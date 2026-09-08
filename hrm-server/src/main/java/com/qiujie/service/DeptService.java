@@ -48,8 +48,11 @@ public class DeptService extends ServiceImpl<DeptMapper, Dept> {
     private StaffMapper staffMapper;
 
     public ResponseDTO add(Dept dept) {
-        // 父级部门不需要计算上班时间
-        if(dept.getParentId() != 0){
+        // 父级部门为 0 或未指定时视为根部门，不需要计算上班时间
+        if (dept.getParentId() == null) {
+            dept.setParentId(0);
+        }
+        if (dept.getParentId() != 0) {
             dept.setTotalWorkTime(calculateTotalWorkTime(dept));
         }
         if (save(dept)) {
@@ -94,8 +97,16 @@ public class DeptService extends ServiceImpl<DeptMapper, Dept> {
     }
 
     public ResponseDTO edit(Dept dept) {
-        // 子部门才计算上班事件
-        if(dept.getParentId() != 0) {
+        // 未传 parentId 时取库中原值来判断是否为子部门（update 会忽略 null 字段，不会覆盖原值）
+        Integer parentId = dept.getParentId();
+        if (parentId == null) {
+            Dept db = getById(dept.getId());
+            parentId = db == null ? 0 : db.getParentId();
+        }
+        // 子部门且传入了完整上下班时间时才重新计算总工时
+        if (parentId != null && parentId != 0
+                && dept.getMorStartTime() != null && dept.getMorEndTime() != null
+                && dept.getAftStartTime() != null && dept.getAftEndTime() != null) {
             dept.setTotalWorkTime(calculateTotalWorkTime(dept));
         }
         QueryWrapper<Dept> queryWrapper = new QueryWrapper();
