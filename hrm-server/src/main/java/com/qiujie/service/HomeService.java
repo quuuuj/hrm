@@ -155,7 +155,8 @@ public class HomeService {
         for (Dept parentDept : parentList) {
             List<Dept> list = this.deptService.list(new QueryWrapper<Dept>().eq("parent_id", parentDept.getId()));
             List<Integer> ids = list.stream().map(Dept::getId).collect(Collectors.toList());
-            long num = this.staffService.count(new QueryWrapper<Staff>().in("dept_id", ids));
+            // 无子部门时跳过查询，避免 in() 空集合生成非法 SQL
+            long num = ids.isEmpty() ? 0 : this.staffService.count(new QueryWrapper<Staff>().in("dept_id", ids));
             Map<String, Object> map = new HashMap<>();
             map.put("value", num);
             map.put("name", parentDept.getName());
