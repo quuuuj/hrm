@@ -88,6 +88,7 @@ public class LoginService extends ServiceImpl<StaffMapper, Staff> {
         ValidateCode validateCode = ValidateCodeUtil.generateValidateCode();
         // Redis key 自带过期时间，过期后自动删除
         redisUtil.set("validate:code", validateCode.getCode(), ValidateCodeUtil.expireIn);
+        response.setContentType("image/jpeg");
         ImageIO.write(validateCode.getImage(), "jpeg", response.getOutputStream());
     }
 }
