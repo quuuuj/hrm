@@ -1227,10 +1227,10 @@ INSERT INTO `sys_staff` VALUES (43, 'staff_43', '若依', 1, '$2a$10$5luvC4HpaIJ
 -- Table structure for assistant_conversation
 -- ----------------------------
 -- ----------------------------
--- Table structure for assistant_session
+-- Table structure for ast_chat_session
 -- ----------------------------
-DROP TABLE IF EXISTS `assistant_session`;
-CREATE TABLE `assistant_session` (
+DROP TABLE IF EXISTS `ast_chat_session`;
+CREATE TABLE `ast_chat_session` (
   `id`              bigint       NOT NULL AUTO_INCREMENT COMMENT '主键',
   `staff_id`        int          NOT NULL COMMENT '所属员工ID',
   `title`           varchar(200) NOT NULL DEFAULT '新会话' COMMENT '会话标题',
@@ -1247,10 +1247,10 @@ CREATE TABLE `assistant_session` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI助手会话表';
 
 -- ----------------------------
--- Table structure for assistant_message
+-- Table structure for ast_chat_message
 -- ----------------------------
-DROP TABLE IF EXISTS `assistant_message`;
-CREATE TABLE `assistant_message` (
+DROP TABLE IF EXISTS `ast_chat_message`;
+CREATE TABLE `ast_chat_message` (
   `id`                 bigint       NOT NULL AUTO_INCREMENT COMMENT '主键',
   `session_id`         bigint       NOT NULL COMMENT '所属会话ID',
   `role`               varchar(16)  NOT NULL COMMENT 'USER / ASSISTANT / TOOL',
@@ -1263,11 +1263,11 @@ CREATE TABLE `assistant_message` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI助手消息表';
 
 -- ----------------------------
--- Table structure for assistant_session_context
+-- Table structure for ast_chat_session_context
 -- ----------------------------
-DROP TABLE IF EXISTS `assistant_session_context`;
-CREATE TABLE `assistant_session_context` (
-  `session_id`                           bigint    NOT NULL COMMENT '会话ID，一对一关联assistant_session.id',
+DROP TABLE IF EXISTS `ast_chat_session_context`;
+CREATE TABLE `ast_chat_session_context` (
+  `session_id`                           bigint    NOT NULL COMMENT '会话ID，一对一关联ast_chat_session.id',
   `session_memory`                       text      DEFAULT NULL COMMENT 'L1 会话记忆摘要',
   `compact_summary`                      text      DEFAULT NULL COMMENT 'L2 紧凑摘要',
   `session_memory_base_message_id`       bigint    DEFAULT NULL COMMENT 'L1 摘要起始消息ID',
@@ -1279,14 +1279,14 @@ CREATE TABLE `assistant_session_context` (
   `context_version`                      bigint    NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
   `update_time`                          datetime  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`session_id`),
-  CONSTRAINT `fk_context_session` FOREIGN KEY (`session_id`) REFERENCES `assistant_session` (`id`)
+  CONSTRAINT `fk_context_session` FOREIGN KEY (`session_id`) REFERENCES `ast_chat_session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI助手会话上下文表';
 
 -- ----------------------------
--- Table structure for assistant_llm_usage
+-- Table structure for ast_chat_llm_usage
 -- ----------------------------
-DROP TABLE IF EXISTS `assistant_llm_usage`;
-CREATE TABLE `assistant_llm_usage` (
+DROP TABLE IF EXISTS `ast_chat_llm_usage`;
+CREATE TABLE `ast_chat_llm_usage` (
   `id`                bigint        NOT NULL AUTO_INCREMENT COMMENT '主键',
   `staff_id`          int           NOT NULL COMMENT '调用者员工ID',
   `module`            varchar(32)   NOT NULL COMMENT 'ASSISTANT / QA',
