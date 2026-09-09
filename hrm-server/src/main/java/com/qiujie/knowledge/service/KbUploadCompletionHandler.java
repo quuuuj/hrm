@@ -45,7 +45,9 @@ public class KbUploadCompletionHandler implements UploadCompletionHandler {
     @Override
     public Map<String, Object> checkDedup(String fileHash) {
         List<KnowledgeDocument> existing = documentMapper.selectList(
-                new QueryWrapper<KnowledgeDocument>().eq("file_hash", fileHash));
+                new QueryWrapper<KnowledgeDocument>()
+                        .eq("file_hash", fileHash)
+                        .eq("is_deleted", 0));
         if (existing.isEmpty()) return null;
         KnowledgeDocument doc = existing.get(0);
         Map<String, Object> result = new HashMap<>();

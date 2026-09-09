@@ -29,6 +29,7 @@ public class KnowledgeService {
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(current, size);
         QueryWrapper<KnowledgeDocument> wrapper = new QueryWrapper<>();
         wrapper.orderByDesc("create_time");
+        wrapper.eq("is_deleted", 0);
         if (oldName != null && !oldName.isBlank()) {
             wrapper.like("old_name", oldName);
         }
@@ -42,10 +43,10 @@ public class KnowledgeService {
 
     public ResponseDTO query(Long id) {
         KnowledgeDocument doc = documentMapper.selectById(id);
-        if (doc != null) {
-            return Response.success(doc);
+        if (doc == null || doc.getIsDeleted() != null && doc.getIsDeleted() == 1) {
+            return Response.error("文档不存在");
         }
-        return Response.error("文档不存在");
+        return Response.success(doc);
     }
 
     /**
