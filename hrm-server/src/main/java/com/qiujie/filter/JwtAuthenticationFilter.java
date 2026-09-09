@@ -29,6 +29,18 @@ import java.util.stream.Collectors;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    /**
+     * SSE（SseEmitter）请求结束时容器会发起一次 ASYNC dispatch 走完过滤器链，
+     * Spring Security 6 的 AuthorizationFilter 同样参与该 dispatch；
+     * 若本过滤器跳过 ASYNC dispatch（OncePerRequestFilter 默认行为），
+     * 该 dispatch 上 SecurityContext 为空 → Access Denied → 错误页写回已提交的
+     * SSE 响应失败并重置连接，客户端流被提前截断。故此处强制参与 ASYNC dispatch。
+     */
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
