@@ -1,7 +1,6 @@
 package com.qiujie.knowledge.service;
 
 import cn.hutool.core.util.IdUtil;
-import com.alibaba.fastjson.JSON;
 import com.qiujie.knowledge.spi.KnowledgeSearchProvider.SearchResult;
 import com.qiujie.knowledge.dto.QaRequest;
 import com.qiujie.knowledge.dto.QaResponse;
@@ -102,8 +101,9 @@ public class QaService {
                     emitter.send(SseEmitter.event().name("token").data(chunk));
                 }
 
-                // 7. 推送引用和元数据
-                emitter.send(SseEmitter.event().name("citations").data(JSON.toJSONString(citations)));
+                // 7. 推送引用和元数据（直接发对象，由 SSE 消息转换器序列化为 JSON 数组；
+                //    此前手动 JSON.toJSONString 会被 Jackson 二次编码成带引号的字符串，客户端解析失败）
+                emitter.send(SseEmitter.event().name("citations").data(citations));
                 Map<String, Object> meta = new HashMap<>();
                 meta.put("evidenceLevel", assessment.level().name());
                 meta.put("strategy", plan.strategy());
