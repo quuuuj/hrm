@@ -1,4 +1,4 @@
-package com.qiujie.dto.notification;
+package com.qiujie.notification.dto;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

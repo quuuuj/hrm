@@ -1,7 +1,7 @@
-package com.qiujie.controller;
+package com.qiujie.notification.controller;
 
-import com.qiujie.service.SseService;
-import com.qiujie.util.SecurityUtil;
+import com.qiujie.common.sse.SseService;
+import com.qiujie.staff.service.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
