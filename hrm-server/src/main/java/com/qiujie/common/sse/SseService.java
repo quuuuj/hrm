@@ -1,7 +1,6 @@
-package com.qiujie.service;
+package com.qiujie.common.sse;
 
 import com.alibaba.fastjson.JSON;
-import com.qiujie.entity.FileTask;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -40,12 +39,6 @@ public class SseService {
             remove(userId, emitter);
         }
         return emitter;
-    }
-
-    /** 推送导入导出任务更新（向后兼容） */
-    public void emit(FileTask task) {
-        if (task.getOperatorId() == null) return;
-        emit(task.getOperatorId(), "task-update", task);
     }
 
     /** 通用推送。对 emitter 集合做快照遍历，避免并发 remove 干扰。 */

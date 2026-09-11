@@ -1,9 +1,8 @@
-package com.qiujie.aspect;
+package com.qiujie.common.aspect;
 
-import com.qiujie.annotation.RateLimit;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.util.SecurityUtil;
+import com.qiujie.common.annotation.RateLimit;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -12,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -39,10 +40,7 @@ public class RateLimitAspect {
     @Autowired(required = false)
     private HttpServletRequest request;
 
-    @Autowired(required = false)
-    private SecurityUtil securityUtil;
-
-    @Around("@annotation(com.qiujie.annotation.RateLimit)")
+    @Around("@annotation(com.qiujie.common.annotation.RateLimit)")
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
@@ -122,12 +120,14 @@ public class RateLimitAspect {
         return ip;
     }
 
+    /**
+     * 以认证主体名（员工工号，唯一）作为限流标识——只读 SecurityContext，不查库、不依赖业务模块。
+     */
     private String getUserId() {
-        if (securityUtil == null) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !StringUtils.hasText(authentication.getName())) {
             return null;
         }
-
-        Integer userId = securityUtil.getCurrentOperatorId();
-        return userId == null ? null : userId.toString();
+        return authentication.getName();
     }
 }

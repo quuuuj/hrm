@@ -1,4 +1,4 @@
-package com.qiujie.enums;
+package com.qiujie.common.enums;
 
 import java.io.Serializable;
 

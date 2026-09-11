@@ -1,4 +1,4 @@
-package com.qiujie.storage;
+package com.qiujie.common.storage;
 
 import io.minio.*;
 import org.slf4j.Logger;

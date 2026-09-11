@@ -1,6 +1,6 @@
-package com.qiujie.dto;
+package com.qiujie.common.dto;
 
-import com.qiujie.enums.BaseEnum;
+import com.qiujie.common.enums.BaseEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;

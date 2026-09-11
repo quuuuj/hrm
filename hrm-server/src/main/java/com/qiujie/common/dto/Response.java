@@ -1,7 +1,7 @@
-package com.qiujie.dto;
+package com.qiujie.common.dto;
 
-import com.qiujie.enums.BaseEnum;
-import com.qiujie.enums.BusinessStatusEnum;
+import com.qiujie.common.enums.BaseEnum;
+import com.qiujie.common.enums.BusinessStatusEnum;
 
 /**
  * 请求响应数据

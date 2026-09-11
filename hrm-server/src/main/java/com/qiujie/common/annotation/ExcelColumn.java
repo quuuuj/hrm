@@ -1,4 +1,4 @@
-package com.qiujie.annotation;
+package com.qiujie.common.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,4 +1,4 @@
-package com.qiujie.enums;
+package com.qiujie.common.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
