@@ -1,7 +1,7 @@
-package com.qiujie.controller;
+package com.qiujie.home.controller;
 
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.service.HomeService;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.home.service.HomeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
