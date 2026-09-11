@@ -2,7 +2,7 @@ package com.qiujie.knowledge.lifecycle;
 
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
 import com.qiujie.knowledge.lifecycle.port.ObjectStore;
-import com.qiujie.knowledge.mapper.KnowledgeDocumentMapper;
+import com.qiujie.mapper.DocsMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,11 +15,11 @@ final class DocumentPurgeHandler {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentPurgeHandler.class);
 
-    private final KnowledgeDocumentMapper documentMapper;
+    private final DocsMapper documentMapper;
     private final ChunkVectorStore chunkVectorStore;
     private final ObjectStore objectStore;
 
-    DocumentPurgeHandler(KnowledgeDocumentMapper documentMapper,
+    DocumentPurgeHandler(DocsMapper documentMapper,
                          ChunkVectorStore chunkVectorStore,
                          ObjectStore objectStore) {
         this.documentMapper = documentMapper;

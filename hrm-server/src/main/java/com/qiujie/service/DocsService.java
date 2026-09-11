@@ -56,6 +56,18 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
     @Autowired
     private DocsMapper docsMapper;
 
+    @Autowired
+    private com.qiujie.knowledge.mapper.DocumentChunkMapper chunkMapper;
+
+    /**
+     * 列出指定文档的全部切片（文件中心查看分块对话框）。
+     */
+    public ResponseDTO chunks(Long documentId) {
+        List<com.qiujie.knowledge.entity.DocumentChunk> chunks =
+                chunkMapper.selectByDocumentIdOrderByChunkIndex(documentId);
+        return Response.success(chunks);
+    }
+
     /**
      * 在文件下载以及数据导出时，响应对象是可以不用作为方法返回值返回的，其在方法执行时已经开始输出，
      * 且其无法与@RestController配合，以JSON格式返回给前端；如果返回响应对象，后端会抛出异常
@@ -113,7 +125,23 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
         return Response.error();
     }
 
+    @Autowired(required = false)
+    private com.qiujie.knowledge.lifecycle.DocumentLifecycleService lifecycle;
+
+    /**
+     * 逻辑删除：若文档有关联的知识库状态（kb_status is not null），
+     * 委托 DocumentLifecycleService 执行 CAS 逻辑删 + 作废在途作业 + 事务提交后异步清理 PG 切片/向量/镜像与物理文件；
+     * 否则执行普通通用文件的逻辑删除。
+     */
     public ResponseDTO delete(Integer id) {
+        Docs doc = docsMapper.selectById(id);
+        if (doc == null) {
+            return Response.error();
+        }
+        if (doc.getKbStatus() != null && lifecycle != null) {
+            lifecycle.delete(new com.qiujie.knowledge.lifecycle.DocumentLifecycleService.DeleteCommand(id.longValue()));
+            return Response.success();
+        }
         if (removeById(id)) {
             return Response.success();
         }
@@ -122,10 +150,10 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
 
     @Transactional(rollbackFor = Exception.class)
     public ResponseDTO deleteBatch(List<Integer> ids) {
-        if (removeBatchByIds(ids)) {
-            return Response.success();
+        for (Integer id : ids) {
+            delete(id);
         }
-        return Response.error();
+        return Response.success();
     }
 
 

@@ -1,8 +1,8 @@
 package com.qiujie.knowledge.lifecycle.port;
 
 import com.pgvector.PGvector;
+import com.qiujie.entity.Docs;
 import com.qiujie.knowledge.entity.DocumentChunk;
-import com.qiujie.knowledge.entity.KnowledgeDocument;
 import com.qiujie.knowledge.lifecycle.VectorMetadata;
 import com.qiujie.knowledge.mapper.DocumentChunkMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * ChunkVectorStore 生产适配器：JdbcTemplate 直连 kb 数据源（PG，autocommit 不可回滚）。
- * 复用现有 DocumentChunkMapper 的切片 SQL；vector_store 与 kb_document 镜像表的 SQL 在此集中，
+ * 复用现有 DocumentChunkMapper 的切片 SQL；vector_store 与 kb_document 镜像表（PG 侧）的 SQL 在此集中，
  * metadata JSON 一律经 {@link VectorMetadata} 生成（形状单一事实来源）。
  */
 @Component
@@ -75,7 +75,7 @@ public class JdbcChunkVectorStore implements ChunkVectorStore {
     }
 
     @Override
-    public void upsertDocumentMirror(KnowledgeDocument doc) {
+    public void upsertDocumentMirror(Docs doc) {
         kbJdbc.update("""
                 INSERT INTO kb_document (id, name, old_name, type, file_hash, file_size,
                                          status, staff_id, is_deleted, create_time, update_time)
@@ -85,7 +85,7 @@ public class JdbcChunkVectorStore implements ChunkVectorStore {
                   status = EXCLUDED.status, staff_id = EXCLUDED.staff_id, is_deleted = 0,
                   update_time = NOW()
                 """, doc.getId(), doc.getName(), doc.getOldName(), doc.getType(),
-                doc.getFileHash(), doc.getFileSize(), doc.getStatus(), doc.getStaffId());
+                doc.getFileHash(), doc.getStoredSize(), doc.getKbStatus(), doc.getStaffId());
     }
 
     @Override

@@ -37,6 +37,19 @@ public class StaffDocsVO implements Serializable {
     @Schema(description = "备注")
     private String remark;
 
+    @Schema(description = "知识库状态：UPLOADED/PROCESSING/READY/FAILED")
+    private String kbStatus;
+
+    @Schema(description = "处理失败原因")
+    private String failureReason;
+
+    @Schema(description = "分块数量")
+    private Integer chunkCount;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss",timezone = "GMT+8")
+    @Schema(description = "上传完成时间")
+    private Timestamp uploadTime;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss",timezone = "GMT+8")
     @Schema(description = "创建时间")
     private Timestamp createTime;

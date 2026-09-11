@@ -92,7 +92,7 @@ export default {
       this.question = ''
       this.streaming = true
       this.streamingText = ''
-      let answerMsg = { role: 'assistant', content: '', citations: [], evidenceLevel: '' }
+      const answerMsg = { role: 'assistant', content: '', citations: [], evidenceLevel: '' }
       this.streamCtrl = streamAsk(q, this.strategy, {
         onToken: (char) => {
           this.streamingText += char

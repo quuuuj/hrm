@@ -22,38 +22,50 @@
     </el-dialog>
 
     <div style="margin-bottom: 10px">
+      <!-- 通用Excel导入 -->
       <el-upload v-permission="['system:docs:import']" :action="importApi" :headers="headers" accept="xlsx" :show-file-list="false" :multiple="false"
                  :on-success="handleImportSuccess"
                  style="display:inline-block;">
-        <el-button  type="success" size="mini"
-        >导入 <i class="el-icon-bottom"></i>
+        <el-button type="success" size="mini">
+          导入 <i class="el-icon-bottom"></i>
         </el-button>
       </el-upload>
-      <el-button v-permission="['system:docs:export']" type="warning" size="mini" @click="handleExport" style="margin-left: 10px"
-      >导出 <i class="el-icon-top"></i>
+      <el-button v-permission="['system:docs:export']" type="warning" size="mini" @click="handleExport" style="margin-left: 10px">
+        导出 <i class="el-icon-top"></i>
       </el-button>
-      <el-upload v-permission="['system:docs:upload']"
-        :action="uploadApi" :headers="headers" :multiple="false" :show-file-list="false"
-        :on-success="handleUploadSuccess"
-        :limit="1" style="display:inline-block;margin-left: 10px">
-        <el-button type="primary" size="mini"
-        >上传 <i class="el-icon-circle-plus-outline"></i>
-        </el-button>
-      </el-upload>
+      <!-- 大文件/普通文件分片上传 -->
+      <ChunkedImportBtn
+        v-permission="['system:docs:upload']"
+        :import-api="chunkedUploadApi"
+        label="上传文件"
+        accept="*/*"
+        :ingest="false"
+        style="margin-left: 10px"
+        @success="handleUploadSuccess"
+      />
+      <!-- 知识库摄入文档上传（自动触发分块与向量化） -->
+      <ChunkedImportBtn
+        v-permission="['system:docs:upload']"
+        :import-api="chunkedUploadApi"
+        label="上传知识文档"
+        accept=".pdf,.docx,.md,.txt"
+        :ingest="true"
+        style="margin-left: 10px"
+        @success="handleUploadSuccess"
+      />
       <el-popconfirm
         style="margin-left: 10px"
-        confirm-button-text='确定'
-        cancel-button-text='我再想想'
+        confirm-button-text="确定"
+        cancel-button-text="我再想想"
         icon="el-icon-info"
         icon-color="red"
         title="你确定删除吗？"
         @confirm="handleDeleteBatch"
       >
-        <el-button v-permission="['system:docs:delete']" type="danger" size="mini" slot="reference"
-        >批量删除 <i class="el-icon-remove-outline"></i>
+        <el-button v-permission="['system:docs:delete']" type="danger" size="mini" slot="reference">
+          批量删除 <i class="el-icon-remove-outline"></i>
         </el-button>
       </el-popconfirm>
-
     </div>
 
     <!------------- 搜索 ---------------------->
@@ -95,29 +107,58 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="50" align="center"/>
-        <el-table-column prop="name" label="文件名" min-width="180" align="center" fixed/>
-        <el-table-column prop="type" label="类型" min-width="125" align="center"/>
-        <el-table-column prop="oldName" label="文件原名称" min-width="400" align="center"/>
-        <el-table-column prop="size" label="文件大小（KB）" min-width="125" align="center"/>
-        <el-table-column prop="staffName" label="上传者" min-width="125" align="center"/>
-        <el-table-column prop="createTime" label="上传时间" min-width="150" align="center"/>
-        <el-table-column prop="remark" label="备注" min-width="200" align="center"/>
-        <el-table-column label="操作" width="280" fixed="right" align="center">
+        <el-table-column prop="oldName" label="文件名称" min-width="220" align="center" fixed/>
+        <el-table-column prop="type" label="类型" min-width="80" align="center"/>
+        <el-table-column prop="size" label="大小(KB)" min-width="90" align="center"/>
+        <el-table-column label="知识库状态" min-width="120" align="center">
           <template slot-scope="scope">
-            <el-button v-permission="['system:docs:edit']" size="mini" type="primary" @click="handleEdit(scope.row)"
-            >编辑 <i class="el-icon-edit"></i
-            ></el-button>
+            <el-tag v-if="scope.row.kbStatus" :type="statusTagType(scope.row.kbStatus)">
+              {{ scope.row.kbStatus }}
+            </el-tag>
+            <span v-else style="color:#909399">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="chunkCount" label="分块数" min-width="80" align="center">
+          <template slot-scope="scope">
+            {{ scope.row.chunkCount != null ? scope.row.chunkCount : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="staffName" label="上传者" min-width="100" align="center"/>
+        <el-table-column prop="createTime" label="上传时间" min-width="150" align="center"/>
+        <el-table-column prop="remark" label="备注" min-width="150" align="center"/>
+        <el-table-column label="操作" width="320" fixed="right" align="center">
+          <template slot-scope="scope">
+            <el-button
+              v-if="scope.row.kbStatus"
+              size="mini"
+              type="info"
+              @click="handleViewChunks(scope.row)"
+            >分块</el-button>
+            <el-button
+              v-if="scope.row.kbStatus === 'FAILED'"
+              v-permission="['system:docs:upload']"
+              size="mini"
+              type="warning"
+              @click="handleRetry(scope.row)"
+            >重试</el-button>
+            <el-button v-permission="['system:docs:edit']" size="mini" type="primary" @click="handleEdit(scope.row)">
+              编辑
+            </el-button>
             <el-popconfirm
               style="margin-left:10px;margin-right:10px"
-              confirm-button-text='确定'
-              cancel-button-text='我再想想'
+              confirm-button-text="确定"
+              cancel-button-text="我再想想"
               icon="el-icon-info"
               icon-color="red"
               title="你确定删除吗？"
               @confirm="handleDelete(scope.row.id)">
-              <el-button v-permission="['system:docs:delete']" size="mini" type="danger" slot="reference">删除 <i class="el-icon-remove-outline"></i></el-button>
+              <el-button v-permission="['system:docs:delete']" size="mini" type="danger" slot="reference">
+                删除
+              </el-button>
             </el-popconfirm>
-            <el-button v-permission="['system:docs:download']" type="warning" @click="handleDownload(scope.row)">下载 <i class="el-icon-download"/></el-button>
+            <el-button v-permission="['system:docs:download']" size="mini" type="warning" @click="handleDownload(scope.row)">
+              下载
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -132,6 +173,18 @@
         @current-change="handleCurrentChange"
       ></el-pagination>
     </div>
+
+    <!-- 文档分块弹窗 -->
+    <el-dialog title="文档分块预览" :visible.sync="chunkDialog.isShow" width="60%">
+      <div v-loading="chunkDialog.loading">
+        <div v-for="(chunk, idx) in chunkDialog.list" :key="idx" style="margin-bottom:12px;padding:8px;background:#f5f7fa;border-radius:4px">
+          <el-tag size="mini" type="info">#{{ chunk.chunkIndex }}</el-tag>
+          <span style="font-size:12px;color:#909399;margin-left:8px">{{ chunk.tokenCount }} tokens</span>
+          <div style="margin-top:4px;font-size:13px;white-space:pre-wrap">{{ chunk.chunkText }}</div>
+        </div>
+        <div v-if="!chunkDialog.loading && chunkDialog.list.length === 0" style="text-align:center;color:#909399">暂无分块数据</div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 <script>
@@ -141,13 +194,17 @@ import {
   edit, exp,
   getImportApi,
   list,
-  getUploadApi
+  retry,
+  chunks,
+  getImportTaskApi
 } from '@/api/docs'
+import ChunkedImportBtn from '@/components/ChunkedImportBtn'
 import { mapGetters } from 'vuex'
 import { write } from '@/utils/docs'
 
 export default {
   name: 'Docs',
+  components: { ChunkedImportBtn },
   data () {
     return {
       editForm: {
@@ -165,7 +222,12 @@ export default {
           size: 10 // 每页展示的记录数
         }
       },
-      ids: []
+      ids: [],
+      chunkDialog: {
+        isShow: false,
+        loading: false,
+        list: []
+      }
     }
   },
   computed: {
@@ -173,21 +235,28 @@ export default {
     headers () {
       return this.token ? { Authorization: 'Bearer ' + this.token } : {}
     },
-    // 获取导入数据的接口
     importApi () {
       return getImportApi()
     },
-    uploadApi () {
-      return getUploadApi(this.staff.id)
+    chunkedUploadApi () {
+      return getImportTaskApi()
     }
   },
   watch: {
-    // 监听table数据对象，解决table列fixed对齐错误的问题
     'table.tableData': function () {
       this.doLayout()
     }
   },
+  beforeDestroy () {
+    this.stopPolling()
+  },
   methods: {
+    statusTagType (status) {
+      if (status === 'READY') return 'success'
+      if (status === 'PROCESSING') return 'warning'
+      if (status === 'FAILED') return 'danger'
+      return 'info'
+    },
     handleExport () {
       const filename = '文件信息表'
       exp(filename).then(response => {
@@ -199,10 +268,11 @@ export default {
         write(response, row.oldName)
       })
     },
-    // 重新渲染table组件
     doLayout () {
       this.$nextTick(() => {
-        this.$refs.table.doLayout()
+        if (this.$refs.table) {
+          this.$refs.table.doLayout()
+        }
       })
     },
     handleDelete (id) {
@@ -229,7 +299,7 @@ export default {
     },
     handleEdit (row) {
       this.editForm.isShow = true
-      this.editForm.formData = row
+      this.editForm.formData = Object.assign({}, row)
     },
     confirmEdit () {
       edit(this.editForm.formData).then((response) => {
@@ -245,7 +315,6 @@ export default {
     search () {
       this.loading()
     },
-    // 重置搜索表单
     reset () {
       this.searchForm.formData = {}
       this.loading()
@@ -261,7 +330,6 @@ export default {
     handleSelectionChange (list) {
       this.ids = list.map(item => item.id)
     },
-    // 将数据渲染到模板
     loading () {
       list({
         current: this.table.pageConfig.current,
@@ -272,10 +340,45 @@ export default {
         if (response.code === 200) {
           this.table.tableData = response.data.list
           this.table.pageConfig.total = response.data.total
+          if (this.table.tableData.some(row => row.kbStatus === 'PROCESSING' || row.kbStatus === 'UPLOADED')) {
+            this.startPolling()
+          } else {
+            this.stopPolling()
+          }
         } else {
           this.$message.error(response.message)
         }
       })
+    },
+    startPolling () {
+      this.stopPolling()
+      this._pollTimer = setInterval(() => {
+        const hasPending = this.table.tableData.some(row => row.kbStatus === 'PROCESSING' || row.kbStatus === 'UPLOADED')
+        if (!hasPending) {
+          this.stopPolling()
+          return
+        }
+        list({
+          current: this.table.pageConfig.current,
+          size: this.table.pageConfig.size,
+          oldName: this.searchForm.formData.oldName,
+          staffName: this.searchForm.formData.staffName
+        }).then(response => {
+          if (response.code === 200) {
+            this.table.tableData = response.data.list
+            this.table.pageConfig.total = response.data.total
+            if (!this.table.tableData.some(row => row.kbStatus === 'PROCESSING' || row.kbStatus === 'UPLOADED')) {
+              this.stopPolling()
+            }
+          }
+        })
+      }, 3000)
+    },
+    stopPolling () {
+      if (this._pollTimer) {
+        clearInterval(this._pollTimer)
+        this._pollTimer = null
+      }
     },
     handleImportSuccess (response) {
       if (response.code === 200) {
@@ -285,13 +388,35 @@ export default {
         this.$message.error('数据导入失败！')
       }
     },
-    handleUploadSuccess (response) {
-      if (response.code === 200) {
-        this.loading()
-        this.$message.success('文件上传成功！')
-      } else {
-        this.$message.error('文件上传失败！')
-      }
+    handleUploadSuccess () {
+      this.loading()
+      this.$message.success('上传成功！')
+      this.startPolling()
+    },
+    handleViewChunks (row) {
+      this.chunkDialog.isShow = true
+      this.chunkDialog.loading = true
+      this.chunkDialog.list = []
+      chunks(row.id).then(response => {
+        if (response.code === 200) {
+          this.chunkDialog.list = response.data || []
+        }
+      }).finally(() => {
+        this.chunkDialog.loading = false
+      })
+    },
+    handleRetry (row) {
+      this.$confirm('确定重新处理该文档？', '提示', { type: 'warning' }).then(() => {
+        retry(row.id).then(response => {
+          if (response.code === 200) {
+            this.$message.success('已提交重新处理')
+            this.loading()
+            this.startPolling()
+          } else {
+            this.$message.error(response.message || '操作失败')
+          }
+        })
+      }).catch(() => {})
     }
   },
   created () {
@@ -299,3 +424,22 @@ export default {
   }
 }
 </script>
+<style scoped>
+.manage {
+  height: 100%;
+}
+.manage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.common-table {
+  position: relative;
+  height: calc(100% - 130px);
+}
+.pager {
+  position: absolute;
+  bottom: 0;
+  right: 20px;
+}
+</style>

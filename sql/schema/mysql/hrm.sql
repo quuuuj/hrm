@@ -1,10 +1,10 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : 47.106.93.24
+ Source Server         : <服务器IP地址>
  Source Server Type    : MySQL
  Source Server Version : 80100
- Source Host           : 47.106.93.24:3306
+ Source Host           : <服务器IP地址>:3306
  Source Schema         : hrm
 
  Target Server Type    : MySQL
@@ -376,7 +376,7 @@ CREATE TABLE `per_menu`  (
 -- Records of per_menu
 -- ----------------------------
 INSERT INTO `per_menu` VALUES (1, 'staff', '员工管理', 'user', 'system:staff:list', 5, 1, 1, NULL, '2022-02-22 19:47:58', '2024-04-11 16:50:00', 0);
-INSERT INTO `per_menu` VALUES (2, 'docs', '文件管理', 'folder', 'system:docs:list', 5, 1, 1, NULL, '2022-12-22 19:48:47', '2024-04-11 16:50:07', 0);
+INSERT INTO `per_menu` VALUES (2, 'docs', '文件中心', 'folder', 'system:docs:list', 5, 1, 1, NULL, '2022-12-22 19:48:47', '2024-04-11 16:50:07', 0);
 INSERT INTO `per_menu` VALUES (3, 'role', '角色管理', 's-custom', 'permission:role:list', 6, 1, 1, '', '2022-10-22 19:49:42', '2024-04-11 16:50:18', 0);
 INSERT INTO `per_menu` VALUES (4, 'menu', '菜单管理', 'collection', 'permission:menu:list', 6, 1, 1, NULL, '2022-01-27 14:32:37', '2024-04-11 16:50:27', 0);
 INSERT INTO `per_menu` VALUES (5, 'system', '系统管理', 's-management', '', 0, 0, 1, '', '2022-01-27 14:36:17', '2024-04-11 16:53:43', 0);

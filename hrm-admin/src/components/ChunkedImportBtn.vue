@@ -30,12 +30,14 @@ const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024 // 5MB
 export default {
   name: 'ChunkedImportBtn',
   props: {
-    /** 上传完成后调用的业务接口，如 /knowledge/upload */
+    /** 上传完成后调用的业务接口，如 /knowledge/upload 或 /docs/upload */
     importApi: { type: String, required: true },
     /** 接受的文件类型，如 .xlsx,.pdf */
     accept: { type: String, default: '.xlsx' },
     /** 按钮文案 */
-    label: { type: String, default: '导入' }
+    label: { type: String, default: '导入' },
+    /** 是否加入知识库进行分块与向量化（默认 false） */
+    ingest: { type: Boolean, default: false }
   },
   emits: ['success', 'error'],
   data () {
@@ -70,6 +72,7 @@ export default {
     async doChunkedUpload (file) {
       const chunkSize = DEFAULT_CHUNK_SIZE
       const chunkCount = Math.ceil(file.size / chunkSize)
+      const baseUploadUrl = this.importApi ? this.importApi.replace(/\/upload$/, '') : ''
 
       // 阶段 1: 初始化上传会话，获取 uploadId
       const initRes = await uploadInit({
@@ -77,8 +80,9 @@ export default {
         fileExt: this.getExt(file.name),
         fileSize: file.size,
         fileHash: await this.sha256(file), // 用于断点续传去重
-        chunkSize
-      })
+        chunkSize,
+        ingest: this.ingest
+      }, baseUploadUrl)
       if (initRes.code !== 200) throw new Error(initRes.message || '初始化上传失败')
       const uploadId = initRes.data.uploadId
 
@@ -97,13 +101,13 @@ export default {
         form.append('chunkIndex', i)
         form.append('chunkHash', await this.sha256Blob(blob))
         form.append('file', blob, `chunk-${i}`)
-        await uploadChunk(form)
+        await uploadChunk(form, baseUploadUrl)
         uploadedCount++
         this.progressText = `上传 ${uploadedCount}/${chunkCount}`
       }
 
       // 阶段 3: 通知服务端合并分片
-      const completeRes = await uploadComplete(uploadId)
+      const completeRes = await uploadComplete(uploadId, baseUploadUrl, { ingest: this.ingest })
       if (completeRes.code !== 200) throw new Error(completeRes.message || '合并分片失败')
       return uploadId
     },

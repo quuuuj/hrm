@@ -1,7 +1,7 @@
 package com.qiujie.knowledge.lifecycle;
 
+import com.qiujie.entity.Docs;
 import com.qiujie.knowledge.entity.IngestionJob;
-import com.qiujie.knowledge.entity.KnowledgeDocument;
 import com.qiujie.knowledge.enums.DocumentStatusEnum;
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore.ChunkDraft;
@@ -10,7 +10,7 @@ import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore.VectorDraft;
 import com.qiujie.knowledge.lifecycle.port.EmbeddingProvider;
 import com.qiujie.knowledge.lifecycle.port.ObjectStore;
 import com.qiujie.knowledge.mapper.IngestionJobMapper;
-import com.qiujie.knowledge.mapper.KnowledgeDocumentMapper;
+import com.qiujie.mapper.DocsMapper;
 import com.qiujie.knowledge.service.ChunkService;
 import com.qiujie.knowledge.service.DocumentParserService;
 import com.qiujie.knowledge.service.TextCleanupService;
@@ -32,7 +32,7 @@ public final class IngestionPipeline {
 
     private static final Logger log = LoggerFactory.getLogger(IngestionPipeline.class);
 
-    private final KnowledgeDocumentMapper documentMapper;
+    private final DocsMapper documentMapper;
     private final IngestionJobMapper jobMapper;
     private final ChunkVectorStore chunkVectorStore;
     private final ObjectStore objectStore;
@@ -41,7 +41,7 @@ public final class IngestionPipeline {
     private final TextCleanupService textCleanupService;
     private final ChunkService chunkService;
 
-    public IngestionPipeline(KnowledgeDocumentMapper documentMapper,
+    public IngestionPipeline(DocsMapper documentMapper,
                              IngestionJobMapper jobMapper,
                              ChunkVectorStore chunkVectorStore,
                              ObjectStore objectStore,
@@ -61,7 +61,7 @@ public final class IngestionPipeline {
 
     /** 执行摄入（工作线程调用，无 Spring 事务；PG 侧 best-effort）。 */
     void run(Long documentId) {
-        KnowledgeDocument doc = documentMapper.selectById(documentId);
+        Docs doc = documentMapper.selectById(documentId);
         if (doc == null) {
             return;
         }
@@ -112,7 +112,7 @@ public final class IngestionPipeline {
             chunkVectorStore.storeVectors(vectorDrafts);
 
             // 同步 PG kb_document 镜像行（关键词检索/邻窗扩展的 JOIN 来源）
-            chunkVectorStore.upsertDocumentMirror(doc.setStatus(DocumentStatusEnum.READY.name()));
+            chunkVectorStore.upsertDocumentMirror(doc.setKbStatus(DocumentStatusEnum.READY.name()));
 
             String preview = fullText.length() > 500 ? fullText.substring(0, 500) : fullText;
             if (documentMapper.completeProcessing(documentId, preview, chunks.size()) == 0) {

@@ -1,7 +1,8 @@
 package com.qiujie.knowledge.service;
 
-import com.qiujie.knowledge.enums.EvidenceLevel;
-import com.qiujie.knowledge.spi.KnowledgeSearchProvider.SearchResult;
+import com.qiujie.chat.service.EvidenceLevel;
+import com.qiujie.chat.service.EvidenceAssessmentService;
+import com.qiujie.chat.service.KnowledgeSearchProvider.SearchResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

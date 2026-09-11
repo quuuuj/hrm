@@ -1,7 +1,7 @@
 package com.qiujie.knowledge.lifecycle;
 
+import com.qiujie.entity.Docs;
 import com.qiujie.knowledge.entity.IngestionJob;
-import com.qiujie.knowledge.entity.KnowledgeDocument;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.DeleteCommand;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.DeleteResult;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.RegisterCommand;
@@ -9,9 +9,9 @@ import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.RegisterResult;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.RetryCommand;
 import com.qiujie.knowledge.lifecycle.port.EmbeddingProvider;
 import com.qiujie.knowledge.lifecycle.support.FixedEmbeddingProvider;
-import com.qiujie.knowledge.mapper.KnowledgeDocumentMapper;
-import com.qiujie.knowledge.service.HybridRetrievalService;
-import com.qiujie.knowledge.spi.KnowledgeSearchProvider.SearchResult;
+import com.qiujie.mapper.DocsMapper;
+import com.qiujie.chat.service.HybridRetrievalService;
+import com.qiujie.chat.service.KnowledgeSearchProvider.SearchResult;
 import com.qiujie.storage.MinioStorageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -95,7 +95,7 @@ class DocumentLifecycleIntegrationTest {
     private DocumentLifecycleService lifecycle;
 
     @Autowired
-    private KnowledgeDocumentMapper documentMapper;
+    private DocsMapper documentMapper;
 
     @Autowired
     private MinioStorageService minioStorage;
@@ -116,10 +116,10 @@ class DocumentLifecycleIntegrationTest {
         RegisterResult result = lifecycle.register(new RegisterCommand(
                 key, "集成测试手册.txt", "txt", "hash-it-1", 200L, 9));
 
-        KnowledgeDocument doc = awaitStatus(result.documentId(), "READY", 60_000);
+        Docs doc = awaitStatus(result.documentId(), "READY", 60_000);
 
         // MySQL：文档结算 READY，失败原因清空，切片数落库
-        assertEquals("READY", doc.getStatus());
+        assertEquals("READY", doc.getKbStatus());
         assertEquals(1, doc.getChunkCount());
         assertNull(doc.getFailureReason());
         // MySQL：作业 SUCCEEDED
@@ -172,7 +172,7 @@ class DocumentLifecycleIntegrationTest {
 
         assertFalse(deleteResult.alreadyDeleted());
         // MySQL 逻辑删
-        assertEquals(1, documentMapper.selectById(docId).getIsDeleted());
+        assertEquals(1, documentMapper.selectById(docId).getDeleteFlag());
         // MinIO 物理文件已删
         assertFalse(minioStorage.exists(key));
         // PG 产物全清理（幂等 purge 在提交后异步执行，轮询等待）
@@ -191,56 +191,57 @@ class DocumentLifecycleIntegrationTest {
     @DisplayName("CAS SQL 语义：认领互斥、READY 拒绝、已删不复活、存活引用计数")
     void casSemantics_ShouldHold_WithRealDatabase() {
         // UPLOADED → 认领成功，再次认领失败
-        KnowledgeDocument doc = insertDoc("knowledge/9/it/cas1.txt", "cas1.txt", "UPLOADED");
-        assertEquals(1, documentMapper.claimForProcessing(doc.getId()));
-        assertEquals("PROCESSING", documentMapper.selectById(doc.getId()).getStatus());
-        assertEquals(0, documentMapper.claimForProcessing(doc.getId()));
+        Docs doc = insertDoc("knowledge/9/it/cas1.txt", "cas1.txt", "UPLOADED");
+        assertEquals(1, documentMapper.claimForProcessing(doc.getId().longValue()));
+        assertEquals("PROCESSING", documentMapper.selectById(doc.getId()).getKbStatus());
+        assertEquals(0, documentMapper.claimForProcessing(doc.getId().longValue()));
         // PROCESSING → READY 结算
-        assertEquals(1, documentMapper.completeProcessing(doc.getId(), "预览", 3));
-        KnowledgeDocument ready = documentMapper.selectById(doc.getId());
-        assertEquals("READY", ready.getStatus());
+        assertEquals(1, documentMapper.completeProcessing(doc.getId().longValue(), "预览", 3));
+        Docs ready = documentMapper.selectById(doc.getId());
+        assertEquals("READY", ready.getKbStatus());
         assertEquals("预览", ready.getPreviewText());
         assertNull(ready.getFailureReason());
         // READY 拒绝再认领
-        assertEquals(0, documentMapper.claimForProcessing(doc.getId()));
+        assertEquals(0, documentMapper.claimForProcessing(doc.getId().longValue()));
 
         // 已删文档：结算失败（不复活）、markDeleted 幂等
-        KnowledgeDocument deleted = insertDoc("knowledge/9/it/cas2.txt", "cas2.txt", "PROCESSING");
-        assertEquals(1, documentMapper.markDeleted(deleted.getId()));
-        assertEquals(0, documentMapper.markDeleted(deleted.getId()));
-        assertEquals(0, documentMapper.completeProcessing(deleted.getId(), "预览", 1));
+        Docs deleted = insertDoc("knowledge/9/it/cas2.txt", "cas2.txt", "PROCESSING");
+        assertEquals(1, documentMapper.markDeleted(deleted.getId().longValue()));
+        assertEquals(0, documentMapper.markDeleted(deleted.getId().longValue()));
+        assertEquals(0, documentMapper.completeProcessing(deleted.getId().longValue(), "预览", 1));
 
         // 存活引用计数：同名文件一存活一已删 → 只计存活
-        KnowledgeDocument live = insertDoc("knowledge/9/it/shared.txt", "shared.txt", "UPLOADED");
+        Docs live = insertDoc("knowledge/9/it/shared.txt", "shared.txt", "UPLOADED");
         assertEquals(1L, documentMapper.countLiveByFileName("knowledge/9/it/shared.txt", 9999L));
     }
 
     // ==================== 辅助 ====================
 
-    private KnowledgeDocument insertDoc(String name, String oldName, String status) {
-        KnowledgeDocument doc = new KnowledgeDocument()
+    private Docs insertDoc(String name, String oldName, String status) {
+        Docs doc = new Docs()
                 .setName(name)
                 .setOldName(oldName)
                 .setType("txt")
                 .setFileHash("hash-" + name)
-                .setFileSize(100L)
-                .setStatus(status)
+                .setSize(1L)
+                .setStoredSize(100L)
+                .setKbStatus(status)
                 .setStaffId(9);
         documentMapper.insert(doc);
         return doc;
     }
 
-    private KnowledgeDocument awaitStatus(Long documentId, String status, long timeoutMs) throws InterruptedException {
+    private Docs awaitStatus(Long documentId, String status, long timeoutMs) throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
-        KnowledgeDocument doc = null;
+        Docs doc = null;
         while (System.currentTimeMillis() < deadline) {
             doc = documentMapper.selectById(documentId);
-            if (doc != null && status.equals(doc.getStatus())) {
+            if (doc != null && status.equals(doc.getKbStatus())) {
                 return doc;
             }
             Thread.sleep(300);
         }
-        fail("等待状态超时: expected=" + status + " actual=" + (doc != null ? doc.getStatus() : "null"));
+        fail("等待状态超时: expected=" + status + " actual=" + (doc != null ? doc.getKbStatus() : "null"));
         return null;
     }
 

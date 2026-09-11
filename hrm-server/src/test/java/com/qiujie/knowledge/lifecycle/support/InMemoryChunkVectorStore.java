@@ -1,7 +1,7 @@
 package com.qiujie.knowledge.lifecycle.support;
 
+import com.qiujie.entity.Docs;
 import com.qiujie.knowledge.entity.DocumentChunk;
-import com.qiujie.knowledge.entity.KnowledgeDocument;
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
 
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ public class InMemoryChunkVectorStore implements ChunkVectorStore {
 
     private final Map<Long, List<DocumentChunk>> chunksByDoc = new ConcurrentHashMap<>();
     private final List<VectorDraft> vectors = new CopyOnWriteArrayList<>();
-    private final Map<Long, KnowledgeDocument> mirror = new ConcurrentHashMap<>();
+    private final Map<Long, Docs> mirror = new ConcurrentHashMap<>();
     private final AtomicLong idSeq = new AtomicLong(1);
 
     @Override
@@ -61,8 +61,8 @@ public class InMemoryChunkVectorStore implements ChunkVectorStore {
     }
 
     @Override
-    public void upsertDocumentMirror(KnowledgeDocument doc) {
-        mirror.put(doc.getId(), doc);
+    public void upsertDocumentMirror(Docs doc) {
+        mirror.put(doc.getId().longValue(), doc);
     }
 
     @Override
@@ -76,7 +76,7 @@ public class InMemoryChunkVectorStore implements ChunkVectorStore {
         return List.copyOf(vectors);
     }
 
-    public KnowledgeDocument mirror(Long documentId) {
+    public Docs mirror(Long documentId) {
         return mirror.get(documentId);
     }
 

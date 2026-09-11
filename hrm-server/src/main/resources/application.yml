@@ -89,14 +89,13 @@ jwt:
 staff:
   default-password: ${STAFF_DEFAULT_PASSWORD:123}
 
-assistant:
-  enabled: ${ASSISTANT_ENABLED:false}
-  timeout-seconds: ${ASSISTANT_TIMEOUT_SECONDS:15}
-  retention-days: ${ASSISTANT_RETENTION_DAYS:30}
+chat:
+  enabled: ${CHAT_ENABLED:${ASSISTANT_ENABLED:false}}
+  timeout-seconds: ${CHAT_TIMEOUT_SECONDS:15}
   provider:
-    base-url: ${ASSISTANT_PROVIDER_BASE_URL:}
-    api-key: ${ASSISTANT_PROVIDER_API_KEY:}
-    model: ${ASSISTANT_PROVIDER_MODEL:}
+    base-url: ${CHAT_PROVIDER_BASE_URL:${ASSISTANT_PROVIDER_BASE_URL:}}
+    api-key: ${CHAT_PROVIDER_API_KEY:${ASSISTANT_PROVIDER_API_KEY:}}
+    model: ${CHAT_PROVIDER_MODEL:${ASSISTANT_PROVIDER_MODEL:}}
 
 # MinIO 对象存储
 storage:

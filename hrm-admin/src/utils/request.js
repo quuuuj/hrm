@@ -28,10 +28,10 @@ function toLogin () {
  * request 拦截器
  */
 instance.interceptors.request.use(config => {
-    // FormData 由浏览器自动设置 multipart/form-data + boundary，不要覆盖
-    if (!(config.data instanceof FormData)) {
-      config.headers['Content-Type'] = 'application/json;charset=utf-8'
-    }
+  // FormData 由浏览器自动设置 multipart/form-data + boundary，不要覆盖
+  if (!(config.data instanceof FormData)) {
+    config.headers['Content-Type'] = 'application/json;charset=utf-8'
+  }
   return config
 }, error => {
   return Promise.reject(error)

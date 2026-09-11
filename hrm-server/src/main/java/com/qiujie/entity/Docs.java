@@ -1,18 +1,14 @@
 package com.qiujie.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import io.swagger.v3.oas.annotations.media.Schema;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.experimental.Accessors;
-import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.io.Serializable;
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.sql.Timestamp;
-import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 
 /**
  * <p>
@@ -84,5 +80,32 @@ public class Docs implements Serializable {
     @TableLogic
     private Integer deleteFlag;
 
+    // ===== 知识库字段（sys_docs 吸收 kb_document）=====
 
+    /** 知识库状态：UPLOADED/PROCESSING/READY/FAILED；NULL=未入库（通用文件）。 */
+    @Schema(description = "知识库状态")
+    @TableField("kb_status")
+    private String kbStatus;
+
+    @Schema(description = "处理失败原因")
+    @TableField("failure_reason")
+    private String failureReason;
+
+    @Schema(description = "文档预览文本")
+    @TableField("preview_text")
+    private String previewText;
+
+    @Schema(description = "切片数量")
+    @TableField("chunk_count")
+    private Integer chunkCount;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @Schema(description = "上传完成时间")
+    @TableField("upload_time")
+    private LocalDateTime uploadTime;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @Schema(description = "处理完成时间")
+    @TableField("process_time")
+    private LocalDateTime processTime;
 }

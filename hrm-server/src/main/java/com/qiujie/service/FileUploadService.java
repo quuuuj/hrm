@@ -59,6 +59,13 @@ public class FileUploadService {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
+    /** 兼容旧调用点（通用导入、默认不加入知识库）。 */
+    public ResponseDTO initUpload(String fileName, String fileExt, Long fileSize,
+                                   String fileHash, Long chunkSize,
+                                   Integer staffId, UploadCompletionHandler handler) {
+        return initUpload(fileName, fileExt, fileSize, fileHash, chunkSize, staffId, handler, false);
+    }
+
     /**
      * 阶段1：初始化上传会话。
      *
@@ -73,12 +80,13 @@ public class FileUploadService {
      * @param fileHash  文件 SHA-256 哈希，用于秒传去重和断点续传匹配
      * @param chunkSize 单个分片大小（字节），前端默认 5MB
      * @param staffId   当前操作员工 ID
-     * @param handler   业务回调处理器，知识库传入 KbUploadCompletionHandler，通用导入传入 null
+     * @param handler   业务回调处理器，文件中心传入 DocsUploadCompletionHandler，通用导入传入 null
+     * @param ingest    是否加入知识库（随会话透传到 onComplete 回调）
      * @return uploadId + 可选 chunkSize/chunkCount/instantUpload/resumed/uploadedChunks
      */
     public ResponseDTO initUpload(String fileName, String fileExt, Long fileSize,
                                    String fileHash, Long chunkSize,
-                                   Integer staffId, UploadCompletionHandler handler) {
+                                   Integer staffId, UploadCompletionHandler handler, boolean ingest) {
         return transactionTemplate.execute(ts -> {
         // 文件大小校验
         if (fileSize > MAX_FILE_SIZE) {
@@ -250,15 +258,16 @@ public class FileUploadService {
 
     /**
      * 阶段3：完成上传，合并分片并通过 handler 执行业务逻辑。
+     * ingest 参数透传给 handler（决定是否触发知识库 ETL）。
      */
-    public ResponseDTO completeUpload(String uploadId, UploadCompletionHandler handler) {
+    public ResponseDTO completeUpload(String uploadId, UploadCompletionHandler handler, boolean ingest) {
         return transactionTemplate.execute(status -> {
             String mergedKey = mergeChunks(uploadId, handler.getStoragePrefix());
             KbUploadSession session = sessionMapper.selectById(uploadId);
             UploadSessionInfo info = new UploadSessionInfo(
                     uploadId, session.getFileName(), session.getFileExt(),
                     session.getFileSize(), session.getFileHash(),
-                    session.getStaffId(), session.getChunkCount());
+                    session.getStaffId(), session.getChunkCount(), ingest);
             Map<String, Object> extra = handler.onComplete(mergedKey, info);
             if (extra == null) extra = new HashMap<>();
             return Response.success("上传完成", extra);

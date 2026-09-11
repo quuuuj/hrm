@@ -28,7 +28,6 @@
       </el-button>
     </div>
 
-
     <div class="manage-header">
       <el-form label-width="auto" :model="searchForm.formData" :inline="true" size="mini">
         <el-form-item label="姓名" prop="name">

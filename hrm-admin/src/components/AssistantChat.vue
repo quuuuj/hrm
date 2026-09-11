@@ -330,7 +330,7 @@ export default {
       this.messages.push({ role: 'ASSISTANT', content: '' })
       const assistantMsg = this.messages[this.messages.length - 1]
       chatStream(
-        { conversationId: this.conversationId, message: content, mode: 'CHAT' },
+        { sessionId: this.conversationId, message: content },
         (token) => {
           // 每收到一个 token，追加到助手消息内容中
           assistantMsg.content += token

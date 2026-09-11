@@ -1,7 +1,9 @@
 package com.qiujie.controller;
 
 import com.qiujie.entity.Docs;
+import com.qiujie.dto.Response;
 import com.qiujie.dto.ResponseDTO;
+import com.qiujie.knowledge.lifecycle.DocumentLifecycleService;
 import com.qiujie.service.FileUploadService;
 import com.qiujie.service.DocsService;
 import com.qiujie.service.DocsUploadCompletionHandler;
@@ -41,6 +43,9 @@ public class DocsController {
 
     @Autowired
     private SecurityUtil securityUtil;
+
+    @Autowired(required = false)
+    private DocumentLifecycleService lifecycle;
 
     @Operation(summary = "新增")
     @PostMapping
@@ -130,9 +135,10 @@ public class DocsController {
         String fileHash = (String) request.get("fileHash");
         Long chunkSize = request.get("chunkSize") != null
                 ? ((Number) request.get("chunkSize")).longValue() : 5 * 1024 * 1024L;
+        boolean ingest = Boolean.TRUE.equals(request.get("ingest"));
 
         return fileUploadService.initUpload(fileName, fileExt, fileSize, fileHash, chunkSize,
-                securityUtil.getCurrentOperatorId(), docsHandler);
+                securityUtil.getCurrentOperatorId(), docsHandler, ingest);
     }
 
     @Operation(summary = "分片上传-上传分片")
@@ -149,7 +155,26 @@ public class DocsController {
     @Operation(summary = "分片上传-完成")
     @PostMapping("/upload/{uploadId}/complete")
     @PreAuthorize("hasAnyAuthority('system:docs:upload')")
-    public ResponseDTO completeChunkedUpload(@PathVariable String uploadId) {
-        return fileUploadService.completeUpload(uploadId, docsHandler);
+    public ResponseDTO completeChunkedUpload(@PathVariable String uploadId,
+                                             @RequestParam(value = "ingest", required = false, defaultValue = "false") boolean ingest) {
+        return fileUploadService.completeUpload(uploadId, docsHandler, ingest);
+    }
+
+    // ========== 文件中心（知识库能力并入） ==========
+
+    @Operation(summary = "查看文档切片")
+    @GetMapping("/{id}/chunks")
+    @PreAuthorize("hasAnyAuthority('system:docs:list')")
+    public ResponseDTO chunks(@PathVariable Long id) {
+        return this.docsService.chunks(id);
+    }
+
+    @Operation(summary = "重试失败的摄入任务")
+    @PostMapping("/{id}/retry")
+    @PreAuthorize("hasAnyAuthority('system:docs:upload')")
+    public ResponseDTO retry(@PathVariable Integer id) {
+        DocumentLifecycleService.RetryResult r =
+                lifecycle.retry(new DocumentLifecycleService.RetryCommand(id.longValue()));
+        return r.accepted() ? Response.success("已重新提交处理") : Response.error(r.reason());
     }
 }

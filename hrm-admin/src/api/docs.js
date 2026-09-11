@@ -73,6 +73,27 @@ export const exp = (filename) => {
   })
 }
 
+// 重试失败的摄入任务
+export const retry = (id) => {
+  return request({
+    url: url + '/' + id + '/retry',
+    method: 'post'
+  })
+}
+
+// 查看文档分块
+export const chunks = (id) => {
+  return request({
+    url: url + '/' + id + '/chunks',
+    method: 'get'
+  })
+}
+
+// 分片上传接口前缀
+export const getImportTaskApi = () => {
+  return url + '/upload'
+}
+
 // 数据导入
 export const getImportApi = () => {
   return process.env.VUE_APP_BASE_API + url + '/import'

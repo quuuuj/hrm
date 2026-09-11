@@ -1,8 +1,8 @@
 package com.qiujie.knowledge.lifecycle;
 
-import com.qiujie.knowledge.entity.KnowledgeDocument;
+import com.qiujie.entity.Docs;
 import com.qiujie.knowledge.mapper.IngestionJobMapper;
-import com.qiujie.knowledge.mapper.KnowledgeDocumentMapper;
+import com.qiujie.mapper.DocsMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -26,13 +26,13 @@ final class StartupRecovery implements ApplicationRunner {
 
     private static final String INTERRUPT_REASON = "文档处理因服务中断未完成，请重试";
 
-    private final KnowledgeDocumentMapper documentMapper;
+    private final DocsMapper documentMapper;
     private final IngestionJobMapper jobMapper;
     private final IngestionPipeline pipeline;
     private final DocumentPurgeHandler purgeHandler;
     private final Executor executor;
 
-    StartupRecovery(KnowledgeDocumentMapper documentMapper,
+    StartupRecovery(DocsMapper documentMapper,
                     IngestionJobMapper jobMapper,
                     IngestionPipeline pipeline,
                     DocumentPurgeHandler purgeHandler,
@@ -53,14 +53,14 @@ final class StartupRecovery implements ApplicationRunner {
         // 步骤 3-4：涉及远程调用（MinIO/PG/HTTP），异步执行，不阻塞启动
         executor.execute(() -> {
             int recovered = 0;
-            List<KnowledgeDocument> uploaded = documentMapper.selectLiveUploaded();
-            for (KnowledgeDocument doc : uploaded) {
-                pipeline.run(doc.getId());
+            List<Docs> uploaded = documentMapper.selectLiveUploaded();
+            for (Docs doc : uploaded) {
+                pipeline.run(doc.getId().longValue());
                 recovered++;
             }
-            List<KnowledgeDocument> deleted = documentMapper.selectDeleted();
-            for (KnowledgeDocument doc : deleted) {
-                purgeHandler.purge(doc.getId(), doc.getName());
+            List<Docs> deleted = documentMapper.selectDeleted();
+            for (Docs doc : deleted) {
+                purgeHandler.purge(doc.getId().longValue(), doc.getName());
                 recovered++;
             }
             if (markedFailed + recovered > 0) {

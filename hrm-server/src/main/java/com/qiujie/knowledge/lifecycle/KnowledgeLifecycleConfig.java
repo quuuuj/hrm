@@ -4,7 +4,7 @@ import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
 import com.qiujie.knowledge.lifecycle.port.EmbeddingProvider;
 import com.qiujie.knowledge.lifecycle.port.ObjectStore;
 import com.qiujie.knowledge.mapper.IngestionJobMapper;
-import com.qiujie.knowledge.mapper.KnowledgeDocumentMapper;
+import com.qiujie.mapper.DocsMapper;
 import com.qiujie.knowledge.service.ChunkService;
 import com.qiujie.knowledge.service.DocumentParserService;
 import com.qiujie.knowledge.service.TextCleanupService;
@@ -24,7 +24,7 @@ import java.util.concurrent.Executor;
 public class KnowledgeLifecycleConfig {
 
     @Bean
-    public IngestionPipeline ingestionPipeline(KnowledgeDocumentMapper documentMapper,
+    public IngestionPipeline ingestionPipeline(DocsMapper documentMapper,
                                                IngestionJobMapper jobMapper,
                                                ChunkVectorStore chunkVectorStore,
                                                ObjectStore objectStore,
@@ -37,14 +37,14 @@ public class KnowledgeLifecycleConfig {
     }
 
     @Bean
-    public DocumentPurgeHandler documentPurgeHandler(KnowledgeDocumentMapper documentMapper,
+    public DocumentPurgeHandler documentPurgeHandler(DocsMapper documentMapper,
                                                      ChunkVectorStore chunkVectorStore,
                                                      ObjectStore objectStore) {
         return new DocumentPurgeHandler(documentMapper, chunkVectorStore, objectStore);
     }
 
     @Bean
-    public DocumentLifecycleService documentLifecycleService(KnowledgeDocumentMapper documentMapper,
+    public DocumentLifecycleService documentLifecycleService(DocsMapper documentMapper,
                                                              IngestionJobMapper jobMapper,
                                                              TransactionTemplate transactionTemplate,
                                                              @Qualifier("fileTaskExecutor") Executor ingestExecutor,
@@ -57,7 +57,7 @@ public class KnowledgeLifecycleConfig {
     /** 启动恢复：仅在知识库启用时注册（四步恢复覆盖三个崩溃窗口）。 */
     @Bean
     @ConditionalOnExpression("${knowledge.enabled:false}")
-    public StartupRecovery startupRecovery(KnowledgeDocumentMapper documentMapper,
+    public StartupRecovery startupRecovery(DocsMapper documentMapper,
                                            IngestionJobMapper jobMapper,
                                            IngestionPipeline pipeline,
                                            DocumentPurgeHandler purgeHandler,

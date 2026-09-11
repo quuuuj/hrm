@@ -17,7 +17,7 @@ public record VectorMetadata(Long documentId, Long chunkId, String documentName)
     /**
      * 序列化为可写 jsonb 的 JSON 字符串。
      *
-     * @param documentName 显示用文档名，取 kb_document.old_name 快照；null 时写空串
+     * @param documentName 显示用文档名，取 sys_docs.old_name 快照；null 时写空串
      */
     public static String toJson(long documentId, long chunkId, String documentName) {
         try {

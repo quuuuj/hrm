@@ -18,7 +18,7 @@ export const chat = (data) => {
  * - 浏览器原生 EventSource 只支持 GET，无法发送请求体
  * - 同时需要携带 httpOnly Cookie 做身份认证（credentials: 'include'）
  *
- * @param {Object} data - 请求体，包含 conversationId、message、mode 等字段
+ * @param {Object} data - 请求体，包含 sessionId（兼容 conversationId）和 message
  * @param {Function} onToken - 收到 token 事件时回调，参数为单字符或短文本片段
  * @param {Function} onMeta - 收到 meta 事件时回调，参数为解析后的 JSON 对象（含 conversationId）
  * @param {Function} onError - 请求失败或网络异常时回调

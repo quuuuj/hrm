@@ -30,14 +30,16 @@ export const download = (id, fileType) => {
 // ========== 分片上传 ==========
 
 /** 初始化上传会话 */
-export const uploadInit = (data) => {
-  return request({ url: url + '/upload/init', method: 'post', data })
+export const uploadInit = (data, customUrl) => {
+  const base = customUrl || url
+  return request({ url: base + '/upload/init', method: 'post', data })
 }
 
 /** 上传单个分片 */
-export const uploadChunk = (formData) => {
+export const uploadChunk = (formData, customUrl) => {
+  const base = customUrl || url
   return request({
-    url: url + '/upload/chunks',
+    url: base + '/upload/chunks',
     method: 'post',
     data: formData,
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -45,6 +47,7 @@ export const uploadChunk = (formData) => {
 }
 
 /** 合并分片，完成上传 */
-export const uploadComplete = (uploadId) => {
-  return request({ url: url + '/upload/' + uploadId + '/complete', method: 'post' })
+export const uploadComplete = (uploadId, customUrl, params) => {
+  const base = customUrl || url
+  return request({ url: base + '/upload/' + uploadId + '/complete', method: 'post', params })
 }

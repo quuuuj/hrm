@@ -12,9 +12,12 @@ public class UploadSessionInfo {
     private final String fileHash;
     private final Integer staffId;
     private final int chunkCount;
+    /** 是否加入知识库：true 时 onComplete 触发 ETL 摄入，false 只做通用文件存储。 */
+    private final boolean ingest;
 
     public UploadSessionInfo(String uploadId, String fileName, String fileExt,
-                              Long fileSize, String fileHash, Integer staffId, int chunkCount) {
+                              Long fileSize, String fileHash, Integer staffId, int chunkCount,
+                              boolean ingest) {
         this.uploadId = uploadId;
         this.fileName = fileName;
         this.fileExt = fileExt;
@@ -22,6 +25,13 @@ public class UploadSessionInfo {
         this.fileHash = fileHash;
         this.staffId = staffId;
         this.chunkCount = chunkCount;
+        this.ingest = ingest;
+    }
+
+    /** 兼容旧调用点：默认不摄入（通用文件）。 */
+    public UploadSessionInfo(String uploadId, String fileName, String fileExt,
+                              Long fileSize, String fileHash, Integer staffId, int chunkCount) {
+        this(uploadId, fileName, fileExt, fileSize, fileHash, staffId, chunkCount, false);
     }
 
     public String getUploadId() { return uploadId; }
@@ -31,4 +41,5 @@ public class UploadSessionInfo {
     public String getFileHash() { return fileHash; }
     public Integer getStaffId() { return staffId; }
     public int getChunkCount() { return chunkCount; }
+    public boolean isIngest() { return ingest; }
 }

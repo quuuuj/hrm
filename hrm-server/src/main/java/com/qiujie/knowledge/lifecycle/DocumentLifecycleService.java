@@ -1,9 +1,9 @@
 package com.qiujie.knowledge.lifecycle;
 
-import com.qiujie.knowledge.entity.KnowledgeDocument;
+import com.qiujie.entity.Docs;
 import com.qiujie.knowledge.enums.DocumentStatusEnum;
 import com.qiujie.knowledge.mapper.IngestionJobMapper;
-import com.qiujie.knowledge.mapper.KnowledgeDocumentMapper;
+import com.qiujie.mapper.DocsMapper;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -38,14 +38,14 @@ public final class DocumentLifecycleService {
     /** 删除裁决：幂等——不存在/已删除 → alreadyDeleted=true 仍算成功。 */
     public record DeleteResult(Long documentId, boolean alreadyDeleted) {}
 
-    private final KnowledgeDocumentMapper documentMapper;
+    private final DocsMapper documentMapper;
     private final IngestionJobMapper jobMapper;
     private final TransactionTemplate transactionTemplate;
     private final Executor ingestExecutor;
     private final IngestionPipeline pipeline;
     private final DocumentPurgeHandler purgeHandler;
 
-    public DocumentLifecycleService(KnowledgeDocumentMapper documentMapper,
+    public DocumentLifecycleService(DocsMapper documentMapper,
                                     IngestionJobMapper jobMapper,
                                     TransactionTemplate transactionTemplate,
                                     Executor ingestExecutor,
@@ -60,22 +60,23 @@ public final class DocumentLifecycleService {
     }
 
     /**
-     * 上传完成登记：事务内 INSERT kb_document(status=UPLOADED)，提交后异步 ETL。
+     * 上传完成登记：事务内 INSERT sys_docs(kb_status=UPLOADED)，提交后异步 ETL。
      * 事务内调用（分片上传完成回调）加入外层事务、事务外调用（补发摄入）自开事务。
      */
     public RegisterResult register(RegisterCommand cmd) {
         return transactionTemplate.execute(status -> {
-            KnowledgeDocument doc = new KnowledgeDocument()
+            Docs doc = new Docs()
                     .setName(cmd.name())
                     .setOldName(cmd.oldName())
                     .setType(cmd.type())
                     .setFileHash(cmd.fileHash())
-                    .setFileSize(cmd.fileSize())
-                    .setStatus(DocumentStatusEnum.UPLOADED.name())
+                    .setStoredSize(cmd.fileSize())
+                    .setSize(cmd.fileSize() != null ? cmd.fileSize() / 1024 : null)
+                    .setKbStatus(DocumentStatusEnum.UPLOADED.name())
                     .setStaffId(cmd.staffId())
                     .setUploadTime(LocalDateTime.now());
             documentMapper.insert(doc);
-            Long documentId = doc.getId();
+            Long documentId = doc.getId().longValue();
             scheduleAfterCommit(() -> pipeline.run(documentId));
             return new RegisterResult(documentId, DocumentStatusEnum.UPLOADED.name());
         });
@@ -87,17 +88,15 @@ public final class DocumentLifecycleService {
      */
     public RetryResult retry(RetryCommand cmd) {
         return transactionTemplate.execute(status -> {
-            KnowledgeDocument doc = documentMapper.selectById(cmd.documentId());
+            // @TableLogic：已删除行 selectById 返回 null，与"不存在"同路拒绝
+            Docs doc = documentMapper.selectById(cmd.documentId());
             if (doc == null) {
-                return new RetryResult(cmd.documentId(), false, "文档不存在");
+                return new RetryResult(cmd.documentId(), false, "文档不存在或已删除");
             }
-            if (DocumentStatusEnum.READY.name().equals(doc.getStatus())) {
+            if (DocumentStatusEnum.READY.name().equals(doc.getKbStatus())) {
                 return new RetryResult(cmd.documentId(), false, "已处理完成的文档无需重试");
             }
-            if (Integer.valueOf(1).equals(doc.getIsDeleted())) {
-                return new RetryResult(cmd.documentId(), false, "文档已删除");
-            }
-            Long documentId = doc.getId();
+            Long documentId = doc.getId().longValue();
             scheduleAfterCommit(() -> pipeline.run(documentId));
             return new RetryResult(documentId, true, null);
         });
@@ -109,9 +108,9 @@ public final class DocumentLifecycleService {
      */
     public DeleteResult delete(DeleteCommand cmd) {
         return transactionTemplate.execute(status -> {
-            KnowledgeDocument doc = documentMapper.selectById(cmd.documentId());
+            Docs doc = documentMapper.selectById(cmd.documentId());
             if (doc == null || documentMapper.markDeleted(cmd.documentId()) == 0) {
-                // 不存在或已删除：幂等成功
+                // 不存在或已删除（@TableLogic selectById 查不到已删行）：幂等成功
                 return new DeleteResult(cmd.documentId(), true);
             }
             // 作废在途作业，防 worker 在删除后继续写 PG
