@@ -91,7 +91,6 @@ file/
 # 临时截图和文档
 /*.png
 /*.jpg
-/面试准备.md
 
 # 临时文件和重构备份
 tmp/
@@ -100,3 +99,5 @@ tmp/
 
 # 本地开发运行时目录
 hrm-server/hrm-files/
+
+deploy/
