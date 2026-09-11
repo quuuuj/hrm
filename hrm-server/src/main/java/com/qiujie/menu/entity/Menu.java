@@ -1,4 +1,4 @@
-package com.qiujie.entity;
+package com.qiujie.menu.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import io.swagger.v3.oas.annotations.media.Schema;

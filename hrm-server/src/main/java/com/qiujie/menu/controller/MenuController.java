@@ -1,8 +1,8 @@
-package com.qiujie.controller;
+package com.qiujie.menu.controller;
 
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Menu;
-import com.qiujie.service.MenuService;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.menu.entity.Menu;
+import com.qiujie.menu.service.MenuService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
