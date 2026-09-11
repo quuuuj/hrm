@@ -1,13 +1,13 @@
-package com.qiujie.controller;
+package com.qiujie.auth.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Menu;
-import com.qiujie.entity.Staff;
-import com.qiujie.mapper.MenuMapper;
-import com.qiujie.mapper.StaffMapper;
-import com.qiujie.service.LoginService;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.menu.entity.Menu;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.menu.mapper.MenuMapper;
+import com.qiujie.staff.mapper.StaffMapper;
+import com.qiujie.auth.service.LoginService;
 import com.qiujie.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;

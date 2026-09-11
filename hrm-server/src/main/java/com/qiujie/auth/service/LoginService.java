@@ -1,16 +1,16 @@
-package com.qiujie.service;
+package com.qiujie.auth.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Staff;
-import com.qiujie.entity.StaffDetails;
-import com.qiujie.entity.ValidateCode;
-import com.qiujie.mapper.StaffMapper;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.security.StaffDetails;
+import com.qiujie.auth.entity.ValidateCode;
+import com.qiujie.staff.mapper.StaffMapper;
 import com.qiujie.util.JwtUtil;
 import com.qiujie.util.RedisUtil;
-import com.qiujie.util.ValidateCodeUtil;
-import com.qiujie.vo.StaffDeptVO;
+import com.qiujie.auth.util.ValidateCodeUtil;
+import com.qiujie.staff.vo.StaffDeptVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

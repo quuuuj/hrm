@@ -1,4 +1,4 @@
-package com.qiujie.entity;
+package com.qiujie.auth.entity;
 
 import java.awt.image.BufferedImage;
 import java.time.LocalDateTime;

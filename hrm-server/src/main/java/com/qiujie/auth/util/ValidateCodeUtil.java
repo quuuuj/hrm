@@ -1,6 +1,6 @@
-package com.qiujie.util;
+package com.qiujie.auth.util;
 
-import com.qiujie.entity.ValidateCode;
+import com.qiujie.auth.entity.ValidateCode;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
