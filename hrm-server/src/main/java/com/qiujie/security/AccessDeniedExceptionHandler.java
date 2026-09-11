@@ -1,8 +1,8 @@
-package com.qiujie.handler;
+package com.qiujie.security;
 
 import com.alibaba.fastjson.JSON;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.enums.BusinessStatusEnum;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.common.enums.BusinessStatusEnum;
 import com.qiujie.util.WebUtil;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;

@@ -1,6 +1,6 @@
-package com.qiujie.exception;
+package com.qiujie.security;
 
-import com.qiujie.enums.BaseEnum;
+import com.qiujie.common.enums.BaseEnum;
 import lombok.Getter;
 
 /**

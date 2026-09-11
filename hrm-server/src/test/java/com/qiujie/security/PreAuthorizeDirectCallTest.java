@@ -1,9 +1,9 @@
 package com.qiujie.security;
 
-import com.qiujie.controller.StaffLeaveController;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.service.StaffLeaveService;
-import com.qiujie.util.SecurityUtil;
+import com.qiujie.leave.controller.StaffLeaveController;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.leave.service.StaffLeaveService;
+import com.qiujie.staff.service.SecurityUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

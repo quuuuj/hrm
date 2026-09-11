@@ -1,8 +1,8 @@
 package com.qiujie.config;
 
-import com.qiujie.filter.JwtAuthenticationFilter;
-import com.qiujie.handler.AccessDeniedExceptionHandler;
-import com.qiujie.handler.AuthenticationEntryPointHandler;
+import com.qiujie.security.JwtAuthenticationFilter;
+import com.qiujie.security.AccessDeniedExceptionHandler;
+import com.qiujie.security.AuthenticationEntryPointHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

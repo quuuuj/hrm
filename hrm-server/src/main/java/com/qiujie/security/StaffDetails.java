@@ -1,6 +1,5 @@
-package com.qiujie.entity;
+package com.qiujie.security;
 
-import com.qiujie.vo.StaffDeptVO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

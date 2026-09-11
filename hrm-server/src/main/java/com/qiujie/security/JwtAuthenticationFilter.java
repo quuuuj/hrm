@@ -1,6 +1,5 @@
-package com.qiujie.filter;
+package com.qiujie.security;
 
-import com.qiujie.entity.StaffDetails;
 import com.qiujie.util.JwtUtil;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
