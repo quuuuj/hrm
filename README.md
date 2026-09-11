@@ -99,7 +99,7 @@ flowchart TD
         B5 --> C5[召回相关文档切块上下文]
         C3 --> C6[组合上下文与 Prompt]
         C5 --> C6
-        C6 --> C7[大模型生成回答 qwen3.7-flash]
+        C6 --> C7[大模型生成回答（由 CHAT_PROVIDER_MODEL 配置）]
         C7 --> C8[流式/同步反馈给员工前端]
     end
 ```
@@ -170,9 +170,9 @@ graph TB
         end
     end
 
-    subgraph ExternalModel["大模型云端服务"]
-        LLM[DashScope: qwen3.7-flash 对话]
-        Embed[DashScope: qwen3.7-text-embedding 向量嵌入]
+    subgraph ExternalModel["可配置的大模型服务"]
+        LLM[对话模型：由 CHAT_PROVIDER_MODEL 配置]
+        Embed[Embedding 模型：由 DASHSCOPE_EMBEDDING_MODEL 配置]
     end
 
     subgraph Persistence["多引擎存储层"]
@@ -210,7 +210,7 @@ graph TB
 
 ```text
 hrm/
-├── docker-compose.yml              # 本地中间件一键启动编排 (MySQL, Redis, PostgreSQL, MinIO)
+├── docker-compose.yml              # 本地中间件一键启动编排
 ├── sql/                            # 数据库初始化脚本
 │   └── schema/
 │       ├── mysql/
@@ -239,82 +239,96 @@ hrm/
 └── hrm-server/                     # 后端工程 (Spring Boot 3.4 + Java 17)
     ├── src/main/java/com/qiujie/
     │   ├── HrmApplication.java     # 后端主入口启动类
-    │   ├── assistant/              # AI 智能助手、会话上下文与 Tool Calling 适配
-    │   ├── attendance/             # 考勤表现分析与批量打卡批处理
-    │   ├── config/                 # 安全拦截、Redis、MyBatis 多数据源配置
-    │   ├── controller/             # RESTful API 控制层
-    │   ├── entity/                 # MyBatis-Plus 领域实体对象
-    │   ├── filetask/               # 异步大文件导入/导出任务调度
-    │   ├── filter/                 # JwtAuthenticationFilter 安全过滤
-    │   ├── knowledge/              # RAG 知识管道 (切块、向量化、混合检索)
-    │   ├── leaveapproval/          # 请假审批核心副作用端口与领域流转
-    │   ├── mapper/                 # MyBatis 数据持久层 Mapper 接口
-    │   ├── overtime/               # OvertimeCalculator 纯计算加班计算引擎
-    │   ├── salarycalculation/      # SalaryCalculation 纯静态薪资核算核心
-    │   ├── service/                # 综合业务服务实现层
-    │   ├── storage/                # MinIO 对象存储适配实现
-    │   └── util/                   # JWT 工具、DateTime 与验证码生成器
+    │   ├── common/                 # 通用 DTO、枚举、存储与 SSE 能力
+    │   ├── config/                 # 安全、Redis、数据源与 MyBatis 配置
+    │   ├── security/               # JWT 过滤器与认证异常处理
+    │   ├── util/                   # 通用工具与配置
+    │   ├── chat/                   # 统一智能问答与会话管理
+    │   ├── knowledge/              # 知识文档、生命周期与向量检索
+    │   ├── docs/                   # 文件文档管理接口与服务
+    │   ├── filetask/               # 异步文件任务与分片上传
+    │   ├── attendance/             # 考勤
+    │   ├── leave/                  # 请假与审批
+    │   ├── overtime/               # 加班与纯计算模块
+    │   ├── salary/                 # 薪资与纯计算模块
+    │   ├── staff/                  # 员工与认证关联服务
+    │   ├── dept/、role/、menu/      # 组织与权限模块
+    │   └── ...                     # 其他按功能划分的模块
     └── src/main/resources/
-        ├── application.yml         # 核心公共配置
-        └── application-dev.yml     # 本地开发环境 Profiles
+        ├── application.yml        # 公共配置与环境变量入口
+        └── application-*.yml      # 本地/其他环境配置
+```
+
+后端业务模块内部按职责划分 `controller`、`service`、`mapper`、`entity`、`dto`、`vo` 等子包，例如：
+
+```text
+com.qiujie.chat/
+├── controller/
+├── service/
+├── mapper/
+├── entity/
+└── dto/
 ```
 
 ---
 
 ## 🚀 本地快速启动指南
 
-### 1. 启动前置依赖容器
-项目本地所需的全部中间件（MySQL 8.1、Redis 5.0、PostgreSQL/pgvector 16、MinIO）已通过根目录下的 `docker-compose.yml` 统一编排，无需在本机单独安装任何中间件：
+### 1. 启动本地依赖容器
+项目本地所需的中间件（MySQL 8.1、Redis 5.0、PostgreSQL/pgvector 16、MinIO）由根目录的 `docker-compose.yml` 统一编排，无需在本机单独安装：
 
 ```bash
-# 在项目根目录下执行，一键启动所有容器
+# 在项目根目录下执行
 docker compose up -d
 ```
 
-容器就绪后，默认连接信息如下（遵循统一本地开发约定）：
-- **MySQL**：`localhost:3306`（用户 `root` / 密码 `123456`，包含 `hrm` 和 `hrm_flowable` 两个数据库）
-- **Redis**：`localhost:6379`（无密码）
-- **PostgreSQL (pgvector)**：`localhost:5432`（库名 `hrm_kb`，用户 `hrm` / 密码 `123456`）
-- **MinIO**：API 端口 `9000`，控制台 `9001`（账号 `minioadmin` / 密码 `minioadmin`）
+容器就绪后，本地映射端口和连接信息以 `docker-compose.yml` 及环境变量配置为准。默认映射包括：
+- **MySQL**：`localhost:3307`（容器端口 `3306`）
+- **Redis**：`localhost:6380`（容器端口 `6379`）
+- **PostgreSQL (pgvector)**：`localhost:54320`（容器端口 `5432`，数据库 `hrm_kb`）
+- **MinIO**：API `9000`，控制台 `9001`
 
 ---
 
-### 2. 导入数据库初始脚本
-如果容器为首次启动（未挂载已有持久化卷），需依次执行数据库初始化脚本：
+### 2. 初始化本地数据库
+首次启动容器后，按项目实际数据库配置导入初始化脚本：
 
 ```bash
-# 1. 导入 MySQL 业务库与 Flowable 流程引擎库
-docker exec -i hrm-mysql mysql -uroot -p123456 hrm < sql/schema/mysql/hrm.sql
-docker exec -i hrm-mysql mysql -uroot -p123456 hrm_flowable < sql/schema/mysql/hrm_flowable.sql
+# MySQL：导入业务库和 Flowable 流程引擎库
+# 请将 <MYSQL_USER>、<MYSQL_PASSWORD> 替换为本地环境变量，不要把真实凭据写入文档
+mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <MYSQL_DATABASE> < sql/schema/mysql/hrm.sql
+mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <FLOWABLE_DATABASE> < sql/schema/mysql/hrm_flowable.sql
 
-# 2. 导入 PostgreSQL 知识库与向量表
-docker exec -i hrm-postgres psql -U hrm -d hrm_kb < sql/schema/postgresql/knowledge_base.sql
+# PostgreSQL：导入知识库模式
+psql -h 127.0.0.1 -p 5432 -U <KB_DB_USERNAME> -d hrm_kb -f sql/schema/postgresql/knowledge_base.sql
 ```
 
 ---
 
 ### 3. 配置本地开发环境参数
-检查后端配置文件 `hrm-server/src/main/resources/application-dev.yml`：
-- **AI 助手与知识库**：
-  若需开启完整的 AI 智能助手或文档向量检索功能，请在 `application-dev.yml` 中配置你的阿里百炼 DashScope API Key（兼容 OpenAI 规范）：
-  ```yaml
-  spring:
-    ai:
-      dashscope:
-        api-key: <YOUR_DASHSCOPE_API_KEY>
-      openai:
-        api-key: <YOUR_DASHSCOPE_API_KEY>
-        base-url: https://dashscope.aliyuncs.com/compatible-mode
-        chat:
-          options:
-            model: qwen3.7-flash
-  knowledge:
-    enabled: true
-    embedding:
-      api-key: <YOUR_DASHSCOPE_API_KEY>
-      base-url: https://dashscope.aliyuncs.com/compatible-mode
-      model: qwen3.7-text-embedding
-  ```
+后端配置通过环境变量读取数据库、Redis、JWT、对象存储和 AI 服务参数。需要启用智能问答或知识库时，至少配置：
+
+```bash
+export DB_MASTER_URL="jdbc:mysql://localhost:3307/hrm"
+export DB_FLOWABLE_URL="jdbc:mysql://localhost:3307/hrm_flowable"
+export DB_USERNAME="<MYSQL_USER>"
+export DB_PASSWORD="<MYSQL_PASSWORD>"
+export REDIS_HOST="localhost"
+export REDIS_PORT="6380"
+export REDIS_PASSWORD="<REDIS_PASSWORD>"
+export JWT_SECRET="<JWT_SECRET>"
+export MINIO_ENDPOINT="http://localhost:9000"
+export MINIO_ACCESS_KEY="<MINIO_ACCESS_KEY>"
+export MINIO_SECRET_KEY="<MINIO_SECRET_KEY>"
+export CHAT_PROVIDER_BASE_URL="<CHAT_PROVIDER_BASE_URL>"
+export CHAT_PROVIDER_API_KEY="<CHAT_PROVIDER_API_KEY>"
+export CHAT_PROVIDER_MODEL="<CHAT_PROVIDER_MODEL>"
+export KNOWLEDGE_ENABLED="true"
+export DASHSCOPE_API_KEY="<DASHSCOPE_API_KEY>"
+export DASHSCOPE_EMBEDDING_MODEL="<EMBEDDING_MODEL>"
+```
+
+模型名称由 `CHAT_PROVIDER_MODEL` 和 `DASHSCOPE_EMBEDDING_MODEL` 配置，不在 README 中固定具体供应商模型。
 
 ---
 
@@ -348,14 +362,14 @@ npm run serve
 ### 6. 访问系统与默认凭据
 - 打开浏览器访问：`http://localhost:8080`
 - **默认管理员账号**：`admin`
-- **默认密码**：`123456`（系统其他默认测试员工密码均为 `123`）
-- 登录验证码：如需直接从 Redis 获取验证码，可在终端执行 `docker exec -it hrm-redis redis-cli get "validate:code"` 查看。
+- **默认密码**：`123456`
+- 登录验证码：按本地 Redis 配置查询对应验证码键值。
 
 ---
 
 ## 💬 交流与反馈
 
-如果您在学习、部署或使用该项目的过程中遇到任何问题，欢迎加入技术交流群共同探讨：
+如果您在学习或使用该项目的过程中遇到问题，欢迎加入技术交流群共同探讨：
 
 - **QQ 交流群**：`967925576`
 

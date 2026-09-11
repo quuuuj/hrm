@@ -1,6 +1,6 @@
 # ADR 0001：后端包结构统一为按功能模块（package-by-feature）
 
-- **状态**：已接受（待实施）
+- **状态**：已接受（2026-09-11 实施完成）
 - **日期**：2026-09-11
 - **相关**：GitHub issue（RFC：后端包结构统一为 package-by-feature）
 
@@ -40,7 +40,7 @@
 | --- | --- |
 | `leave/approval/` | `ApprovalCandidateResolver`、`LeaveApprovalSideEffects(+Impl)`、`LeaveNotifier(+Impl)`、两个 Flowable `ExecutionListener` |
 | `salary/calculation/` | `SalaryCalculation` |
-| `attendance/import/` | `AttendanceImportBatchProcessor` |
+| `attendance/batch/` | `AttendanceImportBatchProcessor` |
 | `filetask/engine/` | `FileTaskEngine`、`FileTaskCoordinator`、导入导出族 |
 | `filetask/store/` | `ArtifactStore`、`AsyncFileTasks`、`FileTaskRepositoryAdapter`、`MinioArtifactStore`、`TaskRepository`、`TaskSnapshot` |
 
@@ -108,7 +108,7 @@
 
 每个模块一个 commit；横切包归位、死代码与空包清理、ArchUnit 引入各自独立 commit。
 
-前置步骤：先把 `master` 合入当前分支取得干净基线（当前分支已分叉：领先 150 / 落后 43），再从合入后的 HEAD 切出 `refactor/package-by-feature`。
+前置步骤（实施时修正）：基线实为 `dev`/`origin/dev`（当前分支落后 0 / 领先 3）。原文所述"与 master 分叉：领先 150 / 落后 43"不成立——本分支与 `master` 根提交不相干（unrelated histories），不存在可合入的公共基线，故跳过合 master 步骤。
 
 顺带清理：删除死代码 `common/llm/LlmProvider`（全仓零引用，javadoc 仍指向早已并入 `chat/` 的 `assistant/`）；清空空目录 `knowledge/controller`、`knowledge/spi`、测试侧 `assistant/store`。
 
