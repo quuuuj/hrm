@@ -14,12 +14,12 @@ import java.util.List;
 /**
  * 统一智能问答控制器。
  * <p>
- * 端点统一映射至 {@code /chat/*}（同时保留 {@code /assistant/*} 兼容重定向/旧请求）。
+ * 端点统一映射至 {@code /chat/*}。
  * 遵循 RFC #69：删除 mode / switchMode 接口。
  * </p>
  */
 @RestController
-@RequestMapping({"/chat", "/assistant"})
+@RequestMapping("/chat")
 public class ChatController {
 
     @Autowired

@@ -1,6 +1,6 @@
 import request from '../utils/request'
 
-const url = '/assistant'
+const url = '/chat'
 
 export const chat = (data) => {
   return request({
@@ -25,7 +25,7 @@ export const chat = (data) => {
  * @returns {Promise} fetch 链式调用的 Promise
  */
 export const chatStream = (data, onToken, onMeta, onError) => {
-  return fetch('/api/assistant/chat', {
+  return fetch('/api/chat/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
