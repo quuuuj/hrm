@@ -1,4 +1,4 @@
-package com.qiujie.entity;
+package com.qiujie.overtime.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -6,9 +6,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import com.qiujie.enums.OvertimeEnum;
+import com.qiujie.overtime.enums.OvertimeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
-import com.qiujie.enums.OvertimeStatusEnum;
+import com.qiujie.overtime.enums.OvertimeStatusEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import io.swagger.v3.oas.annotations.media.Schema;

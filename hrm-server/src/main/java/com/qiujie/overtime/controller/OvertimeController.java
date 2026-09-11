@@ -1,9 +1,9 @@
-package com.qiujie.controller;
+package com.qiujie.overtime.controller;
 
-import com.qiujie.entity.Overtime;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.enums.OvertimeEnum;
-import com.qiujie.service.OvertimeService;
+import com.qiujie.overtime.entity.Overtime;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.overtime.enums.OvertimeEnum;
+import com.qiujie.overtime.service.OvertimeService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

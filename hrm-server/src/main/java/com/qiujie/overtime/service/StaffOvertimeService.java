@@ -1,33 +1,38 @@
-package com.qiujie.service;
+package com.qiujie.overtime.service;
 
-
-import cn.hutool.core.date.DateUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.config.HolidayConfig;
-import com.qiujie.dto.OvertimeImportRow;import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.*;
-import com.qiujie.enums.*;
-import com.qiujie.filetask.AsyncFileTasks;
-import com.qiujie.mapper.StaffMapper;
-import com.qiujie.mapper.StaffOvertimeMapper;
-import com.qiujie.overtime.OvertimeCalculator;
-import com.qiujie.overtime.OvertimeResult;
-import com.qiujie.util.AiHeaderMatcherImpl;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.common.enums.BusinessStatusEnum;
+import com.qiujie.filetask.entity.FileTaskError;
+import com.qiujie.filetask.enums.TaskModuleEnum;
+import com.qiujie.filetask.service.FileUploadService;
+import com.qiujie.filetask.spi.AsyncFileTasks;
+import com.qiujie.filetask.spi.ExportProcessor;
+import com.qiujie.filetask.spi.FlexibleExcelImportReader;
+import com.qiujie.filetask.spi.ImportProcessor;
+import com.qiujie.overtime.calculation.OvertimeCalculator;
+import com.qiujie.overtime.calculation.OvertimeResult;
+import com.qiujie.overtime.dto.OvertimeImportRow;
+import com.qiujie.overtime.entity.Overtime;
+import com.qiujie.overtime.entity.StaffOvertime;
+import com.qiujie.overtime.enums.OvertimeEnum;
+import com.qiujie.overtime.enums.OvertimeStatusEnum;
+import com.qiujie.overtime.mapper.StaffOvertimeMapper;
+import com.qiujie.overtime.vo.OvertimeMonthVO;
+import com.qiujie.overtime.vo.StaffOvertimeVO;
+import com.qiujie.salary.entity.Salary;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.staff.mapper.StaffMapper;
+import com.qiujie.filetask.excel.AiHeaderMatcherImpl;
 import com.qiujie.util.DatetimeUtil;
 import com.qiujie.util.EasyExcelUtil;
-import com.qiujie.util.SecurityUtil;
-import com.qiujie.vo.OvertimeMonthVO;
-import com.qiujie.vo.StaffOvertimeVO;
+import com.qiujie.staff.service.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +41,6 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.*;
 import java.util.function.Consumer;
@@ -60,9 +64,6 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
 
     @Autowired
     private DatetimeUtil datetimeUtil;
-
-    @Autowired
-    private FileTaskCoordinator fileTaskCoordinator;
 
     @Autowired
     private AsyncFileTasks asyncFileTasks;
@@ -126,9 +127,9 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
         }
         IPage<StaffOvertimeVO> page;
         if (deptId == null) {
-            page = this.staffMapper.listStaffOvertimeVO(config, name);
+            page = this.staffOvertimeMapper.listStaffOvertimeVO(config, name);
         } else {
-            page = this.staffMapper.listStaffDeptOvertimeVO(config, name, deptId);
+            page = this.staffOvertimeMapper.listStaffDeptOvertimeVO(config, name, deptId);
         }
         // 每页展示的数据
         List<StaffOvertimeVO> staffDeptVOList = page.getRecords();
@@ -177,7 +178,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
      * @return
      */
     public void export(HttpServletResponse response, String month, String filename) throws IOException {
-        List<OvertimeMonthVO> list = this.staffMapper.queryOvertimeMonthVO();
+        List<OvertimeMonthVO> list = this.staffOvertimeMapper.queryOvertimeMonthVO();
         for (OvertimeMonthVO overtimeMonthVO : list) {
             // 设置加班次数
             overtimeMonthVO.setOvertimeTimes(this.staffOvertimeMapper.countTimes(overtimeMonthVO.getStaffId(),
@@ -281,7 +282,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
                 securityUtil.getCurrentOperatorId(), new OvertimeImportHandler(),
                 new FlexibleExcelImportReader<>(2, TaskModuleEnum.STAFF_OVERTIME,
                         OvertimeImportRow.class, aiHeaderMatcher));
-        com.qiujie.filetask.TaskSnapshot submission = asyncFileTasks.submitImport(request);
+        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitImport(request);
         Map<String, Object> data = new HashMap<>();
         data.put("taskId", submission.taskId());
         return Response.success("已提交", data);
@@ -293,7 +294,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
         AsyncFileTasks.ExportRequest<OvertimeMonthVO> request = new AsyncFileTasks.ExportRequest<>(
                 TaskModuleEnum.STAFF_OVERTIME, filename, JSON.toJSONString(params),
                 securityUtil.getCurrentOperatorId(), new OvertimeExportHandler());
-        com.qiujie.filetask.TaskSnapshot submission = asyncFileTasks.submitExport(request);
+        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitExport(request);
         Map<String, Object> data = new HashMap<>();
         data.put("taskId", submission.taskId());
         return Response.success("已提交", data);
@@ -388,7 +389,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
             String month = params.get("month");
 
             IPage<OvertimeMonthVO> page = new Page<>(current, pageSize);
-            List<OvertimeMonthVO> list = staffMapper.queryOvertimeMonthVO();
+            List<OvertimeMonthVO> list = staffOvertimeMapper.queryOvertimeMonthVO();
             for (OvertimeMonthVO vo : list) {
                 vo.setOvertimeTimes(staffOvertimeMapper.countTimes(vo.getStaffId(),
                         OvertimeStatusEnum.OVERTIME.getCode(), month));

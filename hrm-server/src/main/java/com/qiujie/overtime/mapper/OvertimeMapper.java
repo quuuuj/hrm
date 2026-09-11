@@ -1,7 +1,7 @@
-package com.qiujie.mapper;
+package com.qiujie.overtime.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qiujie.entity.Overtime;
+import com.qiujie.overtime.entity.Overtime;
 
 /**
  * <p>
