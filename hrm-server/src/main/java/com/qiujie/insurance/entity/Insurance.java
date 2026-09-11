@@ -1,4 +1,4 @@
-package com.qiujie.entity;
+package com.qiujie.insurance.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;

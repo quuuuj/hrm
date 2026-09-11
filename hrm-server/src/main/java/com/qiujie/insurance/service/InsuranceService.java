@@ -1,18 +1,18 @@
-package com.qiujie.service;
+package com.qiujie.insurance.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Insurance;
-import com.qiujie.entity.Staff;
-import com.qiujie.enums.BusinessStatusEnum;
-import com.qiujie.exception.ServiceException;
-import com.qiujie.mapper.InsuranceMapper;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.insurance.entity.Insurance;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.common.enums.BusinessStatusEnum;
+import com.qiujie.security.ServiceException;
+import com.qiujie.insurance.mapper.InsuranceMapper;
 import com.qiujie.util.EasyExcelUtil;
-import com.qiujie.vo.StaffInsuranceVO;
+import com.qiujie.insurance.vo.StaffInsuranceVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

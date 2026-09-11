@@ -1,10 +1,10 @@
-package com.qiujie.controller;
+package com.qiujie.insurance.controller;
 
-import com.qiujie.entity.Staff;
-import com.qiujie.service.InsuranceService;
-import com.qiujie.entity.Insurance;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.insurance.service.InsuranceService;
+import com.qiujie.insurance.entity.Insurance;
 
-import com.qiujie.dto.ResponseDTO;
+import com.qiujie.common.dto.ResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

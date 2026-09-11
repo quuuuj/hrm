@@ -1,9 +1,9 @@
-package com.qiujie.mapper;
+package com.qiujie.insurance.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.qiujie.entity.Insurance;
-import com.qiujie.vo.StaffInsuranceVO;
+import com.qiujie.insurance.entity.Insurance;
+import com.qiujie.insurance.vo.StaffInsuranceVO;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
