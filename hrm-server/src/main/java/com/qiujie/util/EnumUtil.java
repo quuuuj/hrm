@@ -1,7 +1,7 @@
 package com.qiujie.util;
 
 
-import com.qiujie.enums.BaseEnum;
+import com.qiujie.common.enums.BaseEnum;
 
 import java.util.*;
 import java.util.stream.Collectors;

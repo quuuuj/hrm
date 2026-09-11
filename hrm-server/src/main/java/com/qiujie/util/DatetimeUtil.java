@@ -1,7 +1,7 @@
 package com.qiujie.util;
 
 import cn.hutool.core.date.DateUtil;
-import com.qiujie.config.HolidayConfig;
+import com.qiujie.util.HolidayConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

@@ -4,7 +4,7 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.TableField;
-import com.qiujie.enums.BaseEnum;
+import com.qiujie.common.enums.BaseEnum;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedInputStream;
