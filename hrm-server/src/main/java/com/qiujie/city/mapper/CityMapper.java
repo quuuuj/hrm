@@ -1,7 +1,7 @@
-package com.qiujie.mapper;
+package com.qiujie.city.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qiujie.entity.City;
+import com.qiujie.city.entity.City;
 
 /**
  * <p>

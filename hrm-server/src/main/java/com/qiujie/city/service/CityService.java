@@ -1,4 +1,4 @@
-package com.qiujie.service;
+package com.qiujie.city.service;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,10 +17,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.City;
-import com.qiujie.mapper.CityMapper;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.city.entity.City;
+import com.qiujie.city.mapper.CityMapper;
 import com.qiujie.util.HutoolExcelUtil;
 
 import lombok.Data;

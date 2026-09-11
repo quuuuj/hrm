@@ -1,8 +1,8 @@
-package com.qiujie.controller;
+package com.qiujie.city.controller;
 
-import com.qiujie.entity.City;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.service.CityService;
+import com.qiujie.city.entity.City;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.city.service.CityService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
