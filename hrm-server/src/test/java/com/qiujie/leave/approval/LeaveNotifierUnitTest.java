@@ -1,9 +1,9 @@
-package com.qiujie.leaveapproval;
+package com.qiujie.leave.approval;
 
-import com.qiujie.dto.notification.NotificationEvent;
-import com.qiujie.entity.StaffLeave;
-import com.qiujie.enums.AuditStatusEnum;
-import com.qiujie.service.SseService;
+import com.qiujie.notification.dto.NotificationEvent;
+import com.qiujie.leave.entity.StaffLeave;
+import com.qiujie.leave.enums.AuditStatusEnum;
+import com.qiujie.common.sse.SseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

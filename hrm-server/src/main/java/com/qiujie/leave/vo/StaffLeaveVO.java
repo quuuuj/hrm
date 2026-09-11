@@ -1,8 +1,8 @@
-package com.qiujie.vo;
+package com.qiujie.leave.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.qiujie.enums.AuditStatusEnum;
-import com.qiujie.enums.LeaveEnum;
+import com.qiujie.leave.enums.AuditStatusEnum;
+import com.qiujie.leave.enums.LeaveEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

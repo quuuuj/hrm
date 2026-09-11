@@ -1,7 +1,7 @@
-package com.qiujie.leaveapproval;
+package com.qiujie.leave.approval;
 
-import com.qiujie.entity.Staff;
-import com.qiujie.mapper.StaffMapper;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.staff.mapper.StaffMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,12 +1,12 @@
-package com.qiujie.service;
+package com.qiujie.leave.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.enums.LeaveEnum;
-import com.qiujie.entity.Leave;
-import com.qiujie.mapper.LeaveMapper;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
+import com.qiujie.leave.enums.LeaveEnum;
+import com.qiujie.leave.entity.Leave;
+import com.qiujie.leave.mapper.LeaveMapper;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
 import com.qiujie.util.EnumUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

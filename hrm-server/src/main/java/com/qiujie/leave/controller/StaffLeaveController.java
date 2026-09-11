@@ -1,11 +1,11 @@
-package com.qiujie.controller;
+package com.qiujie.leave.controller;
 
-import com.qiujie.service.StaffLeaveService;
-import com.qiujie.util.SecurityUtil;
-import com.qiujie.dto.Response;
-import com.qiujie.entity.StaffLeave;
+import com.qiujie.leave.service.StaffLeaveService;
+import com.qiujie.staff.service.SecurityUtil;
+import com.qiujie.common.dto.Response;
+import com.qiujie.leave.entity.StaffLeave;
 
-import com.qiujie.dto.ResponseDTO;
+import com.qiujie.common.dto.ResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

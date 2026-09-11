@@ -1,6 +1,6 @@
-package com.qiujie.leaveapproval;
+package com.qiujie.leave.approval;
 
-import com.qiujie.entity.StaffLeave;
+import com.qiujie.leave.entity.StaffLeave;
 
 /**
  * 请假审批副作用端口——审批通过后对考勤/调休的同步动作。

@@ -1,8 +1,8 @@
-package com.qiujie.controller;
+package com.qiujie.leave.controller;
 
-import com.qiujie.entity.Leave;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.service.LeaveService;
+import com.qiujie.leave.entity.Leave;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.leave.service.LeaveService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

@@ -1,9 +1,9 @@
-package com.qiujie.mapper;
+package com.qiujie.leave.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.qiujie.entity.StaffLeave;
-import com.qiujie.vo.StaffLeaveVO;
+import com.qiujie.leave.entity.StaffLeave;
+import com.qiujie.leave.vo.StaffLeaveVO;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 

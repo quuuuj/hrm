@@ -1,12 +1,13 @@
-package com.qiujie.entity;
+package com.qiujie.leave.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import com.qiujie.enums.LeaveEnum;
+import com.qiujie.leave.enums.AuditStatusEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
-
+import com.qiujie.leave.enums.LeaveEnum;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Setter;
@@ -14,43 +15,52 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.io.Serializable;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.sql.Date;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.sql.Timestamp;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * <p>
- * 请假表
+ *
  * </p>
  *
  * @author qiujie
- * @since 2022-03-27
+ * @since 2022-04-05
  */
 @Getter
 @Setter
-@TableName("att_leave")
-@Schema(description = "Leave对象 - 请假表")
-public class Leave implements Serializable {
+@TableName("att_staff_leave")
+@Schema(description = "StaffLeave对象 - ")
+public class StaffLeave implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
-    @Schema(description = "休假类型")
-    @TableField("type_num")
-    private LeaveEnum typeNum;
+    @Schema(description = "员工id")
+    @TableField("staff_id")
+    private Integer staffId;
 
-    @Schema(description = "部门id")
-    @TableField("dept_id")
-    private Integer deptId;
-
-    @Schema(description = "休假天数")
+    @Schema(description = "请假的天数")
     @TableField("days")
     private Integer days;
 
-    @Schema(description = "0禁用，1正常，默认1")
+    @TableField("type_num")
+    private LeaveEnum typeNum;
+
+    @Schema(description = "请假的起始日期")
+    @TableField("start_date")
+    private Date startDate;
+
+    @Schema(description = "0待审核，1审核通过，2驳回，3撤销，4审核中")
     @TableField("status")
-    private Integer status;
+    private AuditStatusEnum status;
+
+    @Schema(description = "审批意见")
+    @TableField("audit_remark")
+    private String auditRemark;
 
     @TableField("remark")
     private String remark;
@@ -69,5 +79,6 @@ public class Leave implements Serializable {
     @TableField("is_deleted")
     @TableLogic
     private Integer deleteFlag;
+
 
 }

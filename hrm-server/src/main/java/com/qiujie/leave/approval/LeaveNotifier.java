@@ -1,6 +1,8 @@
-package com.qiujie.leaveapproval;
+package com.qiujie.leave.approval;
+import com.qiujie.common.sse.SseService;
+import com.qiujie.leave.service.StaffLeaveService;
 
-import com.qiujie.entity.StaffLeave;
+import com.qiujie.leave.entity.StaffLeave;
 
 /**
  * 请假通知端口——审批流程各节点对申请人/审批人的 SSE 通知。
