@@ -1,9 +1,9 @@
-package com.qiujie.salarycalculation;
+package com.qiujie.salary.calculation;
 
-import com.qiujie.entity.Salary;
-import com.qiujie.enums.AttendanceStatusEnum;
-import com.qiujie.enums.DeductEnum;
-import com.qiujie.vo.StaffSalaryVO;
+import com.qiujie.salary.entity.Salary;
+import com.qiujie.attendance.enums.AttendanceStatusEnum;
+import com.qiujie.salary.enums.DeductEnum;
+import com.qiujie.salary.vo.StaffSalaryVO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -1,8 +1,8 @@
-package com.qiujie.controller;
+package com.qiujie.salary.controller;
 
-import com.qiujie.entity.Salary;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.service.SalaryService;
+import com.qiujie.salary.entity.Salary;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.salary.service.SalaryService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

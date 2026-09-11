@@ -1,10 +1,10 @@
-package com.qiujie.entity;
+package com.qiujie.salary.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import com.qiujie.enums.DeductEnum;
+import com.qiujie.salary.enums.DeductEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import io.swagger.v3.oas.annotations.media.Schema;

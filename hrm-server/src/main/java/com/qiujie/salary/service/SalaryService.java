@@ -1,4 +1,8 @@
-package com.qiujie.service;
+package com.qiujie.salary.service;
+import com.qiujie.filetask.service.FileTaskCoordinator;
+import com.qiujie.filetask.service.FileUploadService;
+import com.qiujie.filetask.spi.ExportProcessor;
+import com.qiujie.filetask.spi.ImportProcessor;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
@@ -6,22 +10,21 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.entity.Salary;
-import com.qiujie.entity.SalaryDeduct;
-import com.qiujie.entity.FileTaskError;
-import com.qiujie.enums.AttendanceStatusEnum;
-import com.qiujie.enums.DeductEnum;
-import com.qiujie.enums.TaskModuleEnum;
-import com.qiujie.filetask.AsyncFileTasks;
-import com.qiujie.mapper.AttendanceMapper;
-import com.qiujie.mapper.SalaryMapper;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.mapper.StaffOvertimeMapper;
-import com.qiujie.salarycalculation.SalaryCalculation;
+import com.qiujie.salary.entity.Salary;
+import com.qiujie.salary.entity.SalaryDeduct;
+import com.qiujie.filetask.entity.FileTaskError;
+import com.qiujie.attendance.enums.AttendanceStatusEnum;
+import com.qiujie.salary.enums.DeductEnum;
+import com.qiujie.filetask.enums.TaskModuleEnum;
+import com.qiujie.filetask.spi.AsyncFileTasks;
+import com.qiujie.attendance.mapper.AttendanceMapper;
+import com.qiujie.salary.mapper.SalaryMapper;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.salary.calculation.SalaryCalculation;
 import com.qiujie.util.EasyExcelUtil;
-import com.qiujie.util.SecurityUtil;
-import com.qiujie.vo.StaffSalaryVO;
+import com.qiujie.staff.service.SecurityUtil;
+import com.qiujie.salary.vo.StaffSalaryVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,9 +63,6 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
     @Autowired
     private AttendanceMapper attendanceMapper;
 
-
-    @Autowired
-    private StaffOvertimeMapper staffOvertimeMapper;
 
     @Autowired
     private FileTaskCoordinator fileTaskCoordinator;
@@ -194,7 +194,7 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
             // 当月薪资记录 + 加班费汇总
             Salary monthSalary = getOne(new QueryWrapper<Salary>()
                     .eq("staff_id", staffSalaryVO.getStaffId()).eq("month", month));
-            BigDecimal monthOvertime = this.staffOvertimeMapper.sumMonthOvertimeSalary(
+            BigDecimal monthOvertime = this.salaryMapper.sumMonthOvertimeSalary(
                     staffSalaryVO.getStaffId(), month);
             // 纯计算委托
             SalaryCalculation.compute(staffSalaryVO, attendanceCounts, leaveWorkdayCount,
@@ -251,7 +251,7 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
         AsyncFileTasks.ImportRequest<Salary> request = new AsyncFileTasks.ImportRequest<>(
                 TaskModuleEnum.SALARY, "salary_import.xlsx", mergedKey, null,
                 getCurrentOperatorId(), new SalaryImportHandler(this));
-        com.qiujie.filetask.TaskSnapshot submission = asyncFileTasks.submitImport(request);
+        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitImport(request);
         Map<String, Object> result = new HashMap<>();
         result.put("taskId", submission.taskId());
         return Response.success(result);
@@ -264,7 +264,7 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
         AsyncFileTasks.ExportRequest<StaffSalaryVO> request = new AsyncFileTasks.ExportRequest<>(
                 TaskModuleEnum.SALARY, filename, month, getCurrentOperatorId(),
                 new SalaryExportHandler(this));
-        com.qiujie.filetask.TaskSnapshot submission = asyncFileTasks.submitExport(request);
+        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitExport(request);
         Map<String, Object> result = new HashMap<>();
         result.put("taskId", submission.taskId());
         return Response.success(result);
@@ -284,17 +284,17 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
         }
 
         @Override
-        public com.qiujie.enums.TaskModuleEnum getModule() {
-            return com.qiujie.enums.TaskModuleEnum.SALARY;
+        public com.qiujie.filetask.enums.TaskModuleEnum getModule() {
+            return com.qiujie.filetask.enums.TaskModuleEnum.SALARY;
         }
 
         @Override
         public void processBatch(List<Salary> rows, Long taskId,
-                                 java.util.function.Consumer<com.qiujie.entity.FileTaskError> errorCollector) {
+                                 java.util.function.Consumer<com.qiujie.filetask.entity.FileTaskError> errorCollector) {
             try {
                 if (!rows.isEmpty() && !service.saveBatch(rows)) {
                     for (Salary row : rows) {
-                        errorCollector.accept(new com.qiujie.entity.FileTaskError()
+                        errorCollector.accept(new com.qiujie.filetask.entity.FileTaskError()
                                 .setTaskId(taskId)
                                 .setRawData(com.alibaba.fastjson.JSON.toJSONString(row))
                                 .setErrorMessage("薪资数据保存失败"));
@@ -302,7 +302,7 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
                 }
             } catch (Exception e) {
                 for (Salary row : rows) {
-                    errorCollector.accept(new com.qiujie.entity.FileTaskError()
+                    errorCollector.accept(new com.qiujie.filetask.entity.FileTaskError()
                             .setTaskId(taskId)
                             .setRawData(com.alibaba.fastjson.JSON.toJSONString(row))
                             .setErrorMessage(e.getMessage()));
@@ -325,8 +325,8 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
         }
 
         @Override
-        public com.qiujie.enums.TaskModuleEnum getModule() {
-            return com.qiujie.enums.TaskModuleEnum.SALARY;
+        public com.qiujie.filetask.enums.TaskModuleEnum getModule() {
+            return com.qiujie.filetask.enums.TaskModuleEnum.SALARY;
         }
 
         @Override

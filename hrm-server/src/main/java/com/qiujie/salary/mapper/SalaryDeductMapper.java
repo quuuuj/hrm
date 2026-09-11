@@ -1,7 +1,7 @@
-package com.qiujie.mapper;
+package com.qiujie.salary.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qiujie.entity.SalaryDeduct;
+import com.qiujie.salary.entity.SalaryDeduct;
 
 /**
  * <p>

@@ -1,12 +1,12 @@
-package com.qiujie.service;
+package com.qiujie.salary.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.entity.SalaryDeduct;
-import com.qiujie.enums.DeductEnum;
-import com.qiujie.mapper.SalaryDeductMapper;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
+import com.qiujie.salary.entity.SalaryDeduct;
+import com.qiujie.salary.enums.DeductEnum;
+import com.qiujie.salary.mapper.SalaryDeductMapper;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
 import com.qiujie.util.EnumUtil;
 import org.springframework.stereotype.Service;
 
