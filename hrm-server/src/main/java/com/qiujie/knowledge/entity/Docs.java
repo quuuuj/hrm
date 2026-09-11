@@ -1,4 +1,4 @@
-package com.qiujie.entity;
+package com.qiujie.knowledge.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;

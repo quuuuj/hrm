@@ -2,7 +2,7 @@ package com.qiujie.knowledge.lifecycle;
 
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
 import com.qiujie.knowledge.lifecycle.port.ObjectStore;
-import com.qiujie.mapper.DocsMapper;
+import com.qiujie.knowledge.mapper.DocsMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

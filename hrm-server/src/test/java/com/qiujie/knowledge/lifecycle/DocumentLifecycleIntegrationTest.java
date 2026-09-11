@@ -1,6 +1,7 @@
 package com.qiujie.knowledge.lifecycle;
 
-import com.qiujie.entity.Docs;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.entity.IngestionJob;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.DeleteCommand;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.DeleteResult;
@@ -9,10 +10,10 @@ import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.RegisterResult;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.RetryCommand;
 import com.qiujie.knowledge.lifecycle.port.EmbeddingProvider;
 import com.qiujie.knowledge.lifecycle.support.FixedEmbeddingProvider;
-import com.qiujie.mapper.DocsMapper;
+import com.qiujie.knowledge.mapper.DocsMapper;
 import com.qiujie.chat.service.HybridRetrievalService;
 import com.qiujie.chat.service.KnowledgeSearchProvider.SearchResult;
-import com.qiujie.storage.MinioStorageService;
+import com.qiujie.common.storage.MinioStorageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -171,8 +172,10 @@ class DocumentLifecycleIntegrationTest {
         DeleteResult deleteResult = lifecycle.delete(new DeleteCommand(docId));
 
         assertFalse(deleteResult.alreadyDeleted());
-        // MySQL 逻辑删
-        assertEquals(1, documentMapper.selectById(docId).getDeleteFlag());
+        // MySQL 逻辑删：@TableLogic 使 selectById 过滤已删行（返回 null），改用显式计数断言
+        Long liveCount = documentMapper.selectCount(
+                new LambdaQueryWrapper<Docs>().eq(Docs::getId, docId));
+        assertEquals(0L, liveCount);
         // MinIO 物理文件已删
         assertFalse(minioStorage.exists(key));
         // PG 产物全清理（幂等 purge 在提交后异步执行，轮询等待）

@@ -1,9 +1,9 @@
 package com.qiujie.knowledge.lifecycle;
 
-import com.qiujie.entity.Docs;
+import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.enums.DocumentStatusEnum;
 import com.qiujie.knowledge.mapper.IngestionJobMapper;
-import com.qiujie.mapper.DocsMapper;
+import com.qiujie.knowledge.mapper.DocsMapper;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;

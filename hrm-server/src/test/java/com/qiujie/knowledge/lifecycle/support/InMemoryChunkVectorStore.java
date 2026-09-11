@@ -1,6 +1,6 @@
 package com.qiujie.knowledge.lifecycle.support;
 
-import com.qiujie.entity.Docs;
+import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.entity.DocumentChunk;
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
 

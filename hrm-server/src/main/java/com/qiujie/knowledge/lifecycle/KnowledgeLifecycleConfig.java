@@ -4,7 +4,7 @@ import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
 import com.qiujie.knowledge.lifecycle.port.EmbeddingProvider;
 import com.qiujie.knowledge.lifecycle.port.ObjectStore;
 import com.qiujie.knowledge.mapper.IngestionJobMapper;
-import com.qiujie.mapper.DocsMapper;
+import com.qiujie.knowledge.mapper.DocsMapper;
 import com.qiujie.knowledge.service.ChunkService;
 import com.qiujie.knowledge.service.DocumentParserService;
 import com.qiujie.knowledge.service.TextCleanupService;

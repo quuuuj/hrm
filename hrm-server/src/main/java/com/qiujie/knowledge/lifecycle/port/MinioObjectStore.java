@@ -1,6 +1,6 @@
 package com.qiujie.knowledge.lifecycle.port;
 
-import com.qiujie.storage.MinioStorageService;
+import com.qiujie.common.storage.MinioStorageService;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;

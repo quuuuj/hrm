@@ -1,8 +1,8 @@
 package com.qiujie.knowledge.lifecycle;
 
-import com.qiujie.entity.Docs;
+import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.mapper.IngestionJobMapper;
-import com.qiujie.mapper.DocsMapper;
+import com.qiujie.knowledge.mapper.DocsMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;

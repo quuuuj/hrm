@@ -1,7 +1,7 @@
 package com.qiujie.knowledge.lifecycle.port;
 
 import com.pgvector.PGvector;
-import com.qiujie.entity.Docs;
+import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.entity.DocumentChunk;
 import com.qiujie.knowledge.lifecycle.VectorMetadata;
 import com.qiujie.knowledge.mapper.DocumentChunkMapper;

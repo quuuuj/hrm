@@ -1,9 +1,9 @@
-package com.qiujie.mapper;
+package com.qiujie.knowledge.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.qiujie.entity.Docs;
-import com.qiujie.vo.StaffDocsVO;
+import com.qiujie.knowledge.entity.Docs;
+import com.qiujie.knowledge.vo.StaffDocsVO;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;

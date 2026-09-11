@@ -1,6 +1,6 @@
 package com.qiujie.knowledge.lifecycle;
 
-import com.qiujie.entity.Docs;
+import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.entity.IngestionJob;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.DeleteCommand;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.DeleteResult;
@@ -13,7 +13,7 @@ import com.qiujie.knowledge.lifecycle.support.FixedEmbeddingProvider;
 import com.qiujie.knowledge.lifecycle.support.InMemoryChunkVectorStore;
 import com.qiujie.knowledge.lifecycle.support.InMemoryObjectStore;
 import com.qiujie.knowledge.mapper.IngestionJobMapper;
-import com.qiujie.mapper.DocsMapper;
+import com.qiujie.knowledge.mapper.DocsMapper;
 import com.qiujie.knowledge.service.ChunkService;
 import com.qiujie.knowledge.service.DocumentParserService;
 import com.qiujie.knowledge.service.TextCleanupService;
