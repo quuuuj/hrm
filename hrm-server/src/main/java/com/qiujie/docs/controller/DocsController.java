@@ -1,13 +1,13 @@
-package com.qiujie.controller;
+package com.qiujie.docs.controller;
 
-import com.qiujie.entity.Docs;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
+import com.qiujie.knowledge.entity.Docs;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService;
-import com.qiujie.service.FileUploadService;
-import com.qiujie.service.DocsService;
-import com.qiujie.service.DocsUploadCompletionHandler;
-import com.qiujie.util.SecurityUtil;
+import com.qiujie.filetask.service.FileUploadService;
+import com.qiujie.docs.service.DocsService;
+import com.qiujie.docs.service.DocsUploadCompletionHandler;
+import com.qiujie.staff.service.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

@@ -1,13 +1,13 @@
-package com.qiujie.service;
+package com.qiujie.docs.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.qiujie.entity.Docs;
+import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.RegisterCommand;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService.RegisterResult;
-import com.qiujie.mapper.DocsMapper;
-import com.qiujie.spi.UploadSessionInfo;
-import com.qiujie.storage.MinioStorageService;
+import com.qiujie.knowledge.mapper.DocsMapper;
+import com.qiujie.filetask.spi.UploadSessionInfo;
+import com.qiujie.common.storage.MinioStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

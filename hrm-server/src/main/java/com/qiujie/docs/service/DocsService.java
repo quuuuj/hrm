@@ -1,4 +1,4 @@
-package com.qiujie.service;
+package com.qiujie.docs.service;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
@@ -6,15 +6,15 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Docs;
-import com.qiujie.enums.BusinessStatusEnum;
-import com.qiujie.mapper.DocsMapper;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.knowledge.entity.Docs;
+import com.qiujie.common.enums.BusinessStatusEnum;
+import com.qiujie.knowledge.mapper.DocsMapper;
 import com.qiujie.util.HutoolExcelUtil;
 import com.qiujie.util.StorageCompressor;
-import com.qiujie.storage.MinioStorageService;
-import com.qiujie.vo.StaffDocsVO;
+import com.qiujie.common.storage.MinioStorageService;
+import com.qiujie.knowledge.vo.StaffDocsVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

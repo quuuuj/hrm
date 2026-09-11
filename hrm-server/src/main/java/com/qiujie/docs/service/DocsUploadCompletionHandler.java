@@ -1,12 +1,12 @@
-package com.qiujie.service;
+package com.qiujie.docs.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.qiujie.entity.Docs;
+import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.lifecycle.DocumentLifecycleService;
-import com.qiujie.spi.UploadCompletionHandler;
-import com.qiujie.spi.UploadSessionInfo;
-import com.qiujie.mapper.DocsMapper;
-import com.qiujie.storage.MinioStorageService;
+import com.qiujie.filetask.spi.UploadCompletionHandler;
+import com.qiujie.filetask.spi.UploadSessionInfo;
+import com.qiujie.knowledge.mapper.DocsMapper;
+import com.qiujie.common.storage.MinioStorageService;
 import com.qiujie.util.StorageCompressor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
