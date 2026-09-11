@@ -1,6 +1,6 @@
-package com.qiujie.mapper;
+package com.qiujie.role.mapper;
 
-import com.qiujie.entity.StaffRole;
+import com.qiujie.role.entity.StaffRole;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**

@@ -1,7 +1,7 @@
-package com.qiujie.mapper;
+package com.qiujie.role.mapper;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.qiujie.entity.Role;
+import com.qiujie.role.entity.Role;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**

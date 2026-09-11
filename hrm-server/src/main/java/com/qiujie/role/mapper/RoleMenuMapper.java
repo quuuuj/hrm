@@ -1,7 +1,7 @@
-package com.qiujie.mapper;
+package com.qiujie.role.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qiujie.entity.RoleMenu;
+import com.qiujie.role.entity.RoleMenu;
 
 /**
  * <p>

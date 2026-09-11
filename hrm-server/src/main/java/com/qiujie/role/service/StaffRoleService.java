@@ -1,13 +1,13 @@
-package com.qiujie.service;
+package com.qiujie.role.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.enums.BusinessStatusEnum;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.StaffRole;
-import com.qiujie.exception.ServiceException;
-import com.qiujie.mapper.StaffRoleMapper;
+import com.qiujie.common.enums.BusinessStatusEnum;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.role.entity.StaffRole;
+import com.qiujie.security.ServiceException;
+import com.qiujie.role.mapper.StaffRoleMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
