@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 
-@MapperScan({"com.qiujie.mapper", "com.qiujie.chat.mapper", "com.qiujie.knowledge.mapper"})
+@MapperScan({"com.qiujie.*.mapper"})
 @SpringBootApplication
 @EnableTransactionManagement(proxyTargetClass = true) // CGLIB 代理确保实现类 @Transactional 生效
 @EnableScheduling

@@ -1,4 +1,5 @@
-package com.qiujie.service;
+package com.qiujie.staff.service;
+import com.qiujie.dept.service.DeptService;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
@@ -6,13 +7,13 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Dept;
-import com.qiujie.entity.Staff;
-import com.qiujie.mapper.StaffMapper;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.dept.entity.Dept;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.staff.mapper.StaffMapper;
 import com.qiujie.util.EasyExcelUtil;
-import com.qiujie.vo.StaffDeptVO;
+import com.qiujie.staff.vo.StaffDeptVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;

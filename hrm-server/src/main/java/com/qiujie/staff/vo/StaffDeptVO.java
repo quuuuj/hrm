@@ -1,7 +1,7 @@
-package com.qiujie.vo;
+package com.qiujie.staff.vo;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.qiujie.enums.GenderEnum;
+import com.qiujie.staff.enums.GenderEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.experimental.Accessors;

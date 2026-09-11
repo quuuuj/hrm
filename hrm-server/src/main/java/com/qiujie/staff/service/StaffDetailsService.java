@@ -1,13 +1,13 @@
-package com.qiujie.service;
+package com.qiujie.staff.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.qiujie.entity.Menu;
-import com.qiujie.entity.Staff;
-import com.qiujie.entity.StaffDetails;
-import com.qiujie.enums.BusinessStatusEnum;
-import com.qiujie.exception.ServiceException;
-import com.qiujie.mapper.MenuMapper;
-import com.qiujie.mapper.StaffMapper;
+import com.qiujie.menu.entity.Menu;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.security.StaffDetails;
+import com.qiujie.common.enums.BusinessStatusEnum;
+import com.qiujie.security.ServiceException;
+import com.qiujie.menu.mapper.MenuMapper;
+import com.qiujie.staff.mapper.StaffMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

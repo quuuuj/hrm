@@ -1,4 +1,4 @@
-package com.qiujie.entity;
+package com.qiujie.staff.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import com.qiujie.enums.GenderEnum;
+import com.qiujie.staff.enums.GenderEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import io.swagger.v3.oas.annotations.media.Schema;

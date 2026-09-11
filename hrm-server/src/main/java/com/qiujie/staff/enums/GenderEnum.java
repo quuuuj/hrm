@@ -1,4 +1,5 @@
-package com.qiujie.enums;
+package com.qiujie.staff.enums;
+import com.qiujie.common.enums.BaseEnum;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonValue;

@@ -1,10 +1,10 @@
-package com.qiujie.controller;
+package com.qiujie.staff.controller;
 
 
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Staff;
-import com.qiujie.service.StaffRoleService;
-import com.qiujie.service.StaffService;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.role.service.StaffRoleService;
+import com.qiujie.staff.service.StaffService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

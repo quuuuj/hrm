@@ -1,8 +1,8 @@
-package com.qiujie.util;
+package com.qiujie.staff.service;
 
 import cn.hutool.core.util.StrUtil;
-import com.qiujie.mapper.StaffMapper;
-import com.qiujie.vo.StaffDeptVO;
+import com.qiujie.staff.mapper.StaffMapper;
+import com.qiujie.staff.vo.StaffDeptVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

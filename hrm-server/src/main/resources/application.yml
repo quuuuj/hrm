@@ -69,7 +69,7 @@ flowable:
 mybatis-plus:
   configuration:
     log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.nologging.NoLoggingImpl}
-  type-enums-package: com.qiujie.enums
+  type-enums-package: com.qiujie.*.enums
   mapper-locations: classpath:mapper/*.xml
 
 management:
