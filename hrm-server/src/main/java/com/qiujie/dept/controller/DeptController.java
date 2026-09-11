@@ -1,8 +1,8 @@
-package com.qiujie.controller;
+package com.qiujie.dept.controller;
 
-import com.qiujie.entity.Dept;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.service.DeptService;
+import com.qiujie.dept.entity.Dept;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.dept.service.DeptService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

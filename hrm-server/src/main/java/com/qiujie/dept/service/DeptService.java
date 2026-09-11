@@ -1,15 +1,13 @@
-package com.qiujie.service;
+package com.qiujie.dept.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Dept;
-import com.qiujie.entity.Staff;
-import com.qiujie.mapper.DeptMapper;
-import com.qiujie.mapper.StaffMapper;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.dept.entity.Dept;
+import com.qiujie.dept.mapper.DeptMapper;
 import com.qiujie.util.EasyExcelUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +25,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
 
-import com.qiujie.enums.BusinessStatusEnum;
-import com.qiujie.exception.ServiceException;
+import com.qiujie.common.enums.BusinessStatusEnum;
+import com.qiujie.security.ServiceException;
 
 /**
  * <p>
@@ -43,9 +41,6 @@ public class DeptService extends ServiceImpl<DeptMapper, Dept> {
 
     @Autowired
     private DeptMapper deptMapper;
-
-    @Autowired
-    private StaffMapper staffMapper;
 
     public ResponseDTO add(Dept dept) {
         // 父级部门为 0 或未指定时视为根部门，不需要计算上班时间
@@ -68,7 +63,7 @@ public class DeptService extends ServiceImpl<DeptMapper, Dept> {
             return Response.error("该部门下存在子部门，无法删除");
         }
         // 级联检查：是否存在关联员工
-        Long staffCount = this.staffMapper.selectCount(new QueryWrapper<Staff>().eq("dept_id", id));
+        Long staffCount = this.deptMapper.countStaffByDeptId(id);
         if (staffCount > 0) {
             return Response.error("该部门下存在员工，无法删除");
         }
@@ -85,7 +80,7 @@ public class DeptService extends ServiceImpl<DeptMapper, Dept> {
             if (childCount > 0) {
                 return Response.error("部门ID=" + id + "下存在子部门，无法删除");
             }
-            Long staffCount = this.staffMapper.selectCount(new QueryWrapper<Staff>().eq("dept_id", id));
+            Long staffCount = this.deptMapper.countStaffByDeptId(id);
             if (staffCount > 0) {
                 return Response.error("部门ID=" + id + "下存在员工，无法删除");
             }
