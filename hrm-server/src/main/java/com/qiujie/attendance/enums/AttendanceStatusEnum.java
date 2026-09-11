@@ -1,4 +1,5 @@
-package com.qiujie.enums;
+package com.qiujie.attendance.enums;
+import com.qiujie.common.enums.BaseEnum;
 
 
 import com.baomidou.mybatisplus.annotation.EnumValue;

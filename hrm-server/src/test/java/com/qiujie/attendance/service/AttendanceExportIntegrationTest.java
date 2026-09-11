@@ -1,11 +1,12 @@
-package com.qiujie.service;
+package com.qiujie.attendance.service;
+import com.qiujie.filetask.service.FileTaskService;
 
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Attendance;
-import com.qiujie.entity.FileTask;
-import com.qiujie.enums.AttendanceStatusEnum;
-import com.qiujie.enums.TaskStatusEnum;
-import com.qiujie.mapper.AttendanceMapper;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.attendance.entity.Attendance;
+import com.qiujie.filetask.entity.FileTask;
+import com.qiujie.attendance.enums.AttendanceStatusEnum;
+import com.qiujie.filetask.enums.TaskStatusEnum;
+import com.qiujie.attendance.mapper.AttendanceMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

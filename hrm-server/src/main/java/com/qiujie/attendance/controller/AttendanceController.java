@@ -1,8 +1,8 @@
-package com.qiujie.controller;
+package com.qiujie.attendance.controller;
 
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Attendance;
-import com.qiujie.service.AttendanceService;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.attendance.entity.Attendance;
+import com.qiujie.attendance.service.AttendanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

@@ -1,6 +1,6 @@
-package com.qiujie.vo;
+package com.qiujie.attendance.vo;
 
-import com.qiujie.annotation.ExcelColumn;
+import com.qiujie.common.annotation.ExcelColumn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

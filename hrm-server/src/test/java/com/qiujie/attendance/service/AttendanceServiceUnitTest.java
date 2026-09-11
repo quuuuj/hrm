@@ -1,16 +1,17 @@
-package com.qiujie.service;
+package com.qiujie.attendance.service;
+import com.qiujie.filetask.service.FileTaskErrorService;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.attendance.AttendanceImportBatchProcessor;
-import com.qiujie.entity.Attendance;
-import com.qiujie.entity.Dept;
-import com.qiujie.entity.FileTaskError;
-import com.qiujie.entity.Staff;
-import com.qiujie.enums.AttendanceStatusEnum;
-import com.qiujie.mapper.AttendanceMapper;
-import com.qiujie.mapper.DeptMapper;
-import com.qiujie.mapper.StaffMapper;
-import com.qiujie.util.SecurityUtil;
+import com.qiujie.attendance.batch.AttendanceImportBatchProcessor;
+import com.qiujie.attendance.entity.Attendance;
+import com.qiujie.dept.entity.Dept;
+import com.qiujie.filetask.entity.FileTaskError;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.attendance.enums.AttendanceStatusEnum;
+import com.qiujie.attendance.mapper.AttendanceMapper;
+import com.qiujie.dept.mapper.DeptMapper;
+import com.qiujie.staff.mapper.StaffMapper;
+import com.qiujie.staff.service.SecurityUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,9 +71,6 @@ class AttendanceServiceUnitTest {
         attendanceService = new AttendanceService();
         // 通过反射注入 mock 依赖（父类 private 字段无法直接访问）
         ReflectionTestUtils.setField(attendanceService, "attendanceMapper", attendanceMapper);
-        ReflectionTestUtils.setField(attendanceService, "staffMapper", staffMapper);
-        ReflectionTestUtils.setField(attendanceService, "deptMapper", deptMapper);
-        ReflectionTestUtils.setField(attendanceService, "transactionTemplate", transactionTemplate);
         ReflectionTestUtils.setField(attendanceService, "fileTaskErrorService", fileTaskErrorService);
         ReflectionTestUtils.setField(attendanceService, "securityUtil", securityUtil);
         // 注入批处理领域服务（同一规则源，迟到/早退/旷工判定委托给它）
@@ -224,7 +222,7 @@ class AttendanceServiceUnitTest {
 
     @Test
     void processImportRows_NullStaffId_ShouldCollectError() {
-        com.qiujie.dto.AttendanceImportRow row = new com.qiujie.dto.AttendanceImportRow();
+        com.qiujie.attendance.dto.AttendanceImportRow row = new com.qiujie.attendance.dto.AttendanceImportRow();
         row.setStaffId(null);
         row.setAttendanceDate(parseDate("20240102"));
         row.setRowNum(3);
@@ -239,7 +237,7 @@ class AttendanceServiceUnitTest {
 
     @Test
     void processImportRows_NullAttendanceDate_ShouldCollectError() {
-        com.qiujie.dto.AttendanceImportRow row = new com.qiujie.dto.AttendanceImportRow();
+        com.qiujie.attendance.dto.AttendanceImportRow row = new com.qiujie.attendance.dto.AttendanceImportRow();
         row.setStaffId(1);
         row.setAttendanceDate(null);
         row.setRowNum(3);
@@ -256,7 +254,7 @@ class AttendanceServiceUnitTest {
 
     @Test
     void processImportRows_StaffNotExists_ShouldCollectError() {
-        com.qiujie.dto.AttendanceImportRow row = new com.qiujie.dto.AttendanceImportRow();
+        com.qiujie.attendance.dto.AttendanceImportRow row = new com.qiujie.attendance.dto.AttendanceImportRow();
         row.setStaffId(99);
         row.setAttendanceDate(parseDate("20240102"));
         row.setRowNum(3);
@@ -273,7 +271,7 @@ class AttendanceServiceUnitTest {
 
     @Test
     void processImportRows_DeptNotExists_ShouldCollectError() {
-        com.qiujie.dto.AttendanceImportRow row = new com.qiujie.dto.AttendanceImportRow();
+        com.qiujie.attendance.dto.AttendanceImportRow row = new com.qiujie.attendance.dto.AttendanceImportRow();
         row.setStaffId(1);
         row.setAttendanceDate(parseDate("20240102"));
         row.setRowNum(3);
@@ -297,7 +295,7 @@ class AttendanceServiceUnitTest {
 
     @Test
     void processImportRows_ValidRow_ShouldSaveAttendance() {
-        com.qiujie.dto.AttendanceImportRow row = new com.qiujie.dto.AttendanceImportRow();
+        com.qiujie.attendance.dto.AttendanceImportRow row = new com.qiujie.attendance.dto.AttendanceImportRow();
         row.setStaffId(1);
         row.setAttendanceDate(parseDate("20240102")); // 周二
         row.setMorStartTime(parseUtilDate("09:00:00"));
@@ -320,7 +318,7 @@ class AttendanceServiceUnitTest {
 
     @Test
     void processImportRows_LateStatus_ShouldBeDetected() {
-        com.qiujie.dto.AttendanceImportRow row = new com.qiujie.dto.AttendanceImportRow();
+        com.qiujie.attendance.dto.AttendanceImportRow row = new com.qiujie.attendance.dto.AttendanceImportRow();
         row.setStaffId(1);
         row.setAttendanceDate(parseDate("20240102"));
         row.setMorStartTime(parseUtilDate("09:30:00"));

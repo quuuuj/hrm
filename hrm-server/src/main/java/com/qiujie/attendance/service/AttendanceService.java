@@ -1,4 +1,8 @@
-package com.qiujie.service;
+package com.qiujie.attendance.service;
+import com.qiujie.filetask.service.FileTaskErrorService;
+import com.qiujie.filetask.service.FileUploadService;
+import com.qiujie.filetask.spi.ExportProcessor;
+import com.qiujie.filetask.spi.ImportProcessor;
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.EasyExcel;
@@ -9,43 +13,35 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.qiujie.enums.TaskModuleEnum;
-import com.qiujie.attendance.AttendanceImportBatchProcessor;
-import com.qiujie.filetask.AsyncFileTasks;
-import com.qiujie.dto.AttendanceImportRow;
-import com.qiujie.dto.Response;
-import com.qiujie.dto.ResponseDTO;
-import com.qiujie.entity.Attendance;
-import com.qiujie.entity.Dept;
-import com.qiujie.entity.FileTaskError;
-import com.qiujie.entity.Staff;
-import com.qiujie.enums.AttendanceStatusEnum;
-import com.qiujie.enums.BusinessStatusEnum;
-import com.qiujie.mapper.AttendanceMapper;
-import com.qiujie.mapper.DeptMapper;
-import com.qiujie.mapper.StaffMapper;
+import com.qiujie.filetask.enums.TaskModuleEnum;
+import com.qiujie.attendance.batch.AttendanceImportBatchProcessor;
+import com.qiujie.filetask.spi.AsyncFileTasks;
+import com.qiujie.attendance.dto.AttendanceImportRow;
+import com.qiujie.common.dto.Response;
+import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.attendance.entity.Attendance;
+import com.qiujie.dept.entity.Dept;
+import com.qiujie.filetask.entity.FileTaskError;
+import com.qiujie.attendance.enums.AttendanceStatusEnum;
+import com.qiujie.common.enums.BusinessStatusEnum;
+import com.qiujie.attendance.mapper.AttendanceMapper;
 import com.qiujie.util.DatetimeUtil;
 import com.qiujie.util.EasyExcelUtil;
 import com.qiujie.util.EnumUtil;
-import com.qiujie.util.SecurityUtil;
-import com.qiujie.vo.AttendanceMonthSummaryVO;
-import com.qiujie.vo.AttendanceMonthVO;
-import com.qiujie.vo.StaffAttendanceVO;
+import com.qiujie.staff.service.SecurityUtil;
+import com.qiujie.attendance.vo.AttendanceMonthSummaryVO;
+import com.qiujie.attendance.vo.AttendanceMonthVO;
+import com.qiujie.attendance.vo.StaffAttendanceVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.Date;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,22 +60,10 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
     private AttendanceMapper attendanceMapper;
 
     @Autowired
-    private DeptMapper deptMapper;
-
-    @Autowired
-    private StaffMapper staffMapper;
-
-    @Autowired
     private DatetimeUtil datetimeUtil;
 
     @Autowired
     private FileTaskErrorService fileTaskErrorService;
-
-    @Autowired
-    private TransactionTemplate transactionTemplate;
-
-    @Autowired
-    private FileTaskCoordinator fileTaskCoordinator;
 
     @Autowired
     private AsyncFileTasks asyncFileTasks;
@@ -137,9 +121,9 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         }
         IPage<StaffAttendanceVO> page;
         if (deptId == null) {
-            page = this.staffMapper.listStaffAttendanceVO(config, name);
+            page = this.attendanceMapper.listStaffAttendanceVO(config, name);
         } else {
-            page = this.staffMapper.listStaffDeptAttendanceVO(config, name, deptId);
+            page = this.attendanceMapper.listStaffDeptAttendanceVO(config, name, deptId);
         }
         List<StaffAttendanceVO> staffDeptVOList = page.getRecords();
         if (month == null) {
@@ -209,7 +193,7 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
             IPage<AttendanceMonthVO> page;
             do {
                 page = new Page<>(current, pageSize);
-                page = this.staffMapper.queryAttendanceMonthVOPage(page);
+                page = this.attendanceMapper.queryAttendanceMonthVOPage(page);
                 List<AttendanceMonthVO> list = page.getRecords();
                 if (list.isEmpty()) {
                     break;
@@ -259,7 +243,7 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         AsyncFileTasks.ImportRequest<AttendanceImportRow> request = new AsyncFileTasks.ImportRequest<>(
                 TaskModuleEnum.ATTENDANCE, "attendance_import.xlsx", mergedKey, null,
                 getCurrentOperatorId(), new AttendanceImportHandler());
-        com.qiujie.filetask.TaskSnapshot submission = asyncFileTasks.submitImport(request);
+        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitImport(request);
         return Response.success("导入任务已创建", submission.snapshot());
     }
 
@@ -277,7 +261,7 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         AsyncFileTasks.ExportRequest<AttendanceMonthVO> request = new AsyncFileTasks.ExportRequest<>(
                 TaskModuleEnum.ATTENDANCE, exportName, JSON.toJSONString(queryParams),
                 getCurrentOperatorId(), new AttendanceExportHandler());
-        com.qiujie.filetask.TaskSnapshot submission = asyncFileTasks.submitExport(request);
+        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitExport(request);
         return Response.success("导出任务已创建", submission.snapshot());
     }
 
@@ -406,7 +390,7 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
             Date rangeStart = dt.toSqlDate();
             Date rangeEnd = DateUtil.offsetMonth(dt, 1).toSqlDate();
             IPage<AttendanceMonthVO> page = new Page<>(current, pageSize);
-            page = AttendanceService.this.staffMapper.queryAttendanceMonthVOPage(page);
+            page = AttendanceService.this.attendanceMapper.queryAttendanceMonthVOPage(page);
             List<AttendanceMonthVO> list = page.getRecords();
             if (!list.isEmpty()) {
                 List<Integer> staffIds = list.stream()

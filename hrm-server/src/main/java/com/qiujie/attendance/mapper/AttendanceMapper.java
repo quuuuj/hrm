@@ -1,8 +1,11 @@
-package com.qiujie.mapper;
+package com.qiujie.attendance.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qiujie.entity.Attendance;
-import com.qiujie.vo.AttendanceMonthSummaryVO;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.qiujie.attendance.entity.Attendance;
+import com.qiujie.attendance.vo.AttendanceMonthSummaryVO;
+import com.qiujie.attendance.vo.AttendanceMonthVO;
+import com.qiujie.attendance.vo.StaffAttendanceVO;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -14,6 +17,17 @@ public interface AttendanceMapper extends BaseMapper<Attendance> {
 
     @Select("select * from att_attendance where is_deleted = 0 and staff_id = #{id} and attendance_date = #{day}")
     Attendance queryByStaffIdAndDate(@Param("id") Integer id, @Param("day") Date day);
+
+    @Select("select ss.id staff_id,ss.dept_id,ss.code,ss.name,ss.phone,ss.address,sd.name dept_name from sys_staff ss inner join sys_dept sd on ss.dept_id = sd.id " +
+            "where ss.is_deleted = 0 and ss.name like concat('%',#{name},'%')")
+    IPage<StaffAttendanceVO> listStaffAttendanceVO(IPage<StaffAttendanceVO> config, @Param("name") String name);
+
+    @Select("select ss.id staff_id,ss.dept_id,ss.code,ss.name,ss.phone,ss.address,sd.name dept_name from sys_staff ss inner join sys_dept sd on ss.dept_id = sd.id " +
+            "where ss.is_deleted = 0 and ss.dept_id = #{deptId} and ss.name like concat('%',#{name},'%')")
+    IPage<StaffAttendanceVO> listStaffDeptAttendanceVO(IPage<StaffAttendanceVO> config, @Param("name") String name, @Param("deptId") Integer deptId);
+
+    @Select("select ss.id staff_id,ss.dept_id,ss.code,ss.name,ss.phone,ss.address,sd.name dept_name from sys_staff ss inner join sys_dept sd on ss.dept_id = sd.id where ss.is_deleted = 0")
+    IPage<AttendanceMonthVO> queryAttendanceMonthVOPage(IPage<AttendanceMonthVO> page);
 
     @Select("<script><![CDATA[select count(*) from att_attendance where is_deleted = 0 and staff_id = #{id} and status = #{status} and attendance_date >= #{start} and attendance_date < #{end}]]></script>")
     Integer countTimes(@Param("id") Integer id, @Param("status") Integer status,

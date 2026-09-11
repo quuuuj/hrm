@@ -1,4 +1,4 @@
-package com.qiujie.vo;
+package com.qiujie.attendance.vo;
 
 import lombok.Data;
 
