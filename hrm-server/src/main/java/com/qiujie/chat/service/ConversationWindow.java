@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qiujie.chat.ChatProperties;
 import com.qiujie.chat.entity.ChatMessage;
 import com.qiujie.chat.mapper.ChatMessageMapper;
-import com.qiujie.vo.StaffDeptVO;
+import com.qiujie.staff.vo.StaffDeptVO;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;

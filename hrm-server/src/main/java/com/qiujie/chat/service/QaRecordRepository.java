@@ -1,6 +1,6 @@
 package com.qiujie.chat.service;
 
-import com.qiujie.util.SecurityUtil;
+import com.qiujie.staff.service.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
