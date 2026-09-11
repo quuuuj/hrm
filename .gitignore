@@ -49,6 +49,9 @@ replay_pid*.log
 docs/*
 !docs/screenshots/
 !docs/screenshots/*.png
+# Architecture Decision Records are long-lived assets: they must travel with the repo
+!docs/adr/
+!docs/adr/*.md
 
 # Uploaded/runtime files
 file/
