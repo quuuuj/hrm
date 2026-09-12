@@ -20,7 +20,6 @@ import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.store.ArtifactStore;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.mapper.FileTaskMapper;
-import com.qiujie.common.storage.MinioStorageService;
 import com.qiujie.staff.service.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -46,10 +45,6 @@ public class FileTaskService extends ServiceImpl<FileTaskMapper, FileTask>
         implements com.qiujie.filetask.store.TaskRepository {
 
     private static final int ERROR_EXPORT_PAGE_SIZE = 1000;
-    private static final String TEMP_DIR = System.getProperty("java.io.tmpdir") + File.separator + "hrm";
-
-    @Autowired
-    private MinioStorageService storageService;
 
     @Autowired
     private ArtifactStore artifactStore;
@@ -221,15 +216,6 @@ public class FileTaskService extends ServiceImpl<FileTaskMapper, FileTask>
                 .setFailReason(message)
                 .setFinishTime(Timestamp.valueOf(LocalDateTime.now())));
         pushTaskEvent(id);
-    }
-
-    public File buildTaskFile(String subDir, String originalFilename) {
-        return artifactStore.createTaskFile(subDir, originalFilename);
-    }
-
-    /** 将本地临时文件上传至 MinIO，返回存储 key。 */
-    public String uploadToMinio(File file, String subDir) {
-        return artifactStore.upload(file, subDir);
     }
 
     public void generateErrorFile(Long taskId) {

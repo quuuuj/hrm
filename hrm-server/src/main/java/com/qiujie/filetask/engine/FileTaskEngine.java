@@ -13,7 +13,6 @@ import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.enums.TaskStatusEnum;
 import com.qiujie.filetask.store.ArtifactStore;
 import com.qiujie.filetask.store.TaskRepository;
-import com.qiujie.common.storage.MinioStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -42,9 +41,6 @@ public class FileTaskEngine {
 
     @Autowired
     private ArtifactStore artifactStore;
-
-    @Autowired
-    private MinioStorageService storageService;
 
     /**
      * 执行异步导入。
@@ -101,17 +97,25 @@ public class FileTaskEngine {
 
     private <T> void processBatch(ImportReader.ImportBatch<T> batch,
                                   Long taskId, ImportProcessor<T> processor) {
-        List<FileTaskError> errors = new ArrayList<>(batch.errors());
+        List<FileTaskError> allErrors = new ArrayList<>(batch.errors());
+        List<FileTaskError> businessErrors = new ArrayList<>();
         int parsedRows = batch.rows().size();
+        int parseErrors = batch.errors().size();
+
         if (!batch.rows().isEmpty()) {
-            processor.processBatch(batch.rows(), taskId, errors::add);
+            processor.processBatch(batch.rows(), taskId, err -> {
+                businessErrors.add(err);
+                allErrors.add(err);
+            });
         }
-        if (!errors.isEmpty()) {
-            fileTaskErrorService.saveBatch(errors, DB_BATCH_SIZE);
+        if (!allErrors.isEmpty()) {
+            fileTaskErrorService.saveBatch(allErrors, DB_BATCH_SIZE);
         }
-        int businessFailures = errors.size() - batch.errors().size();
-        taskRepository.increaseProgress(taskId, 0, parsedRows + batch.errors().size(),
-                parsedRows - businessFailures, errors.size());
+
+        int processedCount = parsedRows + parseErrors;
+        int successCount = parsedRows - businessErrors.size();
+        int failCount = allErrors.size();
+        taskRepository.increaseProgress(taskId, 0, processedCount, successCount, failCount);
     }
 
     /**

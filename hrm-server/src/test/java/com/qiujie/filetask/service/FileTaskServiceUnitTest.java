@@ -21,7 +21,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -50,9 +49,6 @@ class FileTaskServiceUnitTest {
 
     @Mock
     private SecurityUtil securityUtil;
-
-    @Mock
-    private com.qiujie.common.storage.MinioStorageService storageService;
 
     @Mock
     private ArtifactStore artifactStore;
@@ -157,22 +153,6 @@ class FileTaskServiceUnitTest {
 
         verify(fileTaskMapper).updateById(Mockito.<FileTask>argThat(t ->
                 t.getId().equals(1L) && "/tmp/result.xlsx".equals(t.getResultFilePath())));
-    }
-
-    // ==================== buildTaskFile ====================
-
-    @Test
-    void buildTaskFile_ShouldCreateFileInCorrectDirectory() {
-        when(artifactStore.createTaskFile("task-source", "test.xlsx")).thenAnswer(invocation -> {
-            File file = new File(System.getProperty("java.io.tmpdir"), "uuid.xlsx");
-            file.getParentFile().mkdirs();
-            return file;
-        });
-        File file = fileTaskService.buildTaskFile("task-source", "test.xlsx");
-        assertThat(file).isNotNull();
-        assertThat(file.getParentFile()).exists();
-        assertThat(file.getName()).endsWith(".xlsx");
-        assertThat(file.getName()).doesNotContain("test"); // UUID 文件名，不含原始名
     }
 
     // ==================== cleanExpiredTaskFiles ====================

@@ -145,6 +145,8 @@ class FileTaskEngineUnitTest {
         verify(fileTaskService).finish(taskId, TaskStatusEnum.PARTIAL_SUCCESS);
         verify(fileTaskService).generateErrorFile(taskId);
         verify(fileTaskService, never()).deleteSourceFile(anyLong());
+        // Excel 实际解析出 299 行有效数据，createMockProcessorWithErrors 上报 1 个业务错误：processed=299, success=298, fail=1
+        verify(fileTaskService).increaseProgress(taskId, 0, 299, 298, 1);
     }
 
     @Test
@@ -193,7 +195,7 @@ class FileTaskEngineUnitTest {
 
         fileTaskEngine.runImport(99L, processor);
 
-        // markRunning 在 null 检查前调用，但后续流程不会继续
+        // claimRunning 在 null 检查前调用，但后续流程不会继续
         verify(fileTaskService).claimRunning(99L);
         verify(processor, never()).processBatch(anyList(), anyLong(), any());
         verify(fileTaskService, never()).finish(anyLong(), any());
@@ -226,11 +228,6 @@ class FileTaskEngineUnitTest {
     void runExport_SinglePage_ShouldFinishSuccess() {
         Long taskId = 10L;
 
-        File resultFile = new File(tempDir.toFile(), "task-result/test-uuid.xlsx");
-        resultFile.getParentFile().mkdirs();
-        lenient().when(fileTaskService.buildTaskFile("task-result", "test.xlsx")).thenReturn(resultFile);
-        lenient().when(fileTaskService.uploadToMinio(any(File.class), anyString())).thenReturn("task-result/test-uuid.xlsx");
-
         List<AttendanceImportRow> data = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             AttendanceImportRow row = new AttendanceImportRow();
@@ -258,11 +255,6 @@ class FileTaskEngineUnitTest {
     @Test
     void runExport_MultiplePages_ShouldProcessAll() {
         Long taskId = 11L;
-
-        File resultFile = new File(tempDir.toFile(), "task-result/test-multi.xlsx");
-        resultFile.getParentFile().mkdirs();
-        lenient().when(fileTaskService.buildTaskFile("task-result", "multi.xlsx")).thenReturn(resultFile);
-        lenient().when(fileTaskService.uploadToMinio(any(File.class), anyString())).thenReturn("task-result/test-multi.xlsx");
 
         List<AttendanceImportRow> page1Data = new ArrayList<>();
         for (int i = 0; i < 500; i++) page1Data.add(new AttendanceImportRow());
@@ -296,11 +288,6 @@ class FileTaskEngineUnitTest {
     void runExport_EmptyResult_ShouldFinishSuccess() {
         Long taskId = 12L;
 
-        File resultFile = new File(tempDir.toFile(), "task-result/test-empty.xlsx");
-        resultFile.getParentFile().mkdirs();
-        lenient().when(fileTaskService.buildTaskFile("task-result", "empty.xlsx")).thenReturn(resultFile);
-        lenient().when(fileTaskService.uploadToMinio(any(File.class), anyString())).thenReturn("task-result/test-empty.xlsx");
-
         IPage<AttendanceImportRow> page = new Page<>(1, 500, 0);
         page.setRecords(new ArrayList<>());
 
@@ -319,10 +306,6 @@ class FileTaskEngineUnitTest {
     @Test
     void runExport_ProcessorThrowsException_ShouldCallFail() {
         Long taskId = 13L;
-
-        File resultFile = new File(tempDir.toFile(), "task-result/test-fail.xlsx");
-        resultFile.getParentFile().mkdirs();
-        lenient().when(fileTaskService.buildTaskFile("task-result", "fail.xlsx")).thenReturn(resultFile);
 
         @SuppressWarnings("unchecked")
         ExportProcessor<AttendanceImportRow> processor = mock(ExportProcessor.class);
