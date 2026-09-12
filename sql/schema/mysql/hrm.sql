@@ -1253,10 +1253,9 @@ DROP TABLE IF EXISTS `ast_chat_message`;
 CREATE TABLE `ast_chat_message` (
   `id`                 bigint       NOT NULL AUTO_INCREMENT COMMENT '主键',
   `session_id`         bigint       NOT NULL COMMENT '所属会话ID',
-  `role`               varchar(16)  NOT NULL COMMENT 'USER / ASSISTANT / TOOL',
-  `tool_mode`          varchar(32)  NOT NULL DEFAULT '' COMMENT 'CHAT / KB_SEARCH',
+  `role`               varchar(16)  NOT NULL COMMENT 'USER / ASSISTANT',
+  `tool_mode`          varchar(32)  NOT NULL DEFAULT '' COMMENT '遗留列（RFC #69 已废弃工具体系，V6 迁移删除）',
   `content`            text         NOT NULL COMMENT '消息文本',
-  `structured_payload` json         DEFAULT NULL COMMENT '结构化负载，TOOL角色时存工具名/参数/结果/状态',
   `create_time`        datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_msg_session` (`session_id`, `create_time`)

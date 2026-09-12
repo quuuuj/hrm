@@ -9,7 +9,7 @@
 **数智人事** 是一套面向现代企业的高效人力资源全流程管理系统，旨在提升组织人效与员工自主服务体验。系统采用前后端分离架构，融合企业业务管理规范与先进的生成式 AI 技术：
 
 - **传统业务闭环**：覆盖组织架构、员工全生命周期档案、菜单与角色细粒度 RBAC 权限体系、Flowable 审批流转、灵活考勤与打卡统计、精细化加班与多维假期管理、薪资核算与五险一金配置。
-- **智能化升级**：提供基于 RAG（检索增强生成）的企业知识库问答以及具备员工上下文感知的智能 AI 助手，支持员工自助查询假期余额、考勤异常、组织架构等高频人事事务。
+- **智能化升级**：提供基于 RAG（检索增强生成）的企业知识库智能问答，具备员工上下文感知，覆盖政策制度等人事咨询场景。
 
 ---
 
@@ -23,8 +23,8 @@
   - 基于 httpOnly Cookie 的双 Token（Access Token + Refresh Token）鉴权体系，前端拦截器透明处理并发无感刷新，阻断 XSS 与 Token 劫持风险。
 - **混合持久化与企业级 RAG 知识检索**：
   - 采用 MySQL（业务）+ Redis（缓存/验证码）+ PostgreSQL/pgvector（向量数据库）+ MinIO（对象存储）的多引擎存储架构；内置文档切块、向量化 ETL 流水线，助力企业政策与制度的高精度语义召回。
-- **企业员工 AI 自助助手**：
-  - 搭载兼容 DashScope / OpenAI 规范的智能问答助手，依托 Tool Calling 动态查询当前员工上下文（考勤、调休余额、部门分布等），实现“即问即查”。
+- **企业知识库智能问答助手**：
+  - 搭载兼容 DashScope / OpenAI 规范的智能问答助手，基于企业知识库语义检索与员工静态上下文注入（部门、岗位等档案信息），实现政策制度的"即问即答"。
 
 ---
 
@@ -92,13 +92,11 @@ flowchart TD
         B3 --> B4[DashScope Embedding 向量化]
         B4 --> B5[(PostgreSQL pgvector 向量库)]
         
-        C1[员工发送人事咨询问题] --> C2[AI 助手路由与意图识别]
-        C2 -- 自助事务查询 --> C3[Tool Calling: 查调休/查考勤/查部门]
-        C2 -- 政策制度咨询 --> C4[语义向量相似度检索]
+        C1[员工发送人事咨询问题] --> C2[AI 助手意图识别]
+        C2 --> C4[语义向量相似度检索]
         C4 --> B5
         B5 --> C5[召回相关文档切块上下文]
-        C3 --> C6[组合上下文与 Prompt]
-        C5 --> C6
+        C5 --> C6[组合检索上下文与员工档案 Prompt]
         C6 --> C7[大模型生成回答（由 CHAT_PROVIDER_MODEL 配置）]
         C7 --> C8[流式/同步反馈给员工前端]
     end
@@ -166,7 +164,7 @@ graph TB
             AttendanceSvc[考勤与打卡分析服务]
             FlowEngine[Flowable 8.0 工作流引擎]
             KnowledgeSvc[RAG IngestionPipeline 知识切块]
-            AiAssistantSvc[AI Assistant 智能助手与工具分发]
+            AiAssistantSvc[智能问答助手（检索增强问答）]
         end
     end
 
@@ -199,7 +197,6 @@ graph TB
 
     AiAssistantSvc --> LLM
     AiAssistantSvc -.检索召回.-> DB_Vector
-    AiAssistantSvc -.Tool 调用.-> StaffSvc
 
     Filter -.验证码与黑名单.-> Cache_Redis
 ```

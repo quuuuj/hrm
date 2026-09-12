@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 
 /**
  * 统一问答会话实体 (MySQL)。
- * <p>mode/total_tokens 列随模式体系与用量统计一并删除（RFC #69）。</p>
  */
 @Data
 @Accessors(chain = true)
