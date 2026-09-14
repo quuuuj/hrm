@@ -254,16 +254,27 @@ export default {
     'staff.avatar': // 当头像被修改时，重新获取
       function () {
         setAvatar(this.$refs.img)
+      },
+    'staff.id':
+      function (newVal) {
+        if (newVal) {
+          setAvatar(this.$refs.img)
+        }
       }
   },
   mounted () {
-    setAvatar(this.$refs.img)
+    this.$nextTick(() => {
+      setAvatar(this.$refs.img)
+    })
   },
   methods: {
     loading () {
       queryInfo(this.staff.id).then(response => {
         if (response.code === 200) {
           this.$store.commit('staff/SET_STAFF', response.data)
+          this.$nextTick(() => {
+            setAvatar(this.$refs.img)
+          })
         } else {
           this.$message.error('获取数据失败！')
         }

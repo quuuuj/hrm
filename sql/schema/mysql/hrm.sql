@@ -485,6 +485,8 @@ VALUES
 ('leave_audit', '审批任务', 'check', 'performance:leave:audit', 19, 2, 1, NOW(), 0),
 ('leave_cancel', '撤销请假', 'close', 'performance:leave:cancel', 19, 2, 1, NOW(), 0);
 
+INSERT INTO `per_menu` VALUES (100, 'chat', '智能问答', 'chat-dot-round', NULL, 0, 0, 1, NULL, '2026-09-14 10:00:00', NULL, 0);
+
 -- ----------------------------
 -- Table structure for per_role
 -- ----------------------------
@@ -829,6 +831,7 @@ INSERT INTO `per_role_menu` VALUES (3760, 1, 99);
 INSERT INTO `per_role_menu` VALUES (3761, 1, 6);
 INSERT INTO `per_role_menu` VALUES (3762, 1, 3);
 INSERT INTO `per_role_menu` VALUES (3763, 1, 4);
+INSERT INTO `per_role_menu` VALUES (3764, 1, 100);
 
 -- ----------------------------
 -- Table structure for per_staff_role

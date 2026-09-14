@@ -16,7 +16,6 @@
         <!-- 路由视图 -->
       </el-main>
     </el-container>
-    <AssistantChat/>
   </el-container>
 </template>
 
@@ -25,15 +24,13 @@
 import Aside from '../components/Aside.vue'
 import Header from '../components/Header.vue'
 import Tag from '../components/Tag.vue'
-import AssistantChat from '../components/AssistantChat.vue'
 
 export default {
   name: 'Main',
   components: {
     Aside,
     Header,
-    Tag,
-    AssistantChat
+    Tag
   }
 }
 </script>
