@@ -108,10 +108,14 @@
             <artifactId>spring-retry</artifactId>
         </dependency>
 
-        <!-- Spring AI Alibaba (DashScope) -->
+        <!-- Spring AI OpenAI starter：走 DashScope compatible-mode（与 openai 配置对应）。
+             注意：不要换回 spring-ai-alibaba-starter-dashscope——它注册的 DashScopeChatModel
+             会与 OpenAI ChatModel 产生双 ChatModel 竞争，且其硬编码默认模型 qwen-plus
+             在免费额度下 403 并触发退避重试（曾导致智能问答 SSE 长时间无响应） -->
         <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- Spring AI pgvector (按 Spring AI Alibaba BOM 对齐的 1.0.0 GA 版本) -->
