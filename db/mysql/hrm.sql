@@ -1149,15 +1149,22 @@ CREATE TABLE `sys_docs`  (
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   `is_deleted` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '0未删除，1已删除，默认为0',
+  `kb_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库状态：UPLOADED/PROCESSING/READY/FAILED',
+  `failure_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '处理失败原因',
+  `preview_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文档预览文本',
+  `chunk_count` int NULL DEFAULT 0 COMMENT '切片数量',
+  `upload_time` datetime NULL DEFAULT NULL COMMENT '上传完成时间',
+  `process_time` datetime NULL DEFAULT NULL COMMENT '处理完成时间',
   PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_docs_file_hash` (`file_hash`)
-) ENGINE = InnoDB AUTO_INCREMENT = 93 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '文件表' ROW_FORMAT = DYNAMIC;
+  KEY `idx_docs_file_hash` (`file_hash`),
+  KEY `idx_docs_kb_status` (`kb_status`)
+) ENGINE = InnoDB AUTO_INCREMENT = 93 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '文件中心' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_docs
 -- ----------------------------
-INSERT INTO `sys_docs` VALUES (95, '2a6c9844eb4d109ee3f3.jpg', 'jpg', '桥.jpg', 'e88d330cf616e869867d4764eb7f3717', 800, NULL, 0, 1, NULL, '2026-04-25 20:09:25', '2026-04-25 20:09:25', 0);
-INSERT INTO `sys_docs` VALUES (96, '1e5d5a99c64ebb883dc8.jpg', 'jpg', '5c23d52f880511ebb6edd017c2d2eca2.jpg', 'd2d652f55cd647c3993cbf19ab45f831', 269, NULL, 0, 1, NULL, '2026-04-25 20:09:56', '2026-04-25 20:09:56', 0);
+INSERT INTO `sys_docs` VALUES (95, '2a6c9844eb4d109ee3f3.jpg', 'jpg', '桥.jpg', 'e88d330cf616e869867d4764eb7f3717', 800, NULL, 0, 1, NULL, '2026-04-25 20:09:25', '2026-04-25 20:09:25', 0, NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `sys_docs` VALUES (96, '1e5d5a99c64ebb883dc8.jpg', 'jpg', '5c23d52f880511ebb6edd017c2d2eca2.jpg', 'd2d652f55cd647c3993cbf19ab45f831', 269, NULL, 0, 1, NULL, '2026-04-25 20:09:56', '2026-04-25 20:09:56', 0, NULL, NULL, NULL, 0, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_staff
@@ -1230,85 +1237,37 @@ INSERT INTO `sys_staff` VALUES (43, 'staff_43', '若依', 1, '$2a$10$5luvC4HpaIJ
 -- Table structure for assistant_conversation
 -- ----------------------------
 -- ----------------------------
--- Table structure for ast_chat_session
+-- Table structure for chat_session
 -- ----------------------------
-DROP TABLE IF EXISTS `ast_chat_session`;
-CREATE TABLE `ast_chat_session` (
+DROP TABLE IF EXISTS `chat_session`;
+CREATE TABLE `chat_session` (
   `id`              bigint       NOT NULL AUTO_INCREMENT COMMENT '主键',
   `staff_id`        int          NOT NULL COMMENT '所属员工ID',
   `title`           varchar(200) NOT NULL DEFAULT '新会话' COMMENT '会话标题',
-  `mode`            varchar(20)  NOT NULL DEFAULT 'CHAT' COMMENT 'CHAT / KB_SEARCH',
   `status`          varchar(20)  NOT NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE / ARCHIVED / DELETED',
   `last_message_at` datetime     DEFAULT NULL COMMENT '最后消息时间',
   `message_count`   int          NOT NULL DEFAULT 0 COMMENT '消息总数',
-  `total_tokens`    bigint       NOT NULL DEFAULT 0 COMMENT '累计token',
   `create_time`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time`     datetime     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   KEY `idx_session_staff` (`staff_id`),
   KEY `idx_session_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI助手会话表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能问答会话表';
 
 -- ----------------------------
--- Table structure for ast_chat_message
+-- Table structure for chat_message
 -- ----------------------------
-DROP TABLE IF EXISTS `ast_chat_message`;
-CREATE TABLE `ast_chat_message` (
+DROP TABLE IF EXISTS `chat_message`;
+CREATE TABLE `chat_message` (
   `id`                 bigint       NOT NULL AUTO_INCREMENT COMMENT '主键',
   `session_id`         bigint       NOT NULL COMMENT '所属会话ID',
-  `role`               varchar(16)  NOT NULL COMMENT 'USER / ASSISTANT',
-  `tool_mode`          varchar(32)  NOT NULL DEFAULT '' COMMENT '遗留列（RFC #69 已废弃工具体系，V6 迁移删除）',
+  `role`               varchar(16)  NOT NULL COMMENT 'USER / ASSISTANT / TOOL',
   `content`            text         NOT NULL COMMENT '消息文本',
+  `structured_payload` json         DEFAULT NULL COMMENT '结构化载荷（TOOL 消息的引用/表格/图表/文件）',
   `create_time`        datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
-  KEY `idx_msg_session` (`session_id`, `create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI助手消息表';
-
--- ----------------------------
--- Table structure for ast_chat_session_context
--- ----------------------------
-DROP TABLE IF EXISTS `ast_chat_session_context`;
-CREATE TABLE `ast_chat_session_context` (
-  `session_id`                           bigint    NOT NULL COMMENT '会话ID，一对一关联ast_chat_session.id',
-  `session_memory`                       text      DEFAULT NULL COMMENT 'L1 会话记忆摘要',
-  `compact_summary`                      text      DEFAULT NULL COMMENT 'L2 紧凑摘要',
-  `session_memory_base_message_id`       bigint    DEFAULT NULL COMMENT 'L1 摘要起始消息ID',
-  `session_memory_range_end_message_id`  bigint    DEFAULT NULL COMMENT 'L1 摘要结束消息ID',
-  `compact_summary_base_message_id`      bigint    DEFAULT NULL COMMENT 'L2 摘要起始消息ID',
-  `compact_summary_range_end_message_id` bigint    DEFAULT NULL COMMENT 'L2 摘要结束消息ID',
-  `summary_text`                         text      DEFAULT NULL COMMENT '早期消息历史摘要',
-  `source_message_id`                    bigint    DEFAULT NULL COMMENT '摘要覆盖的结束消息ID',
-  `context_version`                      bigint    NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-  `update_time`                          datetime  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`session_id`),
-  CONSTRAINT `fk_context_session` FOREIGN KEY (`session_id`) REFERENCES `ast_chat_session` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI助手会话上下文表';
-
--- ----------------------------
--- Table structure for ast_chat_llm_usage
--- ----------------------------
-DROP TABLE IF EXISTS `ast_chat_llm_usage`;
-CREATE TABLE `ast_chat_llm_usage` (
-  `id`                bigint        NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `staff_id`          int           NOT NULL COMMENT '调用者员工ID',
-  `module`            varchar(32)   NOT NULL COMMENT 'ASSISTANT / QA',
-  `endpoint`          varchar(64)   NOT NULL COMMENT '接口端点',
-  `session_id`        bigint        DEFAULT NULL COMMENT '关联会话ID',
-  `prompt_tokens`     int           NOT NULL DEFAULT 0 COMMENT '输入token数',
-  `completion_tokens` int           NOT NULL DEFAULT 0 COMMENT '输出token数',
-  `total_tokens`      int           NOT NULL DEFAULT 0 COMMENT '总token数',
-  `is_estimated`      tinyint       NOT NULL DEFAULT 0 COMMENT '是否估算值',
-  `cost_amount`       decimal(12,6) DEFAULT 0 COMMENT '费用（元）',
-  `cost_currency`     varchar(8)    DEFAULT 'CNY' COMMENT '货币单位',
-  `latency_ms`        bigint        NOT NULL DEFAULT 0 COMMENT '响应耗时（毫秒）',
-  `success`           tinyint       NOT NULL DEFAULT 1 COMMENT '是否成功',
-  `error_message`     text          DEFAULT NULL COMMENT '失败原因',
-  `model_name`        varchar(64)   DEFAULT NULL COMMENT '模型名称',
-  `create_time`       datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_llm_staff` (`staff_id`, `create_time`),
-  KEY `idx_llm_module` (`module`, `create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LLM调用统计表';
+  KEY `idx_msg_session` (`session_id`, `create_time` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能问答消息表';
 
 -- ----------------------------
 -- Table structure for file_task
@@ -1353,33 +1312,6 @@ CREATE TABLE IF NOT EXISTS `file_task_error` (
   PRIMARY KEY (`id`),
   KEY `idx_file_task_error_task` (`task_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='导入导出错误明细表';
-
--- ----------------------------
--- Table structure for kb_document
--- ----------------------------
-DROP TABLE IF EXISTS `kb_document`;
-CREATE TABLE `kb_document` (
-  `id`             bigint unsigned NOT NULL AUTO_INCREMENT,
-  `name`           varchar(200)    NOT NULL COMMENT '存储文件名(UUID)',
-  `old_name`       varchar(500)    NOT NULL COMMENT '原始文件名',
-  `type`           varchar(10)     NOT NULL COMMENT '文件扩展名',
-  `file_hash`      varchar(64)     NOT NULL COMMENT 'SHA-256',
-  `file_size`      bigint          NOT NULL COMMENT '原始大小(字节)',
-  `status`         varchar(20)     NOT NULL DEFAULT 'UPLOADED' COMMENT 'UPLOADED/PROCESSING/READY/FAILED',
-  `failure_reason` varchar(512)    DEFAULT NULL COMMENT '失败原因',
-  `preview_text`   text            DEFAULT NULL COMMENT '文档预览文本',
-  `upload_time`    datetime        DEFAULT NULL COMMENT '上传完成时间',
-  `process_time`   datetime        DEFAULT NULL COMMENT '处理完成时间',
-  `chunk_count`    int             DEFAULT 0 COMMENT '切片数量',
-  `staff_id`       int             NOT NULL COMMENT '上传者',
-  `create_time`    datetime        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time`    datetime        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `is_deleted`     tinyint         NOT NULL DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
-  PRIMARY KEY (`id`),
-  KEY `idx_kb_status` (`status`),
-  KEY `idx_kb_staff` (`staff_id`),
-  KEY `idx_kb_hash` (`file_hash`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='知识库文档';
 
 -- ----------------------------
 -- Table structure for kb_upload_session

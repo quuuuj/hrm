@@ -8,6 +8,9 @@
 hs_err_pid*.log
 replay_pid*.log
 
+# 测试相关代码一律不入库
+**/src/test/
+
 # Local and production environment files
 **/.env
 **/.env.*
@@ -19,6 +22,7 @@ replay_pid*.log
 # Deployment configuration
 /deploy/
 **/docker-compose.yml
+!docker/local/docker-compose.yml
 **/Dockerfile
 
 # Certificates, keys, archives, and deployment bundles
@@ -36,10 +40,10 @@ replay_pid*.log
 *.sql
 !hrm-server/src/test/resources/sql/*.sql
 !hrm-server/src/main/resources/db/migration/*.sql
-!sql/schema/mysql/
-!sql/schema/mysql/*.sql
-!sql/schema/postgresql/
-!sql/schema/postgresql/*.sql
+!db/mysql/
+!db/mysql/*.sql
+!db/postgresql/
+!db/postgresql/*.sql
 /sql/migration/
 /sql/run_migration.sh
 *.rdb
@@ -47,8 +51,10 @@ replay_pid*.log
 # Local scripts and generated documentation
 /scripts/
 docs/*
-!docs/screenshots/
-!docs/screenshots/*.png
+!docs/adr/
+!docs/adr/*.md
+!docs/import/
+!docs/import/*.xlsx
 # Architecture Decision Records are long-lived assets: they must travel with the repo
 !docs/adr/
 !docs/adr/*.md
@@ -56,8 +62,8 @@ docs/*
 # Uploaded/runtime files
 file/
 *.xlsx
-!examples/import/
-!examples/import/*.xlsx
+!docs/import/
+!docs/import/*.xlsx
 
 # IDE and agent files
 .idea/

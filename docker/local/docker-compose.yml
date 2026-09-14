@@ -1,0 +1,86 @@
+services:
+  mysql:
+    image: mysql:8.1.0
+    container_name: hrm-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - "3307:3306"
+    volumes:
+      - hrm-mysql-data:/var/lib/mysql
+    networks:
+      - hrm-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:5.0
+    container_name: hrm-redis
+    command: redis-server
+    ports:
+      - "6380:6379"
+    volumes:
+      - hrm-redis-data:/data
+    networks:
+      - hrm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: hrm-postgres
+    environment:
+      POSTGRES_USER: hrm
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: hrm_kb
+    ports:
+      - "54320:5432"
+    volumes:
+      - hrm-postgres-data:/var/lib/postgresql/data
+    networks:
+      - hrm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hrm -d hrm_kb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: hrm-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - hrm-minio-data:/data
+    networks:
+      - hrm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  hrm-mysql-data:
+  hrm-redis-data:
+  hrm-postgres-data:
+  hrm-minio-data:
+
+networks:
+  hrm-network:
+    driver: bridge

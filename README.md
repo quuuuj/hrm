@@ -35,36 +35,36 @@
 ### 1. 登录认证与首页仪表盘
 | 登录界面 | 首页仪表盘（工作台与考勤日历） |
 | :---: | :---: |
-| ![登录界面](docs/screenshots/01-login.png) | ![首页仪表盘](docs/screenshots/02-dashboard.png) |
+| ![登录界面](img/readme/01-login.png) | ![首页仪表盘](img/readme/02-dashboard.png) |
 
 ### 2. 系统管理
 | 员工管理 | 部门管理 |
 | :---: | :---: |
-| ![员工管理](docs/screenshots/03-staff-management.png) | ![部门管理](docs/screenshots/04-dept-management.png) |
+| ![员工管理](img/readme/03-staff-management.png) | ![部门管理](img/readme/04-dept-management.png) |
 | **文件管理** | |
-| ![文件管理](docs/screenshots/05-file-management.png) | |
+| ![文件管理](img/readme/05-file-management.png) | |
 
 ### 3. 权限管理
 | 角色权限分配 | 菜单权限配置 |
 | :---: | :---: |
-| ![角色管理](docs/screenshots/06-role-permission.png) | ![菜单管理](docs/screenshots/07-menu-management.png) |
+| ![角色管理](img/readme/06-role-permission.png) | ![菜单管理](img/readme/07-menu-management.png) |
 
 ### 4. 考勤与审批管理
 | 请假申请与审批 | 考勤表现分析 |
 | :---: | :---: |
-| ![请假审批](docs/screenshots/08-leave-approval.png) | ![考勤表现](docs/screenshots/09-attendance-record.png) |
+| ![请假审批](img/readme/08-leave-approval.png) | ![考勤表现](img/readme/09-attendance-record.png) |
 | **加班详情核算** | |
-| ![加班详情](docs/screenshots/10-overtime-detail.png) | |
+| ![加班详情](img/readme/10-overtime-detail.png) | |
 
 ### 5. 财务与社保管理
 | 员工薪资管理 | 参保城市与五险一金比例 |
 | :---: | :---: |
-| ![薪资管理](docs/screenshots/11-salary-management.png) | ![参保城市](docs/screenshots/12-social-insurance.png) |
+| ![薪资管理](img/readme/11-salary-management.png) | ![参保城市](img/readme/12-social-insurance.png) |
 
 ### 6. 智能问答
 | 智能问答（会话与流式回答） |
 | :---: |
-| ![智能问答](docs/screenshots/14-smart-qa.png) |
+| ![智能问答](img/readme/14-smart-qa.png) |
 
 ---
 
@@ -207,16 +207,19 @@ graph TB
 
 ```text
 hrm/
-├── docker-compose.yml              # 本地中间件一键启动编排
-├── sql/                            # 数据库初始化脚本
-│   └── schema/
-│       ├── mysql/
-│       │   ├── hrm.sql             # 业务主库表结构与系统种子数据
-│       │   └── hrm_flowable.sql    # Flowable 流程引擎专库表结构
-│       └── postgresql/
-│           └── knowledge_base.sql  # PostgreSQL + pgvector 知识库模式
-├── docs/                           # 项目开发规格、测试报告及页面截图
-│   └── screenshots/                # README 引用之核心页面截图
+├── db/                             # 数据库初始化脚本
+│   ├── mysql/
+│   │   ├── hrm.sql                 # 业务主库表结构与系统种子数据
+│   │   └── hrm_flowable.sql        # Flowable 流程引擎专库表结构
+│   └── postgresql/
+│       └── knowledge_base.sql      # PostgreSQL + pgvector 知识库模式
+├── img/
+│   └── readme/                     # README 引用之核心页面截图
+├── docker/                         # Docker 编排
+│   ├── local/                      # 本地中间件一键启动编排（docker-compose.yml）
+│   └── deploy/                     # 私有构建部署目录（不入库）
+├── docs/                           # 项目开发规格、测试报告及导入示例
+│   └── import/                     # 导入功能示例数据
 ├── hrm-admin/                      # 前端工程 (Vue 2.6 + Element UI)
 │   ├── public/                     # 页面模板与图标资源
 │   └── src/
@@ -272,14 +275,14 @@ com.qiujie.chat/
 ## 🚀 本地快速启动指南
 
 ### 1. 启动本地依赖容器
-项目本地所需的中间件（MySQL 8.1、Redis 5.0、PostgreSQL/pgvector 16、MinIO）由根目录的 `docker-compose.yml` 统一编排，无需在本机单独安装：
+项目本地所需的中间件（MySQL 8.1、Redis 5.0、PostgreSQL/pgvector 16、MinIO）由 `docker/local/docker-compose.yml` 统一编排，无需在本机单独安装：
 
 ```bash
 # 在项目根目录下执行
-docker compose up -d
+docker compose -f docker/local/docker-compose.yml up -d
 ```
 
-容器就绪后，本地映射端口和连接信息以 `docker-compose.yml` 及环境变量配置为准。默认映射包括：
+容器就绪后，本地映射端口和连接信息以 `docker/local/docker-compose.yml` 及环境变量配置为准。默认映射包括：
 - **MySQL**：`localhost:3307`（容器端口 `3306`）
 - **Redis**：`localhost:6380`（容器端口 `6379`）
 - **PostgreSQL (pgvector)**：`localhost:54320`（容器端口 `5432`，数据库 `hrm_kb`）
@@ -293,15 +296,13 @@ docker compose up -d
 ```bash
 # MySQL：导入业务库和 Flowable 流程引擎库
 # 请将 <MYSQL_USER>、<MYSQL_PASSWORD> 替换为本地环境变量，不要把真实凭据写入文档
-mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <MYSQL_DATABASE> < sql/schema/mysql/hrm.sql
-mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <FLOWABLE_DATABASE> < sql/schema/mysql/hrm_flowable.sql
+mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <MYSQL_DATABASE> < db/mysql/hrm.sql
+mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <FLOWABLE_DATABASE> < db/mysql/hrm_flowable.sql
 
 # PostgreSQL：导入知识库模式（映射端口 54320）
-psql -h 127.0.0.1 -p 54320 -U <KB_DB_USERNAME> -d hrm_kb -f sql/schema/postgresql/knowledge_base.sql
+psql -h 127.0.0.1 -p 54320 -U <KB_DB_USERNAME> -d hrm_kb -f db/postgresql/knowledge_base.sql
 
-# 执行增量迁移脚本（项目未引入 Flyway，若需体验完整特性，请按序手动执行）
-# 脚本位于 hrm-server/src/main/resources/db/migration/ (V3 ~ V7)
-# 例如：V7__add_chat_menu.sql 增加了智能问答菜单等增量变更
+# 初始化脚本已包含全部表的最终结构（智能问答与知识库合并后的状态），无需额外执行增量迁移
 ```
 
 ---
