@@ -14,6 +14,9 @@ public class TextCleanupService {
         }
 
         return text
+                // 移除 NUL 字节：PostgreSQL UTF-8 编码拒绝 0x00，
+                // txt/md 二进制误传或编码检测失误时会残留并导致切片落库失败
+                .replace("\u0000", "")
                 // 统一换行为 \n
                 .replace("\r\n", "\n").replace("\r", "\n")
                 // 压缩 3+ 连续换行为双换行
