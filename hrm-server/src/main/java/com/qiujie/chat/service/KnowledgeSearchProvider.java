@@ -3,7 +3,7 @@ package com.qiujie.chat.service;
 import java.util.List;
 
 /**
- * 知识库检索抽象。assistant/ 依赖此接口，由 knowledge/ 实现。
+ * 知识库检索抽象。
  */
 public interface KnowledgeSearchProvider {
 

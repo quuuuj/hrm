@@ -90,12 +90,12 @@ staff:
   default-password: ${STAFF_DEFAULT_PASSWORD:123}
 
 chat:
-  enabled: ${CHAT_ENABLED:${ASSISTANT_ENABLED:false}}
+  enabled: ${CHAT_ENABLED:false}
   timeout-seconds: ${CHAT_TIMEOUT_SECONDS:15}
   provider:
-    base-url: ${CHAT_PROVIDER_BASE_URL:${ASSISTANT_PROVIDER_BASE_URL:}}
-    api-key: ${CHAT_PROVIDER_API_KEY:${ASSISTANT_PROVIDER_API_KEY:}}
-    model: ${CHAT_PROVIDER_MODEL:${ASSISTANT_PROVIDER_MODEL:}}
+    base-url: ${LLM_PROVIDER_BASE_URL:}
+    api-key: ${LLM_PROVIDER_API_KEY:}
+    model: ${LLM_PROVIDER_MODEL:}
 
 # MinIO 对象存储
 storage:
@@ -105,22 +105,6 @@ storage:
     secret-key: ${MINIO_SECRET_KEY:}
     bucket: ${MINIO_BUCKET:hrm}
 
-# Agent 智能助手配置
-agent:
-  memory:
-    l1-message-trigger: 4
-    l1-token-trigger: 1200
-    l2-message-trigger: 6
-    l2-token-trigger: 1800
-    session-token-threshold: 6500
-    max-tokens: 50000
-    keep-recent: 3
-
-  session:
-    summary:
-      message-threshold: 20
-      token-threshold: 8000
-      stale-days: 7
 
 # 知识库模块配置
 knowledge:

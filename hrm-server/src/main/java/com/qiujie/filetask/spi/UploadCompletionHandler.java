@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * 分片上传完成后的处理策略。
- * 知识库创建 KnowledgeDocument + 触发 ETL，通用文档创建 Docs + 压缩去重。
+ * 知识库创建文档记录并触发 ETL，通用文档创建 Docs + 压缩去重。
  */
 public interface UploadCompletionHandler {
 

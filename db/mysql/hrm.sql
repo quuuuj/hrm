@@ -1234,9 +1234,6 @@ INSERT INTO `sys_staff` VALUES (37, 'staff_37', '李云龙', 0, '$2a$10$aF8D3SSj
 INSERT INTO `sys_staff` VALUES (43, 'staff_43', '若依', 1, '$2a$10$5luvC4HpaIJQU02rFYKYAuXIKZg1LHp9GMbcnYZHTEgQiFnH9LtOi', NULL, '2010-06-05', NULL, '厦门', '', 17, 1, '2024-04-11 16:55:45', '2024-04-27 21:28:07', 0);
 
 -- ----------------------------
--- Table structure for assistant_conversation
--- ----------------------------
--- ----------------------------
 -- Table structure for chat_session
 -- ----------------------------
 DROP TABLE IF EXISTS `chat_session`;

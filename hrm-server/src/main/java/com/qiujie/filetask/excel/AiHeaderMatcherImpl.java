@@ -29,13 +29,13 @@ public class AiHeaderMatcherImpl implements FlexibleExcelImporter.AiHeaderMatche
 
     private static final Logger log = LoggerFactory.getLogger(AiHeaderMatcherImpl.class);
 
-    @Value("${assistant.provider.base-url:}")
+    @Value("${chat.provider.base-url:}")
     private String baseUrl;
 
-    @Value("${assistant.provider.api-key:}")
+    @Value("${chat.provider.api-key:}")
     private String apiKey;
 
-    @Value("${assistant.provider.model:}")
+    @Value("${chat.provider.model:}")
     private String model;
 
     private RestTemplate restTemplate;
