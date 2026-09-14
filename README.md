@@ -216,8 +216,7 @@ hrm/
 ├── img/
 │   └── readme/                     # README 引用之核心页面截图
 ├── docker/                         # Docker 编排
-│   ├── local/                      # 本地中间件一键启动编排（docker-compose.yml）
-│   └── deploy/                     # 私有构建部署目录（不入库）
+│   └── local/                      # 本地中间件一键启动编排（docker-compose.yml）
 ├── docs/                           # 项目开发规格、测试报告及导入示例
 │   └── import/                     # 导入功能示例数据
 ├── hrm-admin/                      # 前端工程 (Vue 2.6 + Element UI)

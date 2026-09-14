@@ -100,7 +100,7 @@ Required services: MySQL (3306), Redis (6379), PostgreSQL/pgvector (5432). Impor
 - Knowledge base requires PostgreSQL with pgvector extension; set `KNOWLEDGE_ENABLED=true`
 - Ollama embedding defaults to `nomic-embed-text`, chat to `minimax-m3:cloud`
 - MinIO storage: configure `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`
-- Production deployment via Docker Compose (`deploy/docker-compose.server.yml`); uses external Docker network `my_network`
+- Production deployment via Docker Compose (private deploy directory, not in repo); uses external Docker network `my_network`
 
 ## Deep-Module Refactor Playbook
 
