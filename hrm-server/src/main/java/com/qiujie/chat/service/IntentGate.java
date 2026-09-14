@@ -65,7 +65,7 @@ public class IntentGate {
      */
     public GateResult judge(String userMessage) {
         if (userMessage == null || userMessage.isBlank()) {
-            return new GateResult(Intent.CHATTING, "");
+            return new GateResult(Intent.IRRELEVANT, "");
         }
         String prompt = String.format(PROMPT_TEMPLATE, userMessage.trim());
         try {
