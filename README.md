@@ -1,6 +1,6 @@
 # 数智人事 (HRM System)
 
-> 基于 Spring Boot 3.4 与 Vue 2.6 构建的现代化全栈人力资源管理系统，深度集成 Flowable 工作流引擎、RAG 知识库与大语言模型（LLM）智能员工助手。
+> 基于 Spring Boot 3.4 与 Vue 2.6 构建的现代化全栈人力资源管理系统，深度集成 Flowable 工作流引擎、企业知识库（RAG）与智能问答。
 
 ---
 
@@ -23,8 +23,8 @@
   - 基于 httpOnly Cookie 的双 Token（Access Token + Refresh Token）鉴权体系，前端拦截器透明处理并发无感刷新，阻断 XSS 与 Token 劫持风险。
 - **混合持久化与企业级 RAG 知识检索**：
   - 采用 MySQL（业务）+ Redis（缓存/验证码）+ PostgreSQL/pgvector（向量数据库）+ MinIO（对象存储）的多引擎存储架构；内置文档切块、向量化 ETL 流水线，助力企业政策与制度的高精度语义召回。
-- **企业知识库智能问答助手**：
-  - 搭载兼容 DashScope / OpenAI 规范的智能问答助手，基于企业知识库语义检索与员工静态上下文注入（部门、岗位等档案信息），实现政策制度的"即问即答"。
+- **企业知识库与智能问答**：
+  - 搭载兼容 DashScope / OpenAI 规范的智能问答服务，基于企业知识库语义检索与员工静态上下文注入（部门、岗位等档案信息），实现政策制度的"即问即答"。
 
 ---
 
@@ -61,16 +61,16 @@
 | :---: | :---: |
 | ![薪资管理](docs/screenshots/11-salary-management.png) | ![参保城市](docs/screenshots/12-social-insurance.png) |
 
-### 6. RAG 知识库与智能助手
-| 知识库文档管理与分块 | 智能人事问答助手 |
-| :---: | :---: |
-| ![知识库管理](docs/screenshots/13-knowledge-base.png) | ![AI 智能助手](docs/screenshots/14-ai-assistant.png) |
+### 6. 智能问答
+| 智能问答（会话与流式回答） |
+| :---: |
+| ![智能问答](docs/screenshots/14-smart-qa.png) |
 
 ---
 
 ## 🔄 核心业务流程图
 
-系统关键核心业务（请假/加班审批流转链路 + 企业 RAG 智能问答闭环）如下所示：
+系统关键核心业务（请假/加班审批流转链路 + 企业知识库智能问答闭环）如下所示：
 
 ```mermaid
 flowchart TD
@@ -86,13 +86,13 @@ flowchart TD
         A8 --> A9[写入考勤状态记录与站内通知]
     end
 
-    subgraph RagFlow["2. RAG 知识库与 AI 助手问答链路"]
+    subgraph RagFlow["2. 企业知识库与智能问答链路"]
         B1[管理员上传制度文档] --> B2[MinIO 原始文件存储]
         B2 --> B3[ETL 管道: 文档解析与切块]
         B3 --> B4[DashScope Embedding 向量化]
         B4 --> B5[(PostgreSQL pgvector 向量库)]
         
-        C1[员工发送人事咨询问题] --> C2[AI 助手意图识别]
+        C1[员工发送人事咨询问题] --> C2[智能问答意图识别]
         C2 --> C4[语义向量相似度检索]
         C4 --> B5
         B5 --> C5[召回相关文档切块上下文]
@@ -114,10 +114,10 @@ flowchart TD
 | **Spring Boot** | 3.4.4 | 现代化微服务脚手架与依赖管理 |
 | **MyBatis-Plus** | 3.5.10 | ORM 增强框架，支持多数据源隔离与灵活查询 |
 | **Flowable** | 8.0.0 | 原生支持 Spring Boot 3 的企业级工作流引擎 |
-| **Spring AI** | 1.0.0-M6 | 大模型抽象层，驱动 LLM 对话与 Embedding 交互 |
+| **Spring AI** | 1.0.0 (spring-ai-alibaba 1.0.0.2) | 大模型抽象层，驱动 LLM 对话与 Embedding 交互 |
 | **Spring Security** | 6.x | 细粒度 RBAC 安全认证与授权控制 |
 | **JJWT** | 0.11.5 | 无状态的双 Token 签名、加解密与有效期校验 |
-| **SpringDoc OpenAPI**| 2.8.5 | 遵循 OpenAPI 3.1 规范的接口交互文档（Swagger-UI） |
+| **SpringDoc OpenAPI** | 2.8.10 | 遵循 OpenAPI 3.1 规范的接口交互文档（Swagger-UI） |
 | **MySQL** | 8.1 | 主业务数据库（`hrm`）与流程引擎专库（`hrm_flowable`） |
 | **PostgreSQL** | 16 (pgvector) | 知识库文档分块与高维向量存储数据库（`hrm_kb`） |
 | **Redis** | 5.0 | 分布式会话缓存、图形验证码验证与热点数据加速 |
@@ -164,7 +164,7 @@ graph TB
             AttendanceSvc[考勤与打卡分析服务]
             FlowEngine[Flowable 8.0 工作流引擎]
             KnowledgeSvc[RAG IngestionPipeline 知识切块]
-            AiAssistantSvc[智能问答助手（检索增强问答）]
+            AiAssistantSvc[智能问答（检索增强问答）]
         end
     end
 
@@ -222,7 +222,7 @@ hrm/
 │   └── src/
 │       ├── api/                    # 资源粒度划分的后端接口模块
 │       ├── assets/                 # 静态样式与全局图标
-│       ├── components/             # 通用业务组件 (头部头像/通知、AI 助手抽屉)
+│       ├── components/             # 通用业务组件 (头部头像/通知等)
 │       ├── router/                 # 路由定义与权限动态加载
 │       ├── store/                  # Vuex 模块 (staff, menu, token, permission)
 │       ├── utils/                  # 请求封装、无感刷新、验证码与头像加载工具
@@ -232,7 +232,7 @@ hrm/
 │           ├── permission/         # 角色与菜单权限管理
 │           ├── performance/        # 考勤打卡、加班明细、请假审批
 │           ├── money/              # 薪资明细、五险一金比例与参保城市
-│           └── knowledge/          # 知识库文档上传、解析与问答
+│           └── chat/               # 智能问答页面
 └── hrm-server/                     # 后端工程 (Spring Boot 3.4 + Java 17)
     ├── src/main/java/com/qiujie/
     │   ├── HrmApplication.java     # 后端主入口启动类
@@ -296,8 +296,12 @@ docker compose up -d
 mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <MYSQL_DATABASE> < sql/schema/mysql/hrm.sql
 mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <FLOWABLE_DATABASE> < sql/schema/mysql/hrm_flowable.sql
 
-# PostgreSQL：导入知识库模式
-psql -h 127.0.0.1 -p 5432 -U <KB_DB_USERNAME> -d hrm_kb -f sql/schema/postgresql/knowledge_base.sql
+# PostgreSQL：导入知识库模式（映射端口 54320）
+psql -h 127.0.0.1 -p 54320 -U <KB_DB_USERNAME> -d hrm_kb -f sql/schema/postgresql/knowledge_base.sql
+
+# 执行增量迁移脚本（项目未引入 Flyway，若需体验完整特性，请按序手动执行）
+# 脚本位于 hrm-server/src/main/resources/db/migration/ (V3 ~ V7)
+# 例如：V7__add_chat_menu.sql 增加了智能问答菜单等增量变更
 ```
 
 ---
@@ -359,7 +363,7 @@ npm run serve
 ### 6. 访问系统与默认凭据
 - 打开浏览器访问：`http://localhost:8080`
 - **默认管理员账号**：`admin`
-- **默认密码**：`123456`
+- **默认登录密码**：`123456`（注：配置文件中 `staff.default-password: 123` 为系统后台“新建员工”时的初始重置密码）
 - 登录验证码：按本地 Redis 配置查询对应验证码键值。
 
 ---
