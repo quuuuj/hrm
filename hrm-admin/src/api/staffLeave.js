@@ -1,4 +1,4 @@
-import request from '../utils/request'
+import request, { BASE_API } from '../utils/request'
 
 const url = '/staff-leave'
 
@@ -65,7 +65,7 @@ export const exp = (filename) => {
 
 // 数据导入
 export const getImportApi = () => {
-  return process.env.VUE_APP_BASE_API + url + '/import'
+  return BASE_API + url + '/import'
 }
 
 // 请假

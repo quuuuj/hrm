@@ -2,8 +2,10 @@ import axios from 'axios'
 import ElementUI from 'element-ui'
 import store from '../store'
 
+const BASE_API = process.env.VUE_APP_BASE_API
+
 const instance = axios.create({
-  baseURL: process.env.VUE_APP_BASE_API,
+  baseURL: BASE_API,
   timeout: 10000,
   withCredentials: true // 浏览器自动携带 httpOnly Cookie，无需手动加 token
 })
@@ -56,7 +58,7 @@ instance.interceptors.response.use(response => {
     if (!isRefreshing) {
       isRefreshing = true
       return axios.post(
-        process.env.VUE_APP_BASE_API + '/refresh',
+        BASE_API + '/refresh',
         {},
         { withCredentials: true } // 浏览器仅发送 Path=/refresh 的 Refresh Token Cookie
       ).then(refreshRes => {
@@ -102,7 +104,7 @@ instance.interceptors.response.use(response => {
     if (!isRefreshing) {
       isRefreshing = true
       return axios.post(
-        process.env.VUE_APP_BASE_API + '/refresh',
+        BASE_API + '/refresh',
         {},
         { withCredentials: true }
       ).then(refreshRes => {
@@ -133,5 +135,7 @@ instance.interceptors.response.use(response => {
   })
   return Promise.reject(error)
 })
+
+export { BASE_API }
 
 export default instance

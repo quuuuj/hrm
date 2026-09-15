@@ -15,6 +15,8 @@
 </template>
 
 <script>
+import { BASE_API } from '@/utils/request'
+
 export default {
   name: 'NotificationBell',
   data () {
@@ -32,8 +34,7 @@ export default {
   },
   methods: {
     connect () {
-      const baseUrl = process.env.VUE_APP_BASE_API || ''
-      const url = baseUrl + '/notification/subscribe'
+      const url = BASE_API + '/notification/subscribe'
       this.eventSource = new EventSource(url)
       this.eventSource.addEventListener('connected', () => {
         // SSE 连接成功

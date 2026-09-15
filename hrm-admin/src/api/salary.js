@@ -1,4 +1,4 @@
-import request from '../utils/request'
+import request, { BASE_API } from '../utils/request'
 
 const url = '/salary'
 
@@ -63,7 +63,7 @@ export const getImportTaskApi = () => {
 
 // 数据导入（同步，保留兼容）
 export const getImportApi = () => {
-  return process.env.VUE_APP_BASE_API + url + '/import'
+  return BASE_API + url + '/import'
 }
 
 // 异步导出任务

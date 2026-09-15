@@ -285,6 +285,7 @@ import moment from 'moment'
 // 切换到中国时间
 import 'moment/locale/zh-cn'
 import { setAvatar } from '@/utils/avatar'
+import { BASE_API } from '@/utils/request'
 
 moment.locale('zh-cn')
 
@@ -461,7 +462,7 @@ export default {
   },
   methods: {
     connectSse () {
-      const baseUrl = process.env.VUE_APP_BASE_API || ''
+      const baseUrl = BASE_API || ''
       this.eventSource = new EventSource(baseUrl + '/notification/subscribe')
       this.eventSource.addEventListener('connected', () => {})
       this.eventSource.addEventListener('notification', (event) => {

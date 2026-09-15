@@ -5,6 +5,7 @@
  * @mixin fileTaskMixin
  */
 import { list as listFileTask, download as downloadFileTask } from '@/api/fileTask'
+import { BASE_API } from '@/utils/request'
 import { write } from '@/utils/docs'
 
 export default {
@@ -62,7 +63,7 @@ export default {
     connectSse () {
       if (!this.token) return
       this.disconnectSse()
-      const baseApi = process.env.VUE_APP_BASE_API || ''
+      const baseApi = BASE_API || ''
       const url = `${baseApi}/file-task/subscribe?token=${this.token}`
       const es = new EventSource(url)
       this.eventSource = es

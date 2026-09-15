@@ -1,4 +1,4 @@
-import request from '../utils/request'
+import request, { BASE_API } from '../utils/request'
 
 const url = '/docs'
 /**
@@ -96,10 +96,10 @@ export const getImportTaskApi = () => {
 
 // 数据导入
 export const getImportApi = () => {
-  return process.env.VUE_APP_BASE_API + url + '/import'
+  return BASE_API + url + '/import'
 }
 
 // 头像上传（小文件直传）
 export const getUploadApi = (id) => {
-  return process.env.VUE_APP_BASE_API + url + '/upload/' + id
+  return BASE_API + url + '/upload/' + id
 }
