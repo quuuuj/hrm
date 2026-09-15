@@ -1,3 +1,6 @@
+# 本地中间件：所有值直接写字面值，不依赖 .env
+# 启动命令：docker compose -f docker/local/docker-compose.yml up -d
+
 services:
   mysql:
     image: mysql:8.1.0
@@ -5,7 +8,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: 123456
     ports:
-      - "3307:3306"
+      - "3306:3306"
     volumes:
       - hrm-mysql-data:/var/lib/mysql
     networks:
@@ -22,7 +25,7 @@ services:
     container_name: hrm-redis
     command: redis-server
     ports:
-      - "6380:6379"
+      - "6379:6379"
     volumes:
       - hrm-redis-data:/data
     networks:
@@ -42,7 +45,7 @@ services:
       POSTGRES_PASSWORD: 123456
       POSTGRES_DB: hrm_kb
     ports:
-      - "54320:5432"
+      - "5432:5432"
     volumes:
       - hrm-postgres-data:/var/lib/postgresql/data
     networks:

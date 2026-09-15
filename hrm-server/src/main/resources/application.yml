@@ -1,41 +1,41 @@
-server:
-  port: ${SERVER_PORT:8888}
+# 主配置（唯一配置文件）
+# 本地默认值直接写字面值；仅敏感项（LLM_API_KEY / JWT_SECRET / LLM_BASE_URL / LLM_CHAT_MODEL / LLM_EMBEDDING_MODEL）
+# 通过 hrm-server/.env 注入（spring-boot:run 的 cwd 即 hrm-server/）
 
 spring:
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
-
+  config:
+    import: optional:file:.env[.properties]
   datasource:
     master:
-      jdbc-url: ${DB_MASTER_URL}
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}
+      jdbc-url: jdbc:mysql://localhost:3306/hrm?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+      username: root
+      password: 123456
       driver-class-name: com.mysql.cj.jdbc.Driver
       type: com.zaxxer.hikari.HikariDataSource
     flowable:
-      jdbc-url: ${DB_FLOWABLE_URL}
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}
+      jdbc-url: jdbc:mysql://localhost:3306/hrm_flowable?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+      username: root
+      password: 123456
       driver-class-name: com.mysql.cj.jdbc.Driver
       type: com.zaxxer.hikari.HikariDataSource
     kb:
-      jdbc-url: ${KB_DB_URL:jdbc:postgresql://localhost:5432/hrm_kb}
-      username: ${KB_DB_USERNAME:postgres}
-      password: ${KB_DB_PASSWORD:postgres}
+      jdbc-url: jdbc:postgresql://localhost:5432/hrm_kb
+      username: hrm
+      password: 123456
       driver-class-name: org.postgresql.Driver
       type: com.zaxxer.hikari.HikariDataSource
 
   servlet:
     multipart:
       enabled: true
-      max-file-size: ${MAX_FILE_SIZE:20MB}
-      max-request-size: ${MAX_REQUEST_SIZE:30MB}
+      max-file-size: 20MB
+      max-request-size: 30MB
 
   redis:
-    host: ${REDIS_HOST:127.0.0.1}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD}
-    database: ${REDIS_DATABASE:0}
+    host: 127.0.0.1
+    port: 6379
+    password:
+    database: 0
     lettuce:
       pool:
         max-idle: 16
@@ -46,14 +46,15 @@ spring:
     allow-bean-definition-overriding: true
 
   ai:
-    dashscope:
-      api-key: ${DASHSCOPE_API_KEY:}
+    openai:
+      api-key: ${LLM_API_KEY:}
+      base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
       chat:
         options:
-          model: ${DASHSCOPE_CHAT_MODEL:qwen-plus}
-      embedding:
-        options:
-          model: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v3}
+          model: ${LLM_CHAT_MODEL:qwen3.7-flash}
+
+server:
+  port: 8888
 
 flowable:
   database-schema-update: true
@@ -68,7 +69,7 @@ flowable:
 
 mybatis-plus:
   configuration:
-    log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.nologging.NoLoggingImpl}
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
   type-enums-package: com.qiujie.*.enums
   mapper-locations: classpath:mapper/*.xml
 
@@ -87,35 +88,47 @@ jwt:
   secret: ${JWT_SECRET}
 
 staff:
-  default-password: ${STAFF_DEFAULT_PASSWORD:123}
+  default-password: 123
 
 chat:
-  enabled: ${CHAT_ENABLED:false}
-  timeout-seconds: ${CHAT_TIMEOUT_SECONDS:15}
+  enabled: true
+  timeout-seconds: 15
+  knowledge:
+    rebuild-on-start: false
   provider:
-    base-url: ${LLM_PROVIDER_BASE_URL:}
-    api-key: ${LLM_PROVIDER_API_KEY:}
-    model: ${LLM_PROVIDER_MODEL:}
+    base-url: ${LLM_BASE_URL:}
+    api-key: ${LLM_API_KEY:}
+    model: ${LLM_CHAT_MODEL:}
 
 # MinIO 对象存储
 storage:
   minio:
-    endpoint: ${MINIO_ENDPOINT:}
-    access-key: ${MINIO_ACCESS_KEY:}
-    secret-key: ${MINIO_SECRET_KEY:}
-    bucket: ${MINIO_BUCKET:hrm}
-
+    endpoint: http://127.0.0.1:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket: hrm
 
 # 知识库模块配置
 knowledge:
-  enabled: ${KNOWLEDGE_ENABLED:false}
+  enabled: true
   chunk:
-    max-size: ${KNOWLEDGE_CHUNK_MAX_SIZE:1000}
-    overlap: ${KNOWLEDGE_CHUNK_OVERLAP:100}
+    max-size: 1000
+    overlap: 100
   embedding:
-    api-key: ${DASHSCOPE_API_KEY:}
-    base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
-    model: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v4}
+    api-key: ${LLM_API_KEY:}
+    base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+    model: ${LLM_EMBEDDING_MODEL:qwen3.7-text-embedding}
+  retrieval:
+    top-k: 10
+    vector-top-k: 20
+    keyword-top-k: 20
+    rrf-k: 60
+    window-size: 1
+  qa:
+    evidence-none-threshold: 0.0
+    evidence-weak-threshold: 0.3
+    evidence-partial-threshold: 0.5
+    evidence-sufficient-threshold: 0.7
 
 holidays:
   - 2024-01-01
@@ -148,3 +161,10 @@ holidays:
   - 2024-10-05
   - 2024-10-06
   - 2024-10-07
+
+# 本地开发调试日志级别
+logging:
+  level:
+    com.qiujie: debug
+    org.springframework.ai.openai: TRACE
+    org.springframework.web.client.RestClient: DEBUG

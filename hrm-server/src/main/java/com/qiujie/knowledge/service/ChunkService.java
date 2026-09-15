@@ -13,11 +13,11 @@ import java.util.List;
 public class ChunkService {
 
     /** 最大切片字符数 */
-    @Value("${knowledge.chunk.max-size:1000}")
+    @Value("${knowledge.chunk.max-size}")
     private int maxSize;
 
     /** 相邻切片重叠字符数 */
-    @Value("${knowledge.chunk.overlap:100}")
+    @Value("${knowledge.chunk.overlap}")
     private int overlap;
 
     public List<ChunkResult> split(String text) {

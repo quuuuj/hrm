@@ -16,16 +16,16 @@ import com.qiujie.chat.service.KnowledgeSearchProvider.SearchResult;
 @Service
 public class EvidenceAssessmentService {
 
-    @Value("${knowledge.qa.evidence-none-threshold:0.0}")
+    @Value("${knowledge.qa.evidence-none-threshold}")
     private double noneThreshold;
 
-    @Value("${knowledge.qa.evidence-weak-threshold:0.3}")
+    @Value("${knowledge.qa.evidence-weak-threshold}")
     private double weakThreshold;
 
-    @Value("${knowledge.qa.evidence-partial-threshold:0.5}")
+    @Value("${knowledge.qa.evidence-partial-threshold}")
     private double partialThreshold;
 
-    @Value("${knowledge.qa.evidence-sufficient-threshold:0.7}")
+    @Value("${knowledge.qa.evidence-sufficient-threshold}")
     private double sufficientThreshold;
 
     public record Assessment(EvidenceLevel level, String reason) {}

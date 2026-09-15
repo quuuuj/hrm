@@ -97,7 +97,7 @@ flowchart TD
         C4 --> B5
         B5 --> C5[召回相关文档切块上下文]
         C5 --> C6[组合检索上下文与员工档案 Prompt]
-        C6 --> C7[大模型生成回答（由 CHAT_PROVIDER_MODEL 配置）]
+        C6 --> C7[大模型生成回答（由 LLM_CHAT_MODEL 配置）]
         C7 --> C8[流式/同步反馈给员工前端]
     end
 ```
@@ -169,8 +169,8 @@ graph TB
     end
 
     subgraph ExternalModel["可配置的大模型服务"]
-        LLM[对话模型：由 CHAT_PROVIDER_MODEL 配置]
-        Embed[Embedding 模型：由 DASHSCOPE_EMBEDDING_MODEL 配置]
+        LLM[对话模型：由 LLM_CHAT_MODEL 配置]
+        Embed[Embedding 模型：由 LLM_EMBEDDING_MODEL 配置]
     end
 
     subgraph Persistence["多引擎存储层"]
@@ -274,18 +274,18 @@ com.qiujie.chat/
 ## 🚀 本地快速启动指南
 
 ### 1. 启动本地依赖容器
-项目本地所需的中间件（MySQL 8.1、Redis 5.0、PostgreSQL/pgvector 16、MinIO）由 `docker/local/docker-compose.yml` 统一编排，无需在本机单独安装：
+项目本地所需的中间件（MySQL 8.1、Redis 5.0、PostgreSQL/pgvector 16、MinIO）由 `docker/local/docker-compose.yml` 统一编排，所有值直接写在 compose 文件里，无需 `.env`：
 
 ```bash
 # 在项目根目录下执行
 docker compose -f docker/local/docker-compose.yml up -d
 ```
 
-容器就绪后，本地映射端口和连接信息以 `docker/local/docker-compose.yml` 及环境变量配置为准。默认映射包括：
-- **MySQL**：`localhost:3307`（容器端口 `3306`）
-- **Redis**：`localhost:6380`（容器端口 `6379`）
-- **PostgreSQL (pgvector)**：`localhost:54320`（容器端口 `5432`，数据库 `hrm_kb`）
-- **MinIO**：API `9000`，控制台 `9001`
+容器就绪后，本地默认连接信息：
+- **MySQL**：`localhost:3306`，`root/123456`
+- **Redis**：`localhost:6379`（无密码）
+- **PostgreSQL (pgvector)**：`localhost:5432`，`hrm/123456`，数据库 `hrm_kb`
+- **MinIO**：API `9000`，控制台 `9001`，`minioadmin/minioadmin`
 
 ---
 
@@ -294,12 +294,11 @@ docker compose -f docker/local/docker-compose.yml up -d
 
 ```bash
 # MySQL：导入业务库和 Flowable 流程引擎库
-# 请将 <MYSQL_USER>、<MYSQL_PASSWORD> 替换为本地环境变量，不要把真实凭据写入文档
-mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <MYSQL_DATABASE> < db/mysql/hrm.sql
-mysql -h 127.0.0.1 -P 3307 -u <MYSQL_USER> -p <FLOWABLE_DATABASE> < db/mysql/hrm_flowable.sql
+mysql -h 127.0.0.1 -P 3306 -uroot -p123456 hrm < db/mysql/hrm.sql
+mysql -h 127.0.0.1 -P 3306 -uroot -p123456 hrm_flowable < db/mysql/hrm_flowable.sql
 
-# PostgreSQL：导入知识库模式（映射端口 54320）
-psql -h 127.0.0.1 -p 54320 -U <KB_DB_USERNAME> -d hrm_kb -f db/postgresql/knowledge_base.sql
+# PostgreSQL：导入知识库模式
+psql -h 127.0.0.1 -p 5432 -U hrm -d hrm_kb -f db/postgresql/knowledge_base.sql
 
 # 初始化脚本已包含全部表的最终结构（智能问答与知识库合并后的状态），无需额外执行增量迁移
 ```
@@ -307,29 +306,19 @@ psql -h 127.0.0.1 -p 54320 -U <KB_DB_USERNAME> -d hrm_kb -f db/postgresql/knowle
 ---
 
 ### 3. 配置本地开发环境参数
-后端配置通过环境变量读取数据库、Redis、JWT、对象存储和 AI 服务参数。需要启用智能问答或知识库时，至少配置：
+`.env` 只放真正敏感的项；本地中间件凭据、端口、运行参数都已字面值写在 `application.yml` / `docker/local/docker-compose.yml`。需要启用智能问答或知识库时，在 `hrm-server/` 目录创建 `.env`（可参考 `hrm-server/.env.example`），至少配置：
 
 ```bash
-export DB_MASTER_URL="jdbc:mysql://localhost:3307/hrm"
-export DB_FLOWABLE_URL="jdbc:mysql://localhost:3307/hrm_flowable"
-export DB_USERNAME="<MYSQL_USER>"
-export DB_PASSWORD="<MYSQL_PASSWORD>"
-export REDIS_HOST="localhost"
-export REDIS_PORT="6380"
-export REDIS_PASSWORD="<REDIS_PASSWORD>"
-export JWT_SECRET="<JWT_SECRET>"
-export MINIO_ENDPOINT="http://localhost:9000"
-export MINIO_ACCESS_KEY="<MINIO_ACCESS_KEY>"
-export MINIO_SECRET_KEY="<MINIO_SECRET_KEY>"
-export CHAT_PROVIDER_BASE_URL="<CHAT_PROVIDER_BASE_URL>"
-export CHAT_PROVIDER_API_KEY="<CHAT_PROVIDER_API_KEY>"
-export CHAT_PROVIDER_MODEL="<CHAT_PROVIDER_MODEL>"
-export KNOWLEDGE_ENABLED="true"
-export DASHSCOPE_API_KEY="<DASHSCOPE_API_KEY>"
-export DASHSCOPE_EMBEDDING_MODEL="<EMBEDDING_MODEL>"
+LLM_API_KEY="<API密钥>"
+JWT_SECRET="<JWT_SECRET>"
+
+# 换 LLM 服务商/模型时再改这两项
+LLM_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode"
+LLM_CHAT_MODEL="qwen3.7-flash"
+LLM_EMBEDDING_MODEL="qwen3.7-text-embedding"
 ```
 
-模型名称由 `CHAT_PROVIDER_MODEL` 和 `DASHSCOPE_EMBEDDING_MODEL` 配置，不在 README 中固定具体供应商模型。
+后端通过 `application.yml` 中的 `spring.config.import: optional:file:.env[.properties]` 读取 `.env`，无需手动 export。
 
 ---
 

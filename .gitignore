@@ -16,8 +16,9 @@ replay_pid*.log
 **/.env.*
 !**/.env.example
 !**/.env.*.example
-**/application-dev.yml
-**/application-prod.yml
+# 环境 profile 配置入库（dev 无敏感值、prod 全占位符）；覆盖全局 gitignore 的忽略规则
+!**/application-dev.yml
+!**/application-prod.yml
 
 # Deployment configuration
 /deploy/
@@ -102,6 +103,10 @@ file/
 tmp/
 .worktrees/
 *.bak
+.claude/
+
+# 测试产物（测试脚本/测试数据/测试报告/测试日志，一律不入库）
+docs/test-reports/
 
 # 本地开发运行时目录
 hrm-server/hrm-files/

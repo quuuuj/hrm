@@ -43,9 +43,9 @@ public class DashScopeEmbeddingClient {
      * @param model   嵌入模型名称
      */
     public DashScopeEmbeddingClient(
-            @Value("${knowledge.embedding.base-url:https://dashscope.aliyuncs.com/compatible-mode}") String baseUrl,
-            @Value("${knowledge.embedding.api-key:}") String apiKey,
-            @Value("${knowledge.embedding.model:text-embedding-v4}") String model) {
+            @Value("${knowledge.embedding.base-url}") String baseUrl,
+            @Value("${knowledge.embedding.api-key}") String apiKey,
+            @Value("${knowledge.embedding.model}") String model) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5000);
         factory.setReadTimeout(30000);

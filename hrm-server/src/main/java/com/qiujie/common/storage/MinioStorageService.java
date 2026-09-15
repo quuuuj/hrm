@@ -35,7 +35,7 @@ public class MinioStorageService {
             @Value("${storage.minio.endpoint}") String endpoint,
             @Value("${storage.minio.access-key}") String accessKey,
             @Value("${storage.minio.secret-key}") String secretKey,
-            @Value("${storage.minio.bucket:hrm}") String bucket) {
+            @Value("${storage.minio.bucket}") String bucket) {
         this.endpoint = endpoint;
         this.accessKey = accessKey;
         this.secretKey = secretKey;

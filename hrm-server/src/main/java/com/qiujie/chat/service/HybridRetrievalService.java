@@ -34,19 +34,19 @@ public class HybridRetrievalService implements KnowledgeSearchProvider {
         this.kbJdbc = new JdbcTemplate(kbDataSource);
     }
 
-    @Value("${knowledge.retrieval.top-k:10}")
+    @Value("${knowledge.retrieval.top-k}")
     private int topK;
 
-    @Value("${knowledge.retrieval.vector-top-k:20}")
+    @Value("${knowledge.retrieval.vector-top-k}")
     private int vectorTopK;
 
-    @Value("${knowledge.retrieval.keyword-top-k:20}")
+    @Value("${knowledge.retrieval.keyword-top-k}")
     private int keywordTopK;
 
-    @Value("${knowledge.retrieval.rrf-k:60}")
+    @Value("${knowledge.retrieval.rrf-k}")
     private int rrfK;
 
-    @Value("${knowledge.retrieval.window-size:1}")
+    @Value("${knowledge.retrieval.window-size}")
     private int windowSize;
 
     @Override

@@ -23,7 +23,7 @@ public class KnowledgeReindexRunner implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeReindexRunner.class);
 
-    @Value("${chat.knowledge.rebuild-on-start:false}")
+    @Value("${chat.knowledge.rebuild-on-start}")
     private boolean rebuildOnStart;
 
     @Autowired
