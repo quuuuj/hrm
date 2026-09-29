@@ -22,10 +22,13 @@
   左侧放入后右侧实时预览，再一键复制到公众号后台。mdnice 不支持 mermaid，请勿使用。
 
   【发布前待办】
-  1. 时序图 PNG 已入库并实测 200（2026-09-29）：
-     - 导出件 img/readme/07-auth-sequence.png，正文 URL 已钉完整 SHA（1b5554b...）；
+  1. 时序图 PNG 已按「内容 vs 画布」计算法重新导出并像素级验收（2026-09-30）：
+     - 导出件 img/article/07-auth-sequence.png（文章配图放 img/article/，
+       不混入 README 截图用的 img/readme/）；
+     - 画布 2566x3044，内容 2544x3022，四边留白 L=R=T=B=11px（|L-R|=0、|T-B|=0）；
      - 微信 SVG 过滤会剥掉箭头的 defs/marker，PNG 不受影响；改图时改正文注释里的
-       mermaid 源码，重新导出 + 换新 SHA。
+       mermaid 源码，重新导出；
+     - 待办：下方图片 URL 的 SHA 待新 PNG 提交后重新钉死并 curl 实测 200。
   2. jsDelivr 封面 URL 已在本地 curl 验证 200（SHA=5f06498...，远端 dev）。
 -->
 
@@ -281,7 +284,7 @@ sequenceDiagram
     B-->>F: 返回数据
 -->
 
-![双 Token 认证时序图](https://cdn.jsdelivr.net/gh/quuuuj/hrm@1b5554bae39d59913ec079be8a93365ba8436c16/img/readme/07-auth-sequence.png)
+![双 Token 认证时序图](https://cdn.jsdelivr.net/gh/quuuuj/hrm@1b5554bae39d59913ec079be8a93365ba8436c16/img/article/07-auth-sequence.png)
 
 ## 动手验证：curl 看两个 Cookie
 
