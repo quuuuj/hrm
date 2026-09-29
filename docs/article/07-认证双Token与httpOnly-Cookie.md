@@ -28,7 +28,7 @@
      - 画布 2566x3044，内容 2544x3022，四边留白 L=R=T=B=11px（|L-R|=0、|T-B|=0）；
      - 微信 SVG 过滤会剥掉箭头的 defs/marker，PNG 不受影响；改图时改正文注释里的
        mermaid 源码，重新导出；
-     - 待办：下方图片 URL 的 SHA 待新 PNG 提交后重新钉死并 curl 实测 200。
+     - 正文图片 URL 已钉 SHA=e5a65d28... 并 curl 实测 200（475108 字节，2026-09-30）。
   2. jsDelivr 封面 URL 已在本地 curl 验证 200（SHA=5f06498...，远端 dev）。
 -->
 
@@ -284,7 +284,7 @@ sequenceDiagram
     B-->>F: 返回数据
 -->
 
-![双 Token 认证时序图](https://cdn.jsdelivr.net/gh/quuuuj/hrm@1b5554bae39d59913ec079be8a93365ba8436c16/img/article/07-auth-sequence.png)
+![双 Token 认证时序图](https://cdn.jsdelivr.net/gh/quuuuj/hrm@e5a65d28c2c36336a1eaf3de3339b430cbff3597/img/article/07-auth-sequence.png)
 
 ## 动手验证：curl 看两个 Cookie
 
