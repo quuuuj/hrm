@@ -22,10 +22,10 @@
   左侧放入后右侧实时预览，再一键复制到公众号后台。mdnice 不支持 mermaid，请勿使用。
 
   【发布前待办】
-  1. 时序图改为 PNG 引用（微信 SVG 过滤会剥掉箭头的 defs/marker，PNG 不受影响）：
-     a. doocs/md 导出「PNG 图片」（注意亮色主题），存为 img/readme/07-auth-sequence.png；
-     b. 提交并推送后，把正文图片 URL 里的 <完整commit SHA> 替换为该次提交的完整 SHA；
-     c. curl -o /dev/null -w "%{http_code}" 验证 jsDelivr URL 返回 200（钉完整 SHA，勿用 @dev）。
+  1. 时序图 PNG 已入库并实测 200（2026-09-29）：
+     - 导出件 img/readme/07-auth-sequence.png，正文 URL 已钉完整 SHA（1b5554b...）；
+     - 微信 SVG 过滤会剥掉箭头的 defs/marker，PNG 不受影响；改图时改正文注释里的
+       mermaid 源码，重新导出 + 换新 SHA。
   2. jsDelivr 封面 URL 已在本地 curl 验证 200（SHA=5f06498...，远端 dev）。
 -->
 
@@ -281,7 +281,7 @@ sequenceDiagram
     B-->>F: 返回数据
 -->
 
-![双 Token 认证时序图](https://cdn.jsdelivr.net/gh/quuuuj/hrm@<完整commit SHA>/img/readme/07-auth-sequence.png)
+![双 Token 认证时序图](https://cdn.jsdelivr.net/gh/quuuuj/hrm@1b5554bae39d59913ec079be8a93365ba8436c16/img/readme/07-auth-sequence.png)
 
 ## 动手验证：curl 看两个 Cookie
 
