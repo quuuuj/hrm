@@ -56,6 +56,8 @@ docs/*
 !docs/adr/*.md
 !docs/import/
 !docs/import/*.xlsx
+!docs/article/
+!docs/article/*.md
 # Architecture Decision Records are long-lived assets: they must travel with the repo
 !docs/adr/
 !docs/adr/*.md
@@ -112,3 +114,5 @@ docs/test-reports/
 hrm-server/hrm-files/
 
 deploy/
+
+docs/learn
