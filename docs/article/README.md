@@ -85,7 +85,7 @@
 
 | 期 | 标题方向 | 产出 | 核心素材 | 图表 | 前提 | 新术语 |
 |---|---|---|---|---|---|---|
-| 8 | 前端无感续期 | 401 自动刷新、并发请求不重复刷新 | request.js isRefreshing + pendingRequests 单飞；/refresh 端点重查员工状态+最新权限 | 单飞刷新时序 | 7 | 单飞（single-flight） |
+| 8 | 前端无感续期 | 401 自动刷新、并发请求不重复刷新 | request.js isRefreshing + pendingRequests 并发去重；/refresh 端点重查员工状态+最新权限 | 并发去重刷新时序 | 7 | 并发去重刷新 |
 | 9 | RBAC 表与后端校验 | 接口能按权限点拦住 | per_menu/per_role/per_role_menu/per_staff_role；StaffDetailsService 装载权限进 JWT claim；@PreAuthorize 校验链 | RBAC 四表关系 | 7 | RBAC、权限点 |
 | 10 | 动态路由与 v-permission | 菜单按权限生成、按钮按权限显隐 | router/index.js 动态加载；directive/permission；permission store | 登录→菜单→路由链路 | 9 | 动态路由 |
 
