@@ -52,21 +52,12 @@ replay_pid*.log
 # Local scripts and generated documentation
 /scripts/
 docs/*
-!docs/adr/
-!docs/adr/*.md
 !docs/import/
 !docs/import/*.xlsx
-!docs/article/
-!docs/article/*.md
-# Architecture Decision Records are long-lived assets: they must travel with the repo
-!docs/adr/
-!docs/adr/*.md
 
 # Uploaded/runtime files
 file/
 *.xlsx
-!docs/import/
-!docs/import/*.xlsx
 
 # IDE and agent files
 .idea/
@@ -105,7 +96,6 @@ file/
 tmp/
 .worktrees/
 *.bak
-.claude/
 
 # 测试产物（测试脚本/测试数据/测试报告/测试日志，一律不入库）
 docs/test-reports/
