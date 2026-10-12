@@ -1,5 +1,6 @@
 package com.qiujie.dept.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -13,20 +14,19 @@ import com.qiujie.util.EasyExcelUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
-
-import com.qiujie.common.enums.BusinessStatusEnum;
-import com.qiujie.security.ServiceException;
 
 /**
  * <p>
@@ -133,22 +133,37 @@ public class DeptService extends ServiceImpl<DeptMapper, Dept> {
 
     public ResponseDTO list(Integer current, Integer size, String name) {
         IPage<Dept> config = new Page<>(current, size);
-        if (name == null) {
-            name = "";
-        }
-        IPage<Dept> page = this.deptMapper.listParentDept(config, name);
-        // 查询所有菜单
-        List<Dept> list = this.deptMapper.queryAllSub();
-        // 父级部门
+        String searchName = (name == null) ? "" : name;
+        IPage<Dept> page = this.deptMapper.listParentDept(config, searchName);
         List<Dept> parentList = page.getRecords();
-        for (Dept parentDept : parentList) {
-            // 设置子部门
-            List<Dept> subList = list.stream().filter(dept -> dept.getParentId() == parentDept.getId())
-                    .collect(Collectors.toList());
-            parentDept.setChildren(subList);
+
+        if (CollectionUtils.isEmpty(parentList)) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("pages", page.getPages());
+            map.put("total", page.getTotal());
+            map.put("list", Collections.emptyList());
+            return Response.success(map);
         }
-        // 将响应数据填充到map中
-        Map map = new HashMap();
+
+        // 仅提取当前页父部门的 ID 列表
+        List<Integer> parentIds = parentList.stream()
+                .map(Dept::getId)
+                .collect(Collectors.toList());
+
+        // 按需仅查询当前页父部门下属的子部门
+        List<Dept> subList = this.list(new LambdaQueryWrapper<Dept>()
+                .in(Dept::getParentId, parentIds));
+
+        // 按 parentId 分组 (O(M))
+        Map<Integer, List<Dept>> subMap = subList.stream()
+                .collect(Collectors.groupingBy(Dept::getParentId));
+
+        // 组装子部门列表并防空
+        for (Dept parentDept : parentList) {
+            parentDept.setChildren(subMap.getOrDefault(parentDept.getId(), Collections.emptyList()));
+        }
+
+        Map<String, Object> map = new HashMap<>();
         map.put("pages", page.getPages());
         map.put("total", page.getTotal());
         map.put("list", parentList);
@@ -186,18 +201,25 @@ public class DeptService extends ServiceImpl<DeptMapper, Dept> {
     /**
      * 为父级部门设置子部门，使用流来处理数据，并返回父级部门
      *
-     * @param list
-     * @return
+     * @param list 所有部门列表
+     * @return 树形结构后的父级部门列表
      */
     public List<Dept> setSubDept(List<Dept> list) {
-        // 父级菜单
-        List<Dept> parentList = list.stream().parallel()
-                .filter(dept -> dept.getParentId() == 0).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(list)) {
+            return Collections.emptyList();
+        }
+        // 按 parentId 分组
+        Map<Integer, List<Dept>> subMap = list.stream()
+                .filter(dept -> dept.getParentId() != null && !Objects.equals(dept.getParentId(), 0))
+                .collect(Collectors.groupingBy(Dept::getParentId));
+
+        // 筛选父级部门并组装子部门
+        List<Dept> parentList = list.stream()
+                .filter(dept -> Objects.equals(dept.getParentId(), 0))
+                .collect(Collectors.toList());
+
         for (Dept parentDept : parentList) {
-            // 子菜单
-            List<Dept> subList = list.stream().parallel()
-                    .filter(dept -> dept.getParentId() == parentDept.getId()).collect(Collectors.toList());
-            parentDept.setChildren(subList);
+            parentDept.setChildren(subMap.getOrDefault(parentDept.getId(), Collections.emptyList()));
         }
         return parentList;
     }

@@ -20,9 +20,17 @@ import java.util.List;
  */
 public interface DocsMapper extends BaseMapper<Docs> {
 
-    @Select("select sd.*,ss.name staff_name from sys_staff ss left join sys_docs sd on ss.id = sd.staff_id " +
-            "where sd.is_deleted = 0 and sd.old_name like concat('%',#{oldName},'%') and ss.name like concat('%',#{staffName},'%')")
-    IPage<StaffDocsVO> listStaffDocsVO(IPage<StaffDocsVO> config, @Param("oldName") String oldName, @Param("staffName") String staffName);
+    @Select("<script>" +
+            "select sd.*,ss.name staff_name from sys_staff ss left join sys_docs sd on ss.id = sd.staff_id " +
+            "where sd.is_deleted = 0 and sd.old_name like concat('%',#{oldName},'%') and ss.name like concat('%',#{staffName},'%') " +
+            "<if test='onlyKb != null and onlyKb == true'> and sd.kb_status is not null </if>" +
+            "<if test='kbStatus != null and kbStatus != \"\"'> and sd.kb_status = #{kbStatus} </if>" +
+            "</script>")
+    IPage<StaffDocsVO> listStaffDocsVO(IPage<StaffDocsVO> config,
+                                       @Param("oldName") String oldName,
+                                       @Param("staffName") String staffName,
+                                       @Param("onlyKb") Boolean onlyKb,
+                                       @Param("kbStatus") String kbStatus);
 
     // ===== 知识库生命周期 SQL（sys_docs 吸收 kb_document）=====
 

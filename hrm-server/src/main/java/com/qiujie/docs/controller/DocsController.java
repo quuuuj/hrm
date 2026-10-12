@@ -56,14 +56,14 @@ public class DocsController {
 
     @Operation(summary = "逻辑删除")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('system:docs:delete')")
+    @PreAuthorize("hasAnyAuthority('system:docs:delete','qa:knowledge:delete')")
     public ResponseDTO delete(@PathVariable Integer id) {
         return this.docsService.delete(id);
     }
 
     @Operation(summary = "批量逻辑删除")
     @DeleteMapping("/batch/{ids}")
-    @PreAuthorize("hasAnyAuthority('system:docs:delete')")
+    @PreAuthorize("hasAnyAuthority('system:docs:delete','qa:knowledge:delete')")
     public ResponseDTO deleteBatch(@PathVariable List<Integer> ids) {
         return this.docsService.deleteBatch(ids);
     }
@@ -83,9 +83,14 @@ public class DocsController {
 
     @Operation(summary = "分页条件查询")
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('system:docs:list','system:docs:search')")
-    public ResponseDTO list(@RequestParam(defaultValue = "1") Integer current, @RequestParam(defaultValue = "10") Integer size, String oldName, String staffName) {
-        return this.docsService.list(current, size, oldName, staffName);
+    @PreAuthorize("hasAnyAuthority('system:docs:list','system:docs:search','qa:knowledge:list')")
+    public ResponseDTO list(@RequestParam(defaultValue = "1") Integer current,
+                            @RequestParam(defaultValue = "10") Integer size,
+                            String oldName,
+                            String staffName,
+                            @RequestParam(required = false) Boolean onlyKb,
+                            @RequestParam(required = false) String kbStatus) {
+        return this.docsService.list(current, size, oldName, staffName, onlyKb, kbStatus);
     }
 
     @Operation(summary = "数据导出接口")
@@ -127,7 +132,7 @@ public class DocsController {
 
     @Operation(summary = "分片上传-初始化")
     @PostMapping("/upload/init")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload')")
+    @PreAuthorize("hasAnyAuthority('system:docs:upload','qa:knowledge:upload')")
     public ResponseDTO initChunkedUpload(@RequestBody Map<String, Object> request) {
         String fileName = (String) request.get("fileName");
         String fileExt = (String) request.get("fileExt");
@@ -143,7 +148,7 @@ public class DocsController {
 
     @Operation(summary = "分片上传-上传分片")
     @PostMapping("/upload/chunks")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload')")
+    @PreAuthorize("hasAnyAuthority('system:docs:upload','qa:knowledge:upload')")
     public ResponseDTO uploadChunk(
             @RequestParam("uploadId") String uploadId,
             @RequestParam("chunkIndex") Integer chunkIndex,
@@ -154,7 +159,7 @@ public class DocsController {
 
     @Operation(summary = "分片上传-完成")
     @PostMapping("/upload/{uploadId}/complete")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload')")
+    @PreAuthorize("hasAnyAuthority('system:docs:upload','qa:knowledge:upload')")
     public ResponseDTO completeChunkedUpload(@PathVariable String uploadId,
                                              @RequestParam(value = "ingest", required = false, defaultValue = "false") boolean ingest) {
         return fileUploadService.completeUpload(uploadId, docsHandler, ingest);
@@ -164,14 +169,14 @@ public class DocsController {
 
     @Operation(summary = "查看文档切片")
     @GetMapping("/{id}/chunks")
-    @PreAuthorize("hasAnyAuthority('system:docs:list')")
+    @PreAuthorize("hasAnyAuthority('system:docs:list','qa:knowledge:list')")
     public ResponseDTO chunks(@PathVariable Long id) {
         return this.docsService.chunks(id);
     }
 
     @Operation(summary = "重试失败的摄入任务")
     @PostMapping("/{id}/retry")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload')")
+    @PreAuthorize("hasAnyAuthority('system:docs:upload','qa:knowledge:upload')")
     public ResponseDTO retry(@PathVariable Integer id) {
         DocumentLifecycleService.RetryResult r =
                 lifecycle.retry(new DocumentLifecycleService.RetryCommand(id.longValue()));

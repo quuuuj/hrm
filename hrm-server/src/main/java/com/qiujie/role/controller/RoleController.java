@@ -102,7 +102,7 @@ public class RoleController {
     }
 
     @Operation(summary = "得到角色所属的菜单")
-    @GetMapping("/role/{id}")
+    @GetMapping("/menu/{id}")
     public ResponseDTO queryByRoleId(@PathVariable Integer id){
         return this.roleMenuService.queryByRoleId(id);
     }
