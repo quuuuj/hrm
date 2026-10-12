@@ -1,10 +1,10 @@
 # 主配置（唯一配置文件）
 # 本地默认值直接写字面值；仅敏感项（LLM_API_KEY / JWT_SECRET / LLM_BASE_URL / LLM_CHAT_MODEL / LLM_EMBEDDING_MODEL）
-# 通过 hrm-server/.env 注入（spring-boot:run 的 cwd 即 hrm-server/）
+# 通过 hrm-server/.env 注入（兼容任意 cwd：项目根目录或 hrm-server/，IDEA/命令行均可启动）
 
 spring:
   config:
-    import: optional:file:.env[.properties]
+    import: optional:file:.env[.properties],optional:file:hrm-server/.env[.properties]
   datasource:
     master:
       jdbc-url: jdbc:mysql://localhost:3306/hrm?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai

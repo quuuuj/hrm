@@ -1,6 +1,4 @@
 package com.qiujie.filetask.service;
-import com.qiujie.docs.service.DocsUploadCompletionHandler;
-import com.qiujie.filetask.entity.FileTask;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.SecureUtil;

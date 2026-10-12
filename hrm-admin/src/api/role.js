@@ -69,7 +69,7 @@ export const setMenu = (id, data) => {
 // 获取角色的菜单
 export const queryByRoleId = (id) => {
   return request({
-    url: url + '/role/' + id
+    url: url + '/menu/' + id
   })
 }
 

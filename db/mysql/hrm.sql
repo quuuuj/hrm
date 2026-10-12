@@ -485,7 +485,11 @@ VALUES
 ('leave_audit', '审批任务', 'check', 'performance:leave:audit', 19, 2, 1, NOW(), 0),
 ('leave_cancel', '撤销请假', 'close', 'performance:leave:cancel', 19, 2, 1, NOW(), 0);
 
-INSERT INTO `per_menu` VALUES (121, 'chat', '智能问答', 'chat-dot-round', NULL, 0, 0, 1, NULL, '2026-09-14 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (121, 'qa', '智能问答', 'chat-dot-round', NULL, 0, 0, 1, NULL, '2026-09-14 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (122, 'chat', '聊天', 'chat-line-round', NULL, 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (123, 'knowledge', '知识库', 'document-copy', 'qa:knowledge:list', 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (124, 'knowledge_upload', '上传文档', 'upload2', 'qa:knowledge:upload', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (125, 'knowledge_delete', '删除文档', 'remove-outline', 'qa:knowledge:delete', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
 
 -- ----------------------------
 -- Table structure for per_role
@@ -832,6 +836,18 @@ INSERT INTO `per_role_menu` VALUES (3761, 1, 6);
 INSERT INTO `per_role_menu` VALUES (3762, 1, 3);
 INSERT INTO `per_role_menu` VALUES (3763, 1, 4);
 INSERT INTO `per_role_menu` VALUES (3764, 1, 121);
+INSERT INTO `per_role_menu` VALUES (3765, 1, 122);
+INSERT INTO `per_role_menu` VALUES (3766, 1, 123);
+INSERT INTO `per_role_menu` VALUES (3767, 1, 124);
+INSERT INTO `per_role_menu` VALUES (3768, 1, 125);
+INSERT INTO `per_role_menu` VALUES (3769, 2, 121);
+INSERT INTO `per_role_menu` VALUES (3770, 2, 122);
+INSERT INTO `per_role_menu` VALUES (3771, 3, 121);
+INSERT INTO `per_role_menu` VALUES (3772, 3, 122);
+INSERT INTO `per_role_menu` VALUES (3773, 4, 121);
+INSERT INTO `per_role_menu` VALUES (3774, 4, 122);
+INSERT INTO `per_role_menu` VALUES (3775, 7, 121);
+INSERT INTO `per_role_menu` VALUES (3776, 7, 122);
 
 -- ----------------------------
 -- Table structure for per_staff_role
@@ -1103,8 +1119,7 @@ CREATE TABLE `sys_dept`  (
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_deleted` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '逻辑删除，0未删除，1删除',
-  PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_dept_parent` (`parent_id`)
+  PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------

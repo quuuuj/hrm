@@ -175,6 +175,10 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
 
 
     public ResponseDTO list(Integer current, Integer size, String oldName, String staffName) {
+        return list(current, size, oldName, staffName, null, null);
+    }
+
+    public ResponseDTO list(Integer current, Integer size, String oldName, String staffName, Boolean onlyKb, String kbStatus) {
         if (oldName == null) {
             oldName = "";
         }
@@ -182,7 +186,7 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
             staffName = "";
         }
         IPage<StaffDocsVO> config = new Page<>(current, size);
-        IPage<StaffDocsVO> page = this.docsMapper.listStaffDocsVO(config, oldName, staffName);
+        IPage<StaffDocsVO> page = this.docsMapper.listStaffDocsVO(config, oldName, staffName, onlyKb, kbStatus);
         // 将响应数据填充到map中
         Map map = new HashMap();
         map.put("pages", page.getPages());

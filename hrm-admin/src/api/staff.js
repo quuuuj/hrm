@@ -61,7 +61,7 @@ export const setRole = (id, data) => {
 // 获取员工的角色
 export const queryByStaffId = (id) => {
   return request({
-    url: url + '/staff/' + id
+    url: url + '/role/' + id
   })
 }
 
