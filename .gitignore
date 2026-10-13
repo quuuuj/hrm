@@ -54,6 +54,9 @@ replay_pid*.log
 docs/*
 !docs/import/
 !docs/import/*.xlsx
+# 笔记目录入库，但其写作规范 CLAUDE.md 仅本地保留
+!docs/note/
+docs/note/CLAUDE.md
 
 # Uploaded/runtime files
 file/
