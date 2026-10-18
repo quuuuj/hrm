@@ -2,6 +2,7 @@ package com.qiujie.chat.service;
 
 import com.qiujie.knowledge.lifecycle.VectorMetadata;
 import com.qiujie.knowledge.service.DashScopeEmbeddingClient;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,17 +22,32 @@ import java.util.stream.Collectors;
  * </p>
  */
 @Service
-public class HybridRetrievalService implements KnowledgeSearchProvider {
+public class HybridRetrievalService {
 
     private static final Logger log = LoggerFactory.getLogger(HybridRetrievalService.class);
 
     @Autowired
     private DashScopeEmbeddingClient embeddingClient;
 
-    private final JdbcTemplate kbJdbc;
+    @Autowired
+    @Qualifier("kbDataSource")
+    private DataSource kbDataSource;
 
-    public HybridRetrievalService(@Qualifier("kbDataSource") DataSource kbDataSource) {
+    private JdbcTemplate kbJdbc;
+
+    public HybridRetrievalService() {
+    }
+
+    HybridRetrievalService(DataSource kbDataSource) {
+        this.kbDataSource = kbDataSource;
         this.kbJdbc = new JdbcTemplate(kbDataSource);
+    }
+
+    @PostConstruct
+    public void init() {
+        if (this.kbJdbc == null && this.kbDataSource != null) {
+            this.kbJdbc = new JdbcTemplate(kbDataSource);
+        }
     }
 
     @Value("${knowledge.retrieval.top-k}")
@@ -49,7 +65,6 @@ public class HybridRetrievalService implements KnowledgeSearchProvider {
     @Value("${knowledge.retrieval.window-size}")
     private int windowSize;
 
-    @Override
     public List<SearchResult> search(List<String> queries) {
         List<SearchResult> allResults = new ArrayList<>();
         for (String query : queries) {

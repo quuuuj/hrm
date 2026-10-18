@@ -1,7 +1,9 @@
 package com.qiujie.filetask.excel;
 
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -25,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author qiujie
  */
 @Component
-public class AiHeaderMatcherImpl implements FlexibleExcelImporter.AiHeaderMatcher {
+public class AiHeaderMatcherImpl {
 
     private static final Logger log = LoggerFactory.getLogger(AiHeaderMatcherImpl.class);
 
@@ -38,10 +40,14 @@ public class AiHeaderMatcherImpl implements FlexibleExcelImporter.AiHeaderMatche
     @Value("${chat.provider.model}")
     private String model;
 
+    @Autowired
+    private RestTemplateBuilder builder;
+
     private RestTemplate restTemplate;
     private final ConcurrentHashMap<String, String> cache = new ConcurrentHashMap<>();
 
-    public AiHeaderMatcherImpl(RestTemplateBuilder builder) {
+    @PostConstruct
+    public void init() {
         this.restTemplate = builder
                 .setConnectTimeout(Duration.ofSeconds(5))
                 .setReadTimeout(Duration.ofSeconds(10))
@@ -55,7 +61,6 @@ public class AiHeaderMatcherImpl implements FlexibleExcelImporter.AiHeaderMatche
      * @param availableFields 实体可用字段列表
      * @return 匹配的字段名，或 null
      */
-    @Override
     public String match(String headerText, List<String> availableFields) {
         if (!StringUtils.hasText(baseUrl) || !StringUtils.hasText(apiKey)) {
             return null;

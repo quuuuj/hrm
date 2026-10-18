@@ -8,16 +8,22 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
 import com.qiujie.staff.entity.Staff;
+import com.qiujie.leave.entity.Leave;
 import com.qiujie.leave.entity.StaffLeave;
 import com.qiujie.leave.enums.AuditStatusEnum;
+import com.qiujie.leave.enums.LeaveEnum;
 import com.qiujie.common.enums.BusinessStatusEnum;
 import com.qiujie.leave.approval.LeaveNotifier;
+import com.qiujie.leave.mapper.LeaveMapper;
 import com.qiujie.leave.mapper.StaffLeaveMapper;
+import com.qiujie.overtime.service.StaffOvertimeService;
 import com.qiujie.staff.mapper.StaffMapper;
 import com.qiujie.util.EnumUtil;
 import com.qiujie.util.EasyExcelUtil;
 import com.qiujie.staff.service.SecurityUtil;
 import com.qiujie.leave.vo.StaffLeaveVO;
+import com.qiujie.util.DatetimeUtil;
+import cn.hutool.core.date.DateUtil;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.runtime.ProcessInstance;
@@ -52,7 +58,13 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
     private StaffLeaveMapper staffLeaveMapper;
 
     @Autowired
+    private LeaveMapper leaveMapper;
+
+    @Autowired
     private StaffMapper staffMapper;
+
+    @Autowired
+    private StaffOvertimeService staffOvertimeService;
 
     @Autowired
     private RuntimeService runtimeService;
@@ -65,6 +77,9 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
 
     @Autowired
     private LeaveNotifier leaveNotifier;
+
+    @Autowired
+    private DatetimeUtil datetimeUtil;
 
     /**
      * 获取当前登录用户的工号
@@ -81,20 +96,48 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
     }
 
     /**
-     * 验证当前用户并获取工号
+     * 复核部门假期额度与调休余额（与前端 checkDays 保持同口径）
      *
-     * @return 工号，如果验证失败则返回错误响应
+     * @param staff      请假发起人
+     * @param staffLeave 请假信息
+     * @return 校验不通过的错误信息，通过则返回 null
      */
-    private Object validateAndGetCode() {
-        Integer currentStaffId = securityUtil.getCurrentOperatorId();
-        if (currentStaffId == null) {
-            return Response.error(BusinessStatusEnum.UNAUTHORIZED);
+    private String checkQuota(Staff staff, StaffLeave staffLeave) {
+        if (staffLeave.getTypeNum() == null || staffLeave.getDays() == null || staffLeave.getStartDate() == null) {
+            return "请假类型、天数与起始日期不能为空！";
         }
-        Staff currentStaff = this.staffMapper.selectById(currentStaffId);
-        if (currentStaff == null) {
-            return Response.error("用户信息不存在");
+        if (staffLeave.getDays() < 1) {
+            return "请假天数必须大于0！";
         }
-        return currentStaff.getCode();
+
+        // 部门额度校验
+        Leave leave = this.leaveMapper.selectOne(new QueryWrapper<Leave>()
+                .eq("dept_id", staff.getDeptId())
+                .eq("type_num", staffLeave.getTypeNum()));
+        if (leave == null) {
+            return "所在部门未配置该假期类型的额度！";
+        }
+        if (Integer.valueOf(0).equals(leave.getStatus())) {
+            return "该假期类型已停用！";
+        }
+        if (staffLeave.getDays() > leave.getDays()) {
+            return "部门规定，" + leave.getTypeNum().getMessage() + "休假天数不超过" + leave.getDays() + "天!";
+        }
+
+        // 调休余额校验：按工作日折算（补班日/非周末且非节假日），与前端 checkDays 及审批侧考勤写入同口径
+        if (staffLeave.getTypeNum() == LeaveEnum.TIME_OFF) {
+            int required = 0;
+            for (int i = 0; i < staffLeave.getDays(); i++) {
+                if (datetimeUtil.isWorkday(DateUtil.offsetDay(staffLeave.getStartDate(), i).toSqlDate())) {
+                    required++;
+                }
+            }
+            long balance = this.staffOvertimeService.countTimeOffDays(staff.getId());
+            if (required > balance) {
+                return "所需调休天数为" + required + "，而你仅仅只有" + balance + "天的调休余额！";
+            }
+        }
+        return null;
     }
 
     public ResponseDTO add(StaffLeave staffLeave) {
@@ -245,19 +288,28 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
      */
     @Transactional
     public ResponseDTO apply(StaffLeave staffLeave) {
-        // 验证当前用户并获取工号
-        Object codeResult = validateAndGetCode();
-        if (codeResult instanceof ResponseDTO) {
-            return (ResponseDTO) codeResult;
-        }
-        String code = (String) codeResult;
+        // 验证当前用户并获取员工信息
         Integer currentStaffId = securityUtil.getCurrentOperatorId();
+        if (currentStaffId == null) {
+            return Response.error(BusinessStatusEnum.UNAUTHORIZED);
+        }
+        Staff currentStaff = this.staffMapper.selectById(currentStaffId);
+        if (currentStaff == null) {
+            return Response.error("用户信息不存在");
+        }
+        String code = currentStaff.getCode();
 
         // 验证请假归属
         if (!staffLeave.getStaffId().equals(currentStaffId)) {
             log.warn("Unauthorized leave application: currentStaffId={}, targetStaffId={}",
                      currentStaffId, staffLeave.getStaffId());
             return Response.error(BusinessStatusEnum.FORBIDDEN);
+        }
+
+        // 复核部门额度与调休余额（与前端 checkDays 同口径，防止绕过前端直接调接口）
+        String quotaError = checkQuota(currentStaff, staffLeave);
+        if (quotaError != null) {
+            return Response.error(quotaError);
         }
 
         // 检查是否有待审核的请假
@@ -399,6 +451,12 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
             return Response.error();
         }
 
+        // 请求体通常只带 id + status，通知所需的 staffId/days 从库中重新加载
+        StaffLeave persisted = this.getById(staffLeave.getId());
+        if (persisted == null) {
+            return Response.error("请假记录不存在");
+        }
+
         Task task = this.taskService.createTaskQuery().processDefinitionKey("leave")
                 .processInstanceBusinessKey(staffLeave.getId().toString())
                 .taskAssignee(code).singleResult();
@@ -410,17 +468,33 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
 
         Map<String, Object> map = new HashMap<>();
         if (Objects.equals(task.getTaskDefinitionKey(), "hr_audit")) {
-            map.put("hrAuditStatus", staffLeave.getStatus().getCode());
+            map.put("hrAuditStatus", persisted.getStatus().getCode());
         } else if(Objects.equals(task.getTaskDefinitionKey(), "manager_audit")) {
-            map.put("managerAuditStatus", staffLeave.getStatus().getCode());
+            map.put("managerAuditStatus", persisted.getStatus().getCode());
+        }
+
+        boolean hrStage = Objects.equals(task.getTaskDefinitionKey(), "hr_audit");
+        boolean approved = AuditStatusEnum.APPROVE.equals(persisted.getStatus());
+
+        // 经理候选人需在流程推进前查询：Flowable 与业务库事务独立，
+        // taskService.complete 提交后若再抛异常，流程状态会与业务状态不一致
+        List<Integer> managerIds = null;
+        if (hrStage && approved) {
+            managerIds = staffMapper.queryByRole("manager").stream()
+                    .map(Staff::getId).collect(Collectors.toList());
         }
 
         taskService.complete(task.getId(), map);
         log.info("Completed leave audit task: taskId={}, staff={}, status={}",
-                 task.getId(), code, staffLeave.getStatus());
+                 task.getId(), code, persisted.getStatus());
 
-        // 推送通知给申请人
-        leaveNotifier.onLeaveCompleted(staffLeave);
+        if (hrStage && approved) {
+            // HR 通过后流程进入经理审批：通知经理待办，申请人结果等经理审批结束再发
+            leaveNotifier.onManagerPending(persisted, managerIds);
+        } else {
+            // HR 驳回、经理通过/驳回：流程结束或回到申请人，通知申请人结果
+            leaveNotifier.onLeaveCompleted(persisted);
+        }
 
         return Response.success();
     }

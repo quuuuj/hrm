@@ -11,6 +11,7 @@ import com.qiujie.overtime.mapper.OvertimeMapper;
 import com.qiujie.salary.mapper.SalaryMapper;
 import com.qiujie.staff.mapper.StaffMapper;
 import com.qiujie.util.DatetimeUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -40,20 +41,14 @@ public class OvertimeCalculator {
     private static final BigDecimal MIN_HOURLY_OVERTIME = new BigDecimal("2");
     private static final BigDecimal MIN_DAILY_OVERTIME = new BigDecimal("8");
 
-    private final StaffMapper staffMapper;
-    private final OvertimeMapper overtimeMapper;
-    private final SalaryMapper salaryMapper;
-    private final DatetimeUtil datetimeUtil;
-
-    public OvertimeCalculator(StaffMapper staffMapper,
-                              OvertimeMapper overtimeMapper,
-                              SalaryMapper salaryMapper,
-                              DatetimeUtil datetimeUtil) {
-        this.staffMapper = staffMapper;
-        this.overtimeMapper = overtimeMapper;
-        this.salaryMapper = salaryMapper;
-        this.datetimeUtil = datetimeUtil;
-    }
+    @Autowired
+    private StaffMapper staffMapper;
+    @Autowired
+    private OvertimeMapper overtimeMapper;
+    @Autowired
+    private SalaryMapper salaryMapper;
+    @Autowired
+    private DatetimeUtil datetimeUtil;
 
     // ==================== 批量入口（引用数据由调用方预加载，避免 N+1） ====================
 

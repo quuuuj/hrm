@@ -5,6 +5,7 @@ import com.qiujie.chat.entity.ChatMessage;
 import com.qiujie.chat.entity.ChatSession;
 import com.qiujie.chat.mapper.ChatMessageMapper;
 import com.qiujie.chat.mapper.ChatSessionMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,14 +24,10 @@ public class JdbcChatSessionStore implements ChatSessionStore {
 
     private static final int MAX_PAGE_SIZE = 50;
 
-    private final ChatSessionMapper sessionMapper;
-    private final ChatMessageMapper messageMapper;
-
-    public JdbcChatSessionStore(ChatSessionMapper sessionMapper,
-                                ChatMessageMapper messageMapper) {
-        this.sessionMapper = sessionMapper;
-        this.messageMapper = messageMapper;
-    }
+    @Autowired
+    private ChatSessionMapper sessionMapper;
+    @Autowired
+    private ChatMessageMapper messageMapper;
 
     @Override
     public ChatSession openOrCreate(Long sessionId, String message, Integer staffId) {

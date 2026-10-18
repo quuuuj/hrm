@@ -3,6 +3,7 @@ package com.qiujie.chat.service;
 import com.qiujie.chat.llm.ChatLlm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -29,11 +30,8 @@ public class IntentGate {
 
     public record GateResult(Intent intent, String rewrittenQuery) {}
 
-    private final ChatLlm llm;
-
-    public IntentGate(ChatLlm llm) {
-        this.llm = llm;
-    }
+    @Autowired
+    private ChatLlm llm;
 
     private static final String PROMPT_TEMPLATE = """
             你是企业 HR 助手的意图分类与改写器。请分析用户的输入，进行分类并改写。

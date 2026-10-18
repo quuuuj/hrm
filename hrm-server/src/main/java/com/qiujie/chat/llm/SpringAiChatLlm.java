@@ -1,9 +1,11 @@
 package com.qiujie.chat.llm;
 
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -17,9 +19,13 @@ public class SpringAiChatLlm implements ChatLlm {
 
     private static final Logger log = LoggerFactory.getLogger(SpringAiChatLlm.class);
 
-    private final ChatClient chatClient;
+    @Autowired
+    private ChatClient.Builder chatClientBuilder;
 
-    public SpringAiChatLlm(ChatClient.Builder chatClientBuilder) {
+    private ChatClient chatClient;
+
+    @PostConstruct
+    public void init() {
         this.chatClient = chatClientBuilder.build();
     }
 

@@ -1,6 +1,7 @@
 package com.qiujie.chat.service;
 
 import com.qiujie.staff.service.SecurityUtil;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +23,20 @@ public class QaRecordRepository {
 
     private static final Logger log = LoggerFactory.getLogger(QaRecordRepository.class);
 
-    private final JdbcTemplate kbJdbc;
-    private final SecurityUtil securityUtil;
+    @Autowired(required = false)
+    @Qualifier("kbDataSource")
+    private DataSource kbDataSource;
 
-    public QaRecordRepository(@Autowired(required = false) @Qualifier("kbDataSource") DataSource kbDataSource,
-                               SecurityUtil securityUtil) {
-        this.kbJdbc = kbDataSource != null ? new JdbcTemplate(kbDataSource) : null;
-        this.securityUtil = securityUtil;
+    @Autowired
+    private SecurityUtil securityUtil;
+
+    private JdbcTemplate kbJdbc;
+
+    @PostConstruct
+    public void init() {
+        if (kbDataSource != null) {
+            this.kbJdbc = new JdbcTemplate(kbDataSource);
+        }
     }
 
     /**

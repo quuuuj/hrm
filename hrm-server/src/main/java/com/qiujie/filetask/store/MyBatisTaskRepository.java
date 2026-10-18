@@ -13,6 +13,7 @@ import com.qiujie.filetask.enums.TaskStatusEnum;
 import com.qiujie.filetask.enums.TaskTypeEnum;
 import com.qiujie.filetask.mapper.FileTaskMapper;
 import com.qiujie.filetask.service.FileTaskErrorService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
@@ -32,20 +33,14 @@ public class MyBatisTaskRepository implements TaskRepository {
 
     private static final int ERROR_EXPORT_PAGE_SIZE = 1000;
 
-    private final FileTaskMapper fileTaskMapper;
-    private final FileTaskErrorService fileTaskErrorService;
-    private final ArtifactStore artifactStore;
-    private final SseService sseService;
-
-    public MyBatisTaskRepository(FileTaskMapper fileTaskMapper,
-                                 FileTaskErrorService fileTaskErrorService,
-                                 ArtifactStore artifactStore,
-                                 SseService sseService) {
-        this.fileTaskMapper = fileTaskMapper;
-        this.fileTaskErrorService = fileTaskErrorService;
-        this.artifactStore = artifactStore;
-        this.sseService = sseService;
-    }
+    @Autowired
+    private FileTaskMapper fileTaskMapper;
+    @Autowired
+    private FileTaskErrorService fileTaskErrorService;
+    @Autowired
+    private ArtifactStore artifactStore;
+    @Autowired
+    private SseService sseService;
 
     @Override
     public FileTask create(TaskTypeEnum taskType, TaskModuleEnum module, String fileName,

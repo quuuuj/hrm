@@ -3,6 +3,7 @@ package com.qiujie.filetask.store;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import com.qiujie.common.storage.MinioStorageService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -21,11 +22,8 @@ public class MinioArtifactStore implements ArtifactStore {
 
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir") + File.separator + "hrm";
 
-    private final MinioStorageService storageService;
-
-    public MinioArtifactStore(MinioStorageService storageService) {
-        this.storageService = storageService;
-    }
+    @Autowired
+    private MinioStorageService storageService;
 
     @Override
     public boolean isRemote(String path) {

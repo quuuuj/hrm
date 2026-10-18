@@ -30,3 +30,10 @@ export const queryAll = () => {
     url: url + '/all'
   })
 }
+
+// 查询节假日与补班日配置（调休折算工作日用）
+export const queryDateConfig = () => {
+  return request({
+    url: url + '/date-config'
+  })
+}

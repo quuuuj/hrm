@@ -16,7 +16,7 @@
 ## ✨ 核心亮点
 
 - **业务流程深度解耦与纯计算领域设计**：
-  - 考勤核算、加班计算（`OvertimeCalculator`）、审批副作用处理（`LeaveApprovalSideEffects`）以及薪资核算（`SalaryCalculation`）全面收敛为无框架依赖的纯函数领域模型，具备极高的单测覆盖与维护确定性。
+  - 考勤核算、加班计算（`OvertimeCalculator`）以及薪资核算（`SalaryCalculation`）全面收敛为无框架依赖的纯函数领域模型，具备极高的单测覆盖与维护确定性。
 - **Flowable 8.0 流程引擎原生适配**：
   - 深度整合 Spring Boot 3.4 与 Flowable 引擎，基于双 MySQL 独立数据源设计（业务主库 + 流程引擎专库），保证核心工作流数据自治与平滑伸缩。
 - **双 Token 自动无感续期机制**：
@@ -81,7 +81,7 @@ flowchart TD
         A3 --> A4[主管/审批人接收任务]
         A4 --> A5{审批决策}
         A5 -- 驳回 --> A6[更新业务单据状态为 REJECT]
-        A5 -- 批准 --> A7[触发 LeaveApprovalSideEffects 副作用链]
+        A5 -- 批准 --> A7[触发经理审批监听器副作用处理]
         A7 --> A8[扣减员工请假天数 / 增加调休时长]
         A8 --> A9[写入考勤状态记录与站内通知]
     end
@@ -156,7 +156,7 @@ graph TB
         subgraph Domains["纯计算/高内聚领域模块"]
             Overtime[OvertimeCalculator<br/>加班时长核算]
             Salary[SalaryCalculation<br/>薪资社保核算]
-            LeaveSide[LeaveApprovalSideEffects<br/>审批副作用流转]
+            LeaveSide[ManagerApproveListener<br/>审批副作用处理]
         end
 
         subgraph Modules["应用服务层"]
@@ -352,14 +352,8 @@ npm run serve
 ### 6. 访问系统与默认凭据
 - 打开浏览器访问：`http://localhost:8080`
 - **默认管理员账号**：`admin`
-- **默认登录密码**：`123456`（注：配置文件中 `staff.default-password: 123` 为系统后台“新建员工”时的初始重置密码）
+- **默认登录密码**：`123456`（配置文件中 `staff.default-password: 123456` 为系统后台“新建员工”时的初始重置密码）
 - 登录验证码：按本地 Redis 配置查询对应验证码键值。
 
----
 
-## 💬 交流与反馈
-
-如果您在学习或使用该项目的过程中遇到问题，欢迎加入技术交流群共同探讨：
-
-- **QQ 交流群**：`967925576`
 

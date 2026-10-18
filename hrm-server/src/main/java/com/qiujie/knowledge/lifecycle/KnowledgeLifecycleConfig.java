@@ -1,11 +1,11 @@
 package com.qiujie.knowledge.lifecycle;
 
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
-import com.qiujie.knowledge.lifecycle.port.EmbeddingProvider;
 import com.qiujie.knowledge.lifecycle.port.ObjectStore;
 import com.qiujie.knowledge.mapper.IngestionJobMapper;
 import com.qiujie.knowledge.mapper.DocsMapper;
 import com.qiujie.knowledge.service.ChunkService;
+import com.qiujie.knowledge.service.DashScopeEmbeddingClient;
 import com.qiujie.knowledge.service.DocumentParserService;
 import com.qiujie.knowledge.service.TextCleanupService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,7 +18,7 @@ import java.util.concurrent.Executor;
 
 /**
  * 文档生命周期模块装配：门面 + 管道 + 清理 + 启动恢复。
- * 三个端口（ChunkVectorStore/ObjectStore/EmbeddingProvider）的生产适配器由组件扫描注册。
+ * 两个端口（ChunkVectorStore/ObjectStore）的生产适配器由组件扫描注册；嵌入直接使用 DashScopeEmbeddingClient。
  */
 @Configuration
 public class KnowledgeLifecycleConfig {
@@ -28,12 +28,12 @@ public class KnowledgeLifecycleConfig {
                                                IngestionJobMapper jobMapper,
                                                ChunkVectorStore chunkVectorStore,
                                                ObjectStore objectStore,
-                                               EmbeddingProvider embeddingProvider,
+                                               DashScopeEmbeddingClient embeddingClient,
                                                DocumentParserService parserService,
                                                TextCleanupService textCleanupService,
                                                ChunkService chunkService) {
         return new IngestionPipeline(documentMapper, jobMapper, chunkVectorStore, objectStore,
-                embeddingProvider, parserService, textCleanupService, chunkService);
+                embeddingClient, parserService, textCleanupService, chunkService);
     }
 
     @Bean

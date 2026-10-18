@@ -1209,44 +1209,64 @@ CREATE TABLE `sys_staff`  (
 -- ----------------------------
 -- Records of sys_staff
 -- ----------------------------
-INSERT INTO `sys_staff` VALUES (1, 'admin', '秋', 0, '$2a$10$hPdTHgqXy0hEAoSVu3BNAeq1H5vwHUUZ5XgQRLIwIGCouJLoTXNy2', '1e5d5a99c64ebb883dc8.jpg', '2000-12-06', '13991849313', '广东', '四川南充的', 12, 1, '2022-01-22 19:46:27', '2026-04-25 20:09:56', 0);
-INSERT INTO `sys_staff` VALUES (2, 'staff_2', 'lucy', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1998-04-17', '', '长沙', '', 12, 1, '2022-02-22 19:47:58', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (3, 'staff_3', '清河', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-14', '15808425011', '南京', '', 13, 1, '2022-12-22 19:48:47', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (4, 'staff_4', 'john', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', NULL, NULL, '', 13, 1, '2022-10-22 19:49:42', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (5, 'staff_5', 'joy', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1997-01-01', NULL, NULL, '', 12, 1, '2022-01-27 14:32:37', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (6, 'staff_6', 'harden', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-06-01', NULL, NULL, '', 12, 1, '2022-01-27 14:36:17', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (7, 'staff_7', 'alice', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, NULL, NULL, '', 13, 1, '2022-11-20 18:00:21', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (8, 'staff_8', '温婉', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '2000-10-19', NULL, '南充', '', 12, 1, '2022-02-20 18:00:54', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (9, 'staff_9', '司藤', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, NULL, '达那', '', 17, 1, '2022-03-20 18:01:04', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (10, 'staff_10', '秦放', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, NULL, NULL, '', 5, 1, '2022-10-20 18:02:17', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (11, 'staff_11', '小雨', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, NULL, NULL, '', 3, 0, '2022-02-20 20:06:01', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (12, 'staff_12', '小明', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', NULL, '南充', '', 12, 1, '2022-05-21 12:51:18', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (13, 'staff_13', '梧桐', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', NULL, '北京', '', 3, 1, '2022-09-21 12:59:00', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (14, 'staff_14', '福瑞', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1997-02-13', NULL, '苍城山', '', 10, 1, '2022-02-21 13:02:59', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (15, 'staff_15', '瓦房', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '2011-06-08', NULL, '苍城山', '', 8, 1, '2022-07-21 13:13:37', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (16, 'staff_16', '白金', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1999-06-25', NULL, '金陵', '', 3, 0, '2022-04-21 13:30:49', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (17, 'staff_17', '小王', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', NULL, '上海', '', 13, 1, '2022-12-21 14:19:38', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (18, 'staff_18', '白英', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', '13991849316', '申海', '', 8, 1, '2022-03-21 23:55:31', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (19, 'staff_19', '西竹', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', '13991849316', '禹航', '', 5, 1, '2022-02-22 11:31:00', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (20, 'staff_20', '跳跳', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', '13991849316', '北京', '', 3, 1, '2022-06-22 11:53:28', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (21, 'staff_21', '何呵', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', '13991849316', '杭州', '', 9, 1, '2022-03-22 19:46:27', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (22, 'staff_22', '秋冬', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', '13991849316', '成都', '', 10, 0, '2022-01-22 19:46:27', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (23, 'staff_23', '林拜', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, NULL, NULL, '', 3, 1, '2022-02-22 13:48:13', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (24, 'staff_24', '老板', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, NULL, NULL, '', 2, 0, '2022-08-23 20:00:41', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (25, 'staff_25', '林致', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', '13991849316', '武汉', '', 5, 0, '2022-01-22 19:46:27', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (26, 'staff_26', '柱子', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', '13991849316', '武汉', '', 13, 1, '2022-08-25 16:52:55', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (27, 'staff_27', '秋天', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', '13991849316', '武汉', '', 9, 1, '2022-02-26 09:34:31', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (28, 'staff_28', '李振', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', '', '北京', '', 10, 1, '2022-03-26 15:54:50', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (29, 'staff_29', '擎天', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, NULL, NULL, '', 10, 0, '2022-02-26 15:58:19', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (30, 'staff_30', '秦汉', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1996-12-05', NULL, NULL, '', 9, 1, '2022-03-20 11:33:05', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (31, 'staff_31', '林玥', 1, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1997-03-13', NULL, NULL, '', 5, 1, '2022-03-20 11:43:40', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (32, 'staff_32', 'jooo', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1998-03-16', NULL, NULL, '', 12, 1, '2022-03-20 16:37:07', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (33, 'staff_33', '张三', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, '13991849316', '天津', '', 2, 1, '2022-03-20 16:57:01', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (34, 'staff_34', '李四', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, '13991849316', '北京', '', 2, 0, '2022-03-20 16:57:01', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (35, 'staff_35', '王五', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, '13991849316', '上海', '', 5, 1, '2022-03-20 16:57:01', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (36, 'staff_36', 'harden', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', NULL, NULL, NULL, '', 13, 0, '2022-12-28 21:18:12', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (37, 'staff_37', '李云龙', 0, '$2a$10$aF8D3SSjyDYLwwfTY3HKBelkHMhmgGivzbjT7KCq8qUj71XtLRvDm', '', '1989-07-12', '13990839927', '平安县', '', 19, 1, '2023-01-09 22:58:36', '2024-04-27 21:28:07', 0);
-INSERT INTO `sys_staff` VALUES (43, 'staff_43', '若依', 1, '$2a$10$5luvC4HpaIJQU02rFYKYAuXIKZg1LHp9GMbcnYZHTEgQiFnH9LtOi', NULL, '2010-06-05', NULL, '厦门', '', 17, 1, '2024-04-11 16:55:45', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (1, 'admin', '秋', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '1e5d5a99c64ebb883dc8.jpg', '2000-12-06', '13991849313', '广东', '四川南充的', 12, 1, '2022-01-22 19:46:27', '2026-04-25 20:09:56', 0);
+INSERT INTO `sys_staff` VALUES (2, 'staff_2', 'lucy', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1998-04-17', '', '长沙', '', 12, 1, '2022-02-22 19:47:58', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (3, 'staff_3', '清河', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-14', '15808425011', '南京', '', 13, 1, '2022-12-22 19:48:47', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (4, 'staff_4', 'john', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', NULL, NULL, '', 13, 1, '2022-10-22 19:49:42', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (5, 'staff_5', 'joy', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1997-01-01', NULL, NULL, '', 12, 1, '2022-01-27 14:32:37', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (6, 'staff_6', 'harden', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-06-01', NULL, NULL, '', 12, 1, '2022-01-27 14:36:17', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (7, 'staff_7', 'alice', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, NULL, NULL, '', 13, 1, '2022-11-20 18:00:21', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (8, 'staff_8', '温婉', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '2000-10-19', NULL, '南充', '', 12, 1, '2022-02-20 18:00:54', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (9, 'staff_9', '司藤', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, NULL, '达那', '', 17, 1, '2022-03-20 18:01:04', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (10, 'staff_10', '秦放', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, NULL, NULL, '', 5, 1, '2022-10-20 18:02:17', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (11, 'staff_11', '小雨', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, NULL, NULL, '', 3, 0, '2022-02-20 20:06:01', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (12, 'staff_12', '小明', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', NULL, '南充', '', 12, 1, '2022-05-21 12:51:18', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (13, 'staff_13', '梧桐', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', NULL, '北京', '', 3, 1, '2022-09-21 12:59:00', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (14, 'staff_14', '福瑞', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1997-02-13', NULL, '苍城山', '', 10, 1, '2022-02-21 13:02:59', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (15, 'staff_15', '瓦房', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '2011-06-08', NULL, '苍城山', '', 8, 1, '2022-07-21 13:13:37', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (16, 'staff_16', '白金', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1999-06-25', NULL, '金陵', '', 3, 0, '2022-04-21 13:30:49', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (17, 'staff_17', '小王', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', NULL, '上海', '', 13, 1, '2022-12-21 14:19:38', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (18, 'staff_18', '白英', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', '13991849316', '申海', '', 8, 1, '2022-03-21 23:55:31', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (19, 'staff_19', '西竹', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', '13991849316', '禹航', '', 5, 1, '2022-02-22 11:31:00', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (20, 'staff_20', '跳跳', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', '13991849316', '北京', '', 3, 1, '2022-06-22 11:53:28', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (21, 'staff_21', '何呵', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', '13991849316', '杭州', '', 9, 1, '2022-03-22 19:46:27', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (22, 'staff_22', '秋冬', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', '13991849316', '成都', '', 10, 0, '2022-01-22 19:46:27', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (23, 'staff_23', '林拜', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, NULL, NULL, '', 3, 1, '2022-02-22 13:48:13', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (24, 'staff_24', '老板', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, NULL, NULL, '', 2, 0, '2022-08-23 20:00:41', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (25, 'staff_25', '林致', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', '13991849316', '武汉', '', 5, 0, '2022-01-22 19:46:27', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (26, 'staff_26', '柱子', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', '13991849316', '武汉', '', 13, 1, '2022-08-25 16:52:55', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (27, 'staff_27', '秋天', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', '13991849316', '武汉', '', 9, 1, '2022-02-26 09:34:31', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (28, 'staff_28', '李振', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', '', '北京', '', 10, 1, '2022-03-26 15:54:50', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (29, 'staff_29', '擎天', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, NULL, NULL, '', 10, 0, '2022-02-26 15:58:19', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (30, 'staff_30', '秦汉', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1996-12-05', NULL, NULL, '', 9, 1, '2022-03-20 11:33:05', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (31, 'staff_31', '林玥', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1997-03-13', NULL, NULL, '', 5, 1, '2022-03-20 11:43:40', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (32, 'staff_32', 'jooo', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1998-03-16', NULL, NULL, '', 12, 1, '2022-03-20 16:37:07', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (33, 'staff_33', '张三', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, '13991849316', '天津', '', 2, 1, '2022-03-20 16:57:01', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (34, 'staff_34', '李四', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, '13991849316', '北京', '', 2, 0, '2022-03-20 16:57:01', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (35, 'staff_35', '王五', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, '13991849316', '上海', '', 5, 1, '2022-03-20 16:57:01', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (36, 'staff_36', 'harden', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', NULL, NULL, NULL, '', 13, 0, '2022-12-28 21:18:12', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (37, 'staff_37', '李云龙', 0, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', '', '1989-07-12', '13990839927', '平安县', '', 19, 1, '2023-01-09 22:58:36', '2024-04-27 21:28:07', 0);
+INSERT INTO `sys_staff` VALUES (43, 'staff_43', '若依', 1, '$2a$10$G3VXzhUCEi5fK2rUuuVdXujxgpWVrj/MdmoJE3JwlF70m/wxfnRjq', NULL, '2010-06-05', NULL, '厦门', '', 17, 1, '2024-04-11 16:55:45', '2024-04-27 21:28:07', 0);
+
+-- ----------------------------
+-- Table structure for sys_notification
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_notification`;
+CREATE TABLE `sys_notification`  (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '通知id',
+  `staff_id` int UNSIGNED NOT NULL COMMENT '接收人员工id',
+  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知类型，如 LEAVE_SUBMITTED',
+  `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知标题',
+  `body` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '通知内容',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '业务类型，如 LEAVE',
+  `biz_id` int UNSIGNED NULL DEFAULT NULL COMMENT '业务主键',
+  `read_flag` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否已读，0未读，1已读',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '逻辑删除，0未删除，1已删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_notification_staff_read` (`staff_id`, `read_flag`, `create_time`)
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '站内通知表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for chat_session

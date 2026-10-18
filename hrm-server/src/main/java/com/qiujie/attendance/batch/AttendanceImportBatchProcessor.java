@@ -11,6 +11,7 @@ import com.qiujie.attendance.mapper.AttendanceMapper;
 import com.qiujie.dept.mapper.DeptMapper;
 import com.qiujie.staff.mapper.StaffMapper;
 import com.qiujie.util.DatetimeUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -46,20 +47,14 @@ public class AttendanceImportBatchProcessor {
 
     private static final int DB_BATCH_SIZE = 200;
 
-    private final AttendanceMapper attendanceMapper;
-    private final DeptMapper deptMapper;
-    private final StaffMapper staffMapper;
-    private final TransactionTemplate transactionTemplate;
-
-    public AttendanceImportBatchProcessor(AttendanceMapper attendanceMapper,
-                                          DeptMapper deptMapper,
-                                          StaffMapper staffMapper,
-                                          TransactionTemplate transactionTemplate) {
-        this.attendanceMapper = attendanceMapper;
-        this.deptMapper = deptMapper;
-        this.staffMapper = staffMapper;
-        this.transactionTemplate = transactionTemplate;
-    }
+    @Autowired
+    private AttendanceMapper attendanceMapper;
+    @Autowired
+    private DeptMapper deptMapper;
+    @Autowired
+    private StaffMapper staffMapper;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     public Result process(List<AttendanceImportRow> rows, Long taskId,
                           Consumer<FileTaskError> errorCollector) {

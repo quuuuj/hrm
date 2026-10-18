@@ -25,22 +25,19 @@ public class MinioStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(MinioStorageService.class);
 
-    private final String endpoint;
-    private final String accessKey;
-    private final String secretKey;
-    private final String bucket;
-    private MinioClient client;
+    @Value("${storage.minio.endpoint}")
+    private String endpoint;
 
-    public MinioStorageService(
-            @Value("${storage.minio.endpoint}") String endpoint,
-            @Value("${storage.minio.access-key}") String accessKey,
-            @Value("${storage.minio.secret-key}") String secretKey,
-            @Value("${storage.minio.bucket}") String bucket) {
-        this.endpoint = endpoint;
-        this.accessKey = accessKey;
-        this.secretKey = secretKey;
-        this.bucket = bucket;
-    }
+    @Value("${storage.minio.access-key}")
+    private String accessKey;
+
+    @Value("${storage.minio.secret-key}")
+    private String secretKey;
+
+    @Value("${storage.minio.bucket}")
+    private String bucket;
+
+    private MinioClient client;
 
     @PostConstruct
     void init() {

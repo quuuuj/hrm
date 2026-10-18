@@ -1,6 +1,8 @@
 package com.qiujie.knowledge.mapper;
 
 import com.qiujie.knowledge.entity.DocumentChunk;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -18,10 +20,17 @@ import java.util.List;
 @Component
 public class DocumentChunkMapper {
 
-    private final JdbcTemplate jdbc;
+    @Autowired
+    @Qualifier("kbDataSource")
+    private DataSource kbDataSource;
 
-    public DocumentChunkMapper(@Qualifier("kbDataSource") DataSource kbDataSource) {
-        this.jdbc = new JdbcTemplate(kbDataSource);
+    private JdbcTemplate jdbc;
+
+    @PostConstruct
+    public void init() {
+        if (kbDataSource != null) {
+            this.jdbc = new JdbcTemplate(kbDataSource);
+        }
     }
 
     private static final RowMapper<DocumentChunk> ROW_MAPPER = (rs, rowNum) -> new DocumentChunk()

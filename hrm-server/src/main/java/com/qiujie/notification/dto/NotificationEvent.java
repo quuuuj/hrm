@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
  */
 public class NotificationEvent {
 
+    private Integer id;
     private String type;
     private String title;
     private String body;
@@ -18,11 +19,20 @@ public class NotificationEvent {
     public NotificationEvent() {
     }
 
-    public NotificationEvent(String type, String title, String body) {
+    public NotificationEvent(Integer id, String type, String title, String body) {
+        this.id = id;
         this.type = type;
         this.title = title;
         this.body = body;
         this.time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getType() {

@@ -2,6 +2,7 @@ package com.qiujie.filetask.spi;
 
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.enums.TaskModuleEnum;
+import com.qiujie.filetask.excel.AiHeaderMatcherImpl;
 import com.qiujie.filetask.excel.FlexibleExcelImporter;
 
 import java.io.File;
@@ -25,12 +26,12 @@ public final class FlexibleExcelImportReader<T> implements ImportReader<T> {
     private final int headRowNumber;
     private final TaskModuleEnum module;
     private final Class<T> rowClass;
-    private final FlexibleExcelImporter.AiHeaderMatcher fallback;
+    private final AiHeaderMatcherImpl fallback;
 
     public FlexibleExcelImportReader(int headRowNumber,
                                      TaskModuleEnum module,
                                      Class<T> rowClass,
-                                     FlexibleExcelImporter.AiHeaderMatcher fallback) {
+                                     AiHeaderMatcherImpl fallback) {
         this.headRowNumber = headRowNumber;
         this.module = module;
         this.rowClass = rowClass;
