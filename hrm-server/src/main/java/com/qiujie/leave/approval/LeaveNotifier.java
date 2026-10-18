@@ -2,7 +2,9 @@ package com.qiujie.leave.approval;
 
 import com.qiujie.leave.entity.StaffLeave;
 import com.qiujie.leave.enums.AuditStatusEnum;
+import com.qiujie.notification.constant.NotificationBizType;
 import com.qiujie.notification.dto.NotificationMessage;
+import com.qiujie.notification.enums.NotificationCategoryEnum;
 import com.qiujie.notification.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,7 +25,7 @@ import java.util.List;
 @Component
 public class LeaveNotifier {
 
-    private static final String BIZ_TYPE = "LEAVE";
+    private static final String BIZ_TYPE = NotificationBizType.LEAVE;
 
     @Autowired
     private NotificationService notificationService;
@@ -37,11 +39,12 @@ public class LeaveNotifier {
     public void onLeaveSubmitted(StaffLeave leave, List<Integer> hrIds) {
         String desc = leave.getDays() + "天请假，等待审批";
         notificationService.send(NotificationMessage.to(leave.getStaffId(), "LEAVE_SUBMITTED",
-                "请假申请已提交", desc, BIZ_TYPE, leave.getId()));
+                NotificationCategoryEnum.INFO, "请假申请已提交", desc, BIZ_TYPE, bizId(leave)));
 
         if (hrIds != null && !hrIds.isEmpty()) {
             notificationService.send(NotificationMessage.to(hrIds, "LEAVE_PENDING",
-                    "新的请假申请", "员工提交了" + leave.getDays() + "天请假", BIZ_TYPE, leave.getId()));
+                    NotificationCategoryEnum.INFO, "新的请假申请",
+                    "员工提交了" + leave.getDays() + "天请假", BIZ_TYPE, bizId(leave)));
         }
     }
 
@@ -56,7 +59,8 @@ public class LeaveNotifier {
             return;
         }
         notificationService.send(NotificationMessage.to(managerIds, "LEAVE_MANAGER_PENDING",
-                "请假待您审批", "员工提交了" + leave.getDays() + "天请假，人事已通过", BIZ_TYPE, leave.getId()));
+                NotificationCategoryEnum.INFO, "请假待您审批",
+                "员工提交了" + leave.getDays() + "天请假，人事已通过", BIZ_TYPE, bizId(leave)));
     }
 
     /**
@@ -67,9 +71,15 @@ public class LeaveNotifier {
     public void onLeaveCompleted(StaffLeave leave) {
         boolean approved = AuditStatusEnum.APPROVE.equals(leave.getStatus());
         String type = approved ? "LEAVE_APPROVED" : "LEAVE_REJECTED";
+        NotificationCategoryEnum category = approved
+                ? NotificationCategoryEnum.SUCCESS : NotificationCategoryEnum.ERROR;
         String title = "请假" + (approved ? "已通过" : "已拒绝");
         String body = leave.getDays() + "天请假" + (approved ? "已通过" : "已拒绝");
         notificationService.send(NotificationMessage.to(leave.getStaffId(), type,
-                title, body, BIZ_TYPE, leave.getId()));
+                category, title, body, BIZ_TYPE, bizId(leave)));
+    }
+
+    private Long bizId(StaffLeave leave) {
+        return leave.getId() == null ? null : leave.getId().longValue();
     }
 }

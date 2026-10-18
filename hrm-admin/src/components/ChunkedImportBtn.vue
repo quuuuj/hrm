@@ -46,6 +46,12 @@ export default {
       progressText: '导入中...'
     }
   },
+  computed: {
+    /** 文档/知识库上传：importApi 以 /upload 结尾，合并分片时后端直接创建任务 */
+    isDocsUpload () {
+      return /\/upload$/.test(this.importApi)
+    }
+  },
   methods: {
     /** 文件选择后的主流程：上传 → 创建业务任务 */
     async handleFileChange (e) {
@@ -56,7 +62,8 @@ export default {
         // 阶段一：分片上传文件到 MinIO
         const uploadId = await this.doChunkedUpload(file)
         // 阶段二：调用业务接口创建导入任务
-        await this.createImportTask(uploadId)
+        // 文档模块在合并分片时已由后端回调创建任务，无需再调业务接口
+        if (!this.isDocsUpload) await this.createImportTask(uploadId)
         this.$emit('success', uploadId)
       } catch (err) {
         this.$message.error(err.message || '导入失败')
@@ -72,7 +79,8 @@ export default {
     async doChunkedUpload (file) {
       const chunkSize = DEFAULT_CHUNK_SIZE
       const chunkCount = Math.ceil(file.size / chunkSize)
-      const baseUploadUrl = this.importApi ? this.importApi.replace(/\/upload$/, '') : ''
+      // 文档模块的上传端点位于业务前缀下（/docs/upload/*）；业务数据导入复用 /file-task 的分片上传
+      const baseUploadUrl = this.isDocsUpload ? this.importApi.replace(/\/upload$/, '') : '/file-task'
 
       // 阶段 1: 初始化上传会话，获取 uploadId
       const initRes = await uploadInit({

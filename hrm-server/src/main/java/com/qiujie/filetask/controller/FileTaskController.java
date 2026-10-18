@@ -7,10 +7,8 @@ import com.qiujie.filetask.service.FileUploadService;
 import com.qiujie.staff.service.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -30,12 +28,6 @@ public class FileTaskController {
 
     @Autowired
     private SecurityUtil securityUtil;
-
-    @Operation(summary = "SSE 订阅任务状态更新")
-    @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe() {
-        return this.fileTaskCoordinator.subscribe();
-    }
 
     @Operation(summary = "查询文件任务")
     @GetMapping

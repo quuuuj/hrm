@@ -28,6 +28,14 @@
       </el-button>
     </div>
 
+    <FileTaskCard
+      :task-list="taskList"
+      :loading="taskLoading"
+      :highlight-task-id="$route.query.taskId"
+      @download="downloadTask"
+      @refresh="loadTasks(fileTaskModule)"
+    />
+
     <div class="manage-header">
       <el-form label-width="auto" :model="searchForm.formData" :inline="true" size="mini">
         <el-form-item label="姓名" prop="name">
@@ -106,6 +114,8 @@
 
 <script>
 import ChunkedImportBtn from '@/components/ChunkedImportBtn'
+import FileTaskCard from '@/components/FileTaskCard'
+import fileTaskMixin from '@/mixins/fileTaskMixin'
 import {
   queryAll,
   queryByStaffIdAndDate,
@@ -117,9 +127,11 @@ import {
 import { queryAll as queryAllDept } from '@/api/dept'
 export default {
   name: 'Attendance',
-  components: { ChunkedImportBtn },
+  components: { ChunkedImportBtn, FileTaskCard },
+  mixins: [fileTaskMixin],
   data () {
     return {
+      fileTaskModule: 'ATTENDANCE',
       dialog: {
         isShow: false,
         data: {},
@@ -242,30 +254,26 @@ export default {
       }).then(response => {
         if (response.code === 200) {
           this.$message.success(response.message || '导出任务已创建')
+          this.loadTasks(this.fileTaskModule)
         } else {
           this.$message.error(response.message)
         }
       })
     },
     handleImportSuccess () {
-      // 任务创建成功，等待 SSE 通知导入完成后再刷新
+      // 任务已创建，立即刷新任务列表，让 PENDING 任务出现
+      this.loadTasks(this.fileTaskModule)
     },
     handleImportError () {
       // 组件内已显示错误提示
     },
-    onTaskCompleted (task) {
-      if (task.module === 'ATTENDANCE') {
-        this.search()
-      }
+    onTaskCompleted () {
+      this.search()
     }
   },
   created () {
     this.loadBaseData()
     this.search()
-    this.$root.$on('task-completed', this.onTaskCompleted)
-  },
-  beforeDestroy () {
-    this.$root.$off('task-completed', this.onTaskCompleted)
   }
 }
 </script>
@@ -286,13 +294,6 @@ export default {
 
 ::v-deep .task-card {
   flex: 0 0 auto;
-  margin-bottom: 12px;
-}
-
-::v-deep .task-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .manage-header {
@@ -301,7 +302,8 @@ export default {
 
 .common-table {
   flex: 1 1 auto;
-  min-height: 260px;
+  min-height: 0;
+  height: auto;
   background-color: white;
   position: relative;
 

@@ -68,6 +68,14 @@
       </el-button>
     </div>
 
+    <FileTaskCard
+      :task-list="taskList"
+      :loading="taskLoading"
+      :highlight-task-id="$route.query.taskId"
+      @download="downloadTask"
+      @refresh="loadTasks(fileTaskModule)"
+    />
+
     <!---------------------- 搜索 ----------------------------->
     <div class="manage-header">
       <el-form label-width="auto" :model="searchForm.formData"
@@ -149,13 +157,16 @@
 <script>
 // eslint-disable-next-line no-unused-vars
 import ChunkedImportBtn from '@/components/ChunkedImportBtn'
+import FileTaskCard from '@/components/FileTaskCard'
+import fileTaskMixin from '@/mixins/fileTaskMixin'
 import { queryByStaffIdAndDate, getAsyncImportApi, list, setOvertime, createExportTask } from '@/api/staffOvertime'
 import { queryByDeptIdAndTypeNum } from '@/api/overtime'
 import { queryAll } from '@/api/dept'
 
 export default {
   name: 'Overtime',
-  components: { ChunkedImportBtn },
+  components: { ChunkedImportBtn, FileTaskCard },
+  mixins: [fileTaskMixin],
   data () {
     const checkTotalOvertime = (rule, value, callback) => {
       if (value <= 0) {
@@ -165,6 +176,7 @@ export default {
       }
     }
     return {
+      fileTaskModule: 'STAFF_OVERTIME',
       dialogForm: {
         isShow: false,
         formData: {
@@ -306,21 +318,21 @@ export default {
       })
     },
     handleAsyncImportSuccess () {
-      // 任务创建成功，等待 SSE 通知导入完成后再刷新
+      // 任务已创建，立即刷新任务列表，让 PENDING 任务出现
+      this.loadTasks(this.fileTaskModule)
     },
     handleImportError () {
       // 组件内已显示错误提示
     },
-    onTaskCompleted (task) {
-      if (task.module === 'OVERTIME') {
-        this.search()
-      }
+    onTaskCompleted () {
+      this.search()
     },
     handleExportAsync () {
       const filename = this.month.substring(0, 4) + '年' + this.month.substring(4) + '月加班报表'
       createExportTask(this.month, filename).then(response => {
         if (response.code === 200) {
-          this.$message.success('已提交异步导出，可在头像通知栏查看进度')
+          this.$message.success('已提交异步导出，可在任务列表下载')
+          this.loadTasks(this.fileTaskModule)
         } else {
           this.$message.error(response.message || '提交失败')
         }
@@ -329,16 +341,24 @@ export default {
   },
   created () {
     this.loading()
-    this.$root.$on('task-completed', this.onTaskCompleted)
-  },
-  beforeDestroy () {
-    this.$root.$off('task-completed', this.onTaskCompleted)
   }
 }
 </script>
 <style lang="less" scoped>
+.manage {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+::v-deep .task-card {
+  flex: 0 0 auto;
+}
+
 .common-table {
-  height: calc(100% - 62px);
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
   background-color: white;
   position: relative;
 

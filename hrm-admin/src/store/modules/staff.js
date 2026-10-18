@@ -1,4 +1,5 @@
 import router, { resetRouter } from '../../router'
+import { close as closeSse } from '../../utils/sse'
 
 const STAFF_ID_KEY = 'staffId'
 
@@ -24,6 +25,7 @@ export default {
   },
   actions: {
     logout ({ commit }) {
+      closeSse()
       localStorage.clear()
       sessionStorage.removeItem(STAFF_ID_KEY)
       commit('token/SET_AUTH', false, { root: true })

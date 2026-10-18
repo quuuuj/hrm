@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
-import com.qiujie.common.sse.SseService;
 import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.enums.TaskFileTypeEnum;
@@ -16,7 +15,6 @@ import com.qiujie.staff.service.SecurityUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,8 +36,6 @@ public class FileTaskQueryService {
     private FileTaskErrorService fileTaskErrorService;
     @Autowired
     private ArtifactStore artifactStore;
-    @Autowired
-    private SseService sseService;
     @Autowired
     private SecurityUtil securityUtil;
 
@@ -91,14 +87,6 @@ public class FileTaskQueryService {
         map.put("total", page.getTotal());
         map.put("list", page.getRecords());
         return Response.success(map);
-    }
-
-    public SseEmitter subscribeSse() {
-        Integer operatorId = getCurrentOperatorId();
-        if (operatorId == null) {
-            return null;
-        }
-        return sseService.subscribe(operatorId);
     }
 
     public void download(Long id, String fileType, HttpServletResponse response) throws IOException {

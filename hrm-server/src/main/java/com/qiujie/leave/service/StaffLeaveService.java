@@ -447,6 +447,16 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
             return Response.error(BusinessStatusEnum.UNAUTHORIZED);
         }
 
+        // 先校验任务归属：重复提交/任务已被他人处理时直接返回，避免业务状态被误更新
+        Task task = this.taskService.createTaskQuery().processDefinitionKey("leave")
+                .processInstanceBusinessKey(staffLeave.getId().toString())
+                .taskAssignee(code).singleResult();
+
+        if (task == null) {
+            log.warn("Leave audit task not found: leaveId={}, assignee={}", staffLeave.getId(), code);
+            return Response.error("任务不存在或未分配给你（可能已被归还或他人已处理）");
+        }
+
         if (!updateById(staffLeave)) {
             return Response.error();
         }
@@ -455,15 +465,6 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
         StaffLeave persisted = this.getById(staffLeave.getId());
         if (persisted == null) {
             return Response.error("请假记录不存在");
-        }
-
-        Task task = this.taskService.createTaskQuery().processDefinitionKey("leave")
-                .processInstanceBusinessKey(staffLeave.getId().toString())
-                .taskAssignee(code).singleResult();
-
-        if (task == null) {
-            log.warn("Leave audit task not found: leaveId={}, assignee={}", staffLeave.getId(), code);
-            return Response.error("任务不存在或未分配给你（可能已被归还或他人已处理）");
         }
 
         Map<String, Object> map = new HashMap<>();

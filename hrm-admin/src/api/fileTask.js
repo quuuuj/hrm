@@ -10,6 +10,13 @@ export const list = (params) => {
   })
 }
 
+export const detail = (id) => {
+  return request({
+    url: url + '/' + id,
+    method: 'get'
+  })
+}
+
 export const queryErrors = (id, params) => {
   return request({
     url: url + '/' + id + '/errors',

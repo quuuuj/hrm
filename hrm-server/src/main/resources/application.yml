@@ -90,6 +90,12 @@ jwt:
 staff:
   default-password: 123456
 
+notification:
+  retention-days: 30
+
+file-task:
+  retention-days: 30
+
 chat:
   enabled: true
   timeout-seconds: 15

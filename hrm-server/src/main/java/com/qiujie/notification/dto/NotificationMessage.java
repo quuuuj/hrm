@@ -1,5 +1,6 @@
 package com.qiujie.notification.dto;
 
+import com.qiujie.notification.enums.NotificationCategoryEnum;
 import lombok.Getter;
 
 import java.util.Collections;
@@ -18,15 +19,17 @@ public class NotificationMessage {
 
     private final List<Integer> staffIds;
     private final String type;
+    private final NotificationCategoryEnum category;
     private final String title;
     private final String body;
     private final String bizType;
-    private final Integer bizId;
+    private final Long bizId;
 
-    private NotificationMessage(List<Integer> staffIds, String type, String title,
-                                String body, String bizType, Integer bizId) {
+    private NotificationMessage(List<Integer> staffIds, String type, NotificationCategoryEnum category,
+                                String title, String body, String bizType, Long bizId) {
         this.staffIds = staffIds;
         this.type = type;
+        this.category = category;
         this.title = title;
         this.body = body;
         this.bizType = bizType;
@@ -34,16 +37,16 @@ public class NotificationMessage {
     }
 
     /** 单个收件人 */
-    public static NotificationMessage to(Integer staffId, String type, String title,
-                                         String body, String bizType, Integer bizId) {
+    public static NotificationMessage to(Integer staffId, String type, NotificationCategoryEnum category,
+                                         String title, String body, String bizType, Long bizId) {
         // 允许 null，由 NotificationService.send 过滤；通知失败不应阻断业务
         return new NotificationMessage(Collections.singletonList(staffId),
-                type, title, body, bizType, bizId);
+                type, category, title, body, bizType, bizId);
     }
 
     /** 多个收件人 */
-    public static NotificationMessage to(List<Integer> staffIds, String type, String title,
-                                         String body, String bizType, Integer bizId) {
-        return new NotificationMessage(staffIds, type, title, body, bizType, bizId);
+    public static NotificationMessage to(List<Integer> staffIds, String type, NotificationCategoryEnum category,
+                                         String title, String body, String bizType, Long bizId) {
+        return new NotificationMessage(staffIds, type, category, title, body, bizType, bizId);
     }
 }

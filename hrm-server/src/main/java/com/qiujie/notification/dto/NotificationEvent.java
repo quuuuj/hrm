@@ -1,5 +1,9 @@
 package com.qiujie.notification.dto;
 
+import com.qiujie.notification.entity.Notification;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -8,62 +12,35 @@ import java.time.format.DateTimeFormatter;
  *
  * @author qiujie
  */
+@Getter
+@Setter
 public class NotificationEvent {
+
+    private static final DateTimeFormatter TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private Integer id;
     private String type;
+    private String category;
     private String title;
     private String body;
+    private String bizType;
+    private Long bizId;
     private String time;
 
     public NotificationEvent() {
     }
 
-    public NotificationEvent(Integer id, String type, String title, String body) {
-        this.id = id;
-        this.type = type;
-        this.title = title;
-        this.body = body;
-        this.time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getBody() {
-        return body;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
-    }
-
-    public String getTime() {
-        return time;
-    }
-
-    public void setTime(String time) {
-        this.time = time;
+    public static NotificationEvent from(Notification notification) {
+        NotificationEvent event = new NotificationEvent();
+        event.setId(notification.getId());
+        event.setType(notification.getType());
+        event.setCategory(notification.getCategory() == null ? null : notification.getCategory().getValue());
+        event.setTitle(notification.getTitle());
+        event.setBody(notification.getBody());
+        event.setBizType(notification.getBizType());
+        event.setBizId(notification.getBizId());
+        event.setTime(LocalDateTime.now().format(TIME_FORMATTER));
+        return event;
     }
 }

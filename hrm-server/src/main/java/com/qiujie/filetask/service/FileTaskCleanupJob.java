@@ -5,7 +5,10 @@ import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.mapper.FileTaskMapper;
 import com.qiujie.filetask.store.ArtifactStore;
+import com.qiujie.notification.constant.NotificationBizType;
+import com.qiujie.notification.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -19,19 +22,29 @@ import java.util.List;
 @Component
 public class FileTaskCleanupJob {
 
+    @Value("${file-task.retention-days}")
+    private long retentionDays;
+
     @Autowired
     private FileTaskMapper fileTaskMapper;
     @Autowired
     private FileTaskErrorService fileTaskErrorService;
     @Autowired
     private ArtifactStore artifactStore;
+    @Autowired
+    private NotificationService notificationService;
 
     @Scheduled(cron = "0 0 3 * * ?")
     public void cleanExpiredTaskFiles() {
-        LocalDateTime expireTime = LocalDateTime.now().minusDays(7);
+        LocalDateTime expireTime = LocalDateTime.now().minusDays(retentionDays);
         QueryWrapper<FileTask> queryWrapper = new QueryWrapper<>();
         queryWrapper.lt("create_time", Timestamp.valueOf(expireTime));
         List<FileTask> expiredTasks = fileTaskMapper.selectList(queryWrapper);
+        if (expiredTasks.isEmpty()) {
+            return;
+        }
+        notificationService.deleteByBizTypeAndIds(NotificationBizType.FILE_TASK,
+                expiredTasks.stream().map(FileTask::getId).toList());
         for (FileTask task : expiredTasks) {
             if (task.getSourceFilePath() != null) {
                 artifactStore.delete(task.getSourceFilePath());
