@@ -49,4 +49,19 @@ public class DatetimeUtil {
         String str = DateUtil.format(date, "yyyy-MM-dd");
         return holidayConfig.getHolidays().contains(str);
     }
+
+    /**
+     * 判断当前日期是否是工作日：补班的周末，或 既非周末也非法定节假日。
+     * 请假调休折算与审批考勤写入共用此判定，保持同口径
+     *
+     * @param date
+     * @return
+     */
+    public boolean isWorkday(Date date) {
+        String str = DateUtil.format(date, "yyyy-MM-dd");
+        if (holidayConfig.getMakeupWorkdays() != null && holidayConfig.getMakeupWorkdays().contains(str)) {
+            return true;
+        }
+        return !DateUtil.isWeekend(date) && !isHoliday(date);
+    }
 }

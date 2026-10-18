@@ -11,6 +11,7 @@ import com.qiujie.filetask.spi.ImportReader;
 import com.qiujie.filetask.spi.TaskSnapshot;
 import com.qiujie.filetask.store.TaskRepository;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
@@ -28,20 +29,15 @@ import java.io.IOException;
 @Service
 public class FileTaskCoordinator implements AsyncFileTasks {
 
-    private final TaskRepository taskRepository;
-    private final FileTaskQueryService queryService;
-    private final FileTaskEngine fileTaskEngine;
-    private final ThreadPoolTaskExecutor fileTaskExecutor;
-
-    public FileTaskCoordinator(TaskRepository taskRepository,
-                               FileTaskQueryService queryService,
-                               FileTaskEngine fileTaskEngine,
-                               @Qualifier("fileTaskExecutor") ThreadPoolTaskExecutor fileTaskExecutor) {
-        this.taskRepository = taskRepository;
-        this.queryService = queryService;
-        this.fileTaskEngine = fileTaskEngine;
-        this.fileTaskExecutor = fileTaskExecutor;
-    }
+    @Autowired
+    private TaskRepository taskRepository;
+    @Autowired
+    private FileTaskQueryService queryService;
+    @Autowired
+    private FileTaskEngine fileTaskEngine;
+    @Autowired
+    @Qualifier("fileTaskExecutor")
+    private ThreadPoolTaskExecutor fileTaskExecutor;
 
     @Override
     public <T> TaskSnapshot submitImport(AsyncFileTasks.ImportRequest<T> request) {

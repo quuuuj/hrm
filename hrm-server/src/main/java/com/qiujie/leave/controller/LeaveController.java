@@ -1,8 +1,10 @@
 package com.qiujie.leave.controller;
 
 import com.qiujie.leave.entity.Leave;
+import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
 import com.qiujie.leave.service.LeaveService;
+import com.qiujie.util.HolidayConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +27,9 @@ import java.util.List;
 public class LeaveController {
     @Autowired
     private LeaveService leaveService;
+
+    @Autowired
+    private HolidayConfig holidayConfig;
 
     @Operation(summary = "新增")
     @PostMapping
@@ -85,6 +90,12 @@ public class LeaveController {
     @GetMapping("/all")
     public ResponseDTO queryAll() {
         return this.leaveService.queryAll();
+    }
+
+    @Operation(summary = "获取节假日与补班日配置")
+    @GetMapping("/date-config")
+    public ResponseDTO queryDateConfig() {
+        return Response.success(this.holidayConfig);
     }
 
 }

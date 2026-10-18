@@ -4,6 +4,7 @@ import com.qiujie.chat.dto.ChatRequest;
 import com.qiujie.chat.entity.ChatSession;
 import com.qiujie.chat.store.ChatSessionStore;
 import com.qiujie.staff.service.SecurityUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -20,17 +21,12 @@ import java.util.Map;
 @Service
 public class ChatService {
 
-    private final ChatSessionStore sessionStore;
-    private final ChatQaService chatQaService;
-    private final SecurityUtil securityUtil;
-
-    public ChatService(ChatSessionStore sessionStore,
-                       ChatQaService chatQaService,
-                       SecurityUtil securityUtil) {
-        this.sessionStore = sessionStore;
-        this.chatQaService = chatQaService;
-        this.securityUtil = securityUtil;
-    }
+    @Autowired
+    private ChatSessionStore sessionStore;
+    @Autowired
+    private ChatQaService chatQaService;
+    @Autowired
+    private SecurityUtil securityUtil;
 
     /**
      * 流式对话入口。

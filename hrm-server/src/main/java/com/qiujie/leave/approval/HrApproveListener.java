@@ -5,37 +5,35 @@ import com.qiujie.leave.entity.StaffLeave;
 import com.qiujie.leave.enums.AuditStatusEnum;
 import com.qiujie.common.enums.BusinessStatusEnum;
 import com.qiujie.security.ServiceException;
-import com.qiujie.leave.approval.ApprovalCandidateResolver;
 import com.qiujie.leave.service.StaffLeaveService;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.staff.mapper.StaffMapper;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.flowable.engine.delegate.ExecutionListener;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * HR 审批执行监听器——流程转译层。
  * <p>
- * 请假状态置为待审 + 装配经理候选人变量，委托 {@link ApprovalCandidateResolver} 解析候选人。
+ * 请假状态置为待审 + 装配经理候选人变量（角色成员工号逗号串）。
  * </p>
  */
 @Component
 public class HrApproveListener implements ExecutionListener {
 
-    private final StaffLeaveService staffLeaveService;
-    private final ApprovalCandidateResolver candidateResolver;
-    private final RuntimeService runtimeService;
-
-    public HrApproveListener(StaffLeaveService staffLeaveService,
-                             ApprovalCandidateResolver candidateResolver,
-                             RuntimeService runtimeService) {
-        this.staffLeaveService = staffLeaveService;
-        this.candidateResolver = candidateResolver;
-        this.runtimeService = runtimeService;
-    }
+    @Autowired
+    private StaffLeaveService staffLeaveService;
+    @Autowired
+    private StaffMapper staffMapper;
+    @Autowired
+    private RuntimeService runtimeService;
 
     @Override
     @Transactional
@@ -45,8 +43,10 @@ public class HrApproveListener implements ExecutionListener {
         if (!this.staffLeaveService.update(updateWrapper)) {
             throw new ServiceException(BusinessStatusEnum.ERROR);
         }
+        String managerCodes = staffMapper.queryByRole("manager").stream()
+                .map(Staff::getCode).collect(Collectors.joining(","));
         Map<String, Object> variables = new HashMap<>();
-        variables.put("manager", candidateResolver.codesOfRole("manager"));
+        variables.put("manager", managerCodes);
         runtimeService.setVariables(execution.getId(), variables);
     }
 }

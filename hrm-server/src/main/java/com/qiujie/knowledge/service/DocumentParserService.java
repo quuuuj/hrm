@@ -28,7 +28,7 @@ public class DocumentParserService {
             return switch (fileExt.toLowerCase()) {
                 case "pdf" -> parsePdf(bytes);
                 case "docx" -> parseDocx(bytes);
-                case "md", "txt" -> parseText(bytes);
+                case "md", "txt" -> new String(bytes, detectCharset(bytes));
                 default -> throw new IllegalArgumentException("不支持的文件类型: " + fileExt);
             };
         } catch (IOException e) {
@@ -49,11 +49,6 @@ public class DocumentParserService {
              XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
             return extractor.getText();
         }
-    }
-
-    private String parseText(byte[] bytes) {
-        Charset charset = detectCharset(bytes);
-        return new String(bytes, charset);
     }
 
     /**

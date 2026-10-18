@@ -12,6 +12,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,20 +33,32 @@ public class DashScopeEmbeddingClient {
     /** 每批次提交的文本数 */
     private static final int BATCH_SIZE = 10;
 
-    private final RestTemplate restTemplate;
-    private final String nativeApiUrl;
-    private final String model;
-    private final ObjectMapper mapper;
+    @Value("${knowledge.embedding.base-url}")
+    private String baseUrl;
 
-    /**
-     * @param baseUrl DashScope 兼容接口地址，从中提取 host 构建原生 API URL
-     * @param apiKey  百炼 API Key
-     * @param model   嵌入模型名称
-     */
-    public DashScopeEmbeddingClient(
-            @Value("${knowledge.embedding.base-url}") String baseUrl,
-            @Value("${knowledge.embedding.api-key}") String apiKey,
-            @Value("${knowledge.embedding.model}") String model) {
+    @Value("${knowledge.embedding.api-key}")
+    private String apiKey;
+
+    @Value("${knowledge.embedding.model}")
+    private String model;
+
+    private RestTemplate restTemplate;
+    private String nativeApiUrl;
+    private ObjectMapper mapper;
+
+    public DashScopeEmbeddingClient() {
+    }
+
+    /** 供测试替身继承使用：直接给定配置并完成初始化。 */
+    public DashScopeEmbeddingClient(String baseUrl, String apiKey, String model) {
+        this.baseUrl = baseUrl;
+        this.apiKey = apiKey;
+        this.model = model;
+        init();
+    }
+
+    @PostConstruct
+    public void init() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5000);
         factory.setReadTimeout(30000);
@@ -53,7 +66,6 @@ public class DashScopeEmbeddingClient {
         // 从兼容模式 baseUrl 推导原生 API 地址
         String host = baseUrl.replace("/compatible-mode", "");
         this.nativeApiUrl = host + "/api/v1/services/embeddings/text-embedding/text-embedding";
-        this.model = model;
         this.mapper = new ObjectMapper();
         if (apiKey != null && !apiKey.isBlank()) {
             this.restTemplate.getInterceptors().add((request, body, execution) -> {

@@ -5,7 +5,9 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +31,11 @@ public class JwtUtil {
     public static final String TOKEN_TYPE_ACCESS = "access";
     public static final String TOKEN_TYPE_REFRESH = "refresh";
 
-    public JwtUtil(@Value("${jwt.secret}") String secretKey) {
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @PostConstruct
+    public void init() {
         signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
     }
 
@@ -74,10 +80,6 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    private static Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
-    }
-
     private static String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
         return Jwts
                 .builder()
@@ -106,7 +108,7 @@ public class JwtUtil {
     public static String generateAccessToken(Integer staffId, String permissions, String username) {
         Map<String, Object> claims = buildClaims(staffId, permissions);
         claims.put("type", TOKEN_TYPE_ACCESS);
-        return buildToken(claims, createUser(username), ACCESS_EXPIRATION);
+        return buildToken(claims, new User(username, "", new ArrayList<>()), ACCESS_EXPIRATION);
     }
 
     // 生成 Refresh Token（7 天，仅用于 /refresh 接口续期）
@@ -116,17 +118,12 @@ public class JwtUtil {
         return buildToken(claims, userDetails, REFRESH_EXPIRATION);
     }
 
-    private static UserDetails createUser(String username) {
-        return new org.springframework.security.core.userdetails.User(
-                username, "", new ArrayList<>());
-    }
-
     public static boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
     public static boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 }

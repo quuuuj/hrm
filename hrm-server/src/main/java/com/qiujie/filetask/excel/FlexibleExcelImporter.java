@@ -56,7 +56,7 @@ public final class FlexibleExcelImporter {
      */
     public static <T> List<ImportResult<T>> parse(InputStream inputStream, int headRow,
                                                     TaskModuleEnum module, Class<T> entityClass,
-                                                    AiHeaderMatcher fallback) {
+                                                    AiHeaderMatcherImpl fallback) {
         List<ImportResult<T>> results = new ArrayList<>();
         read(inputStream, headRow, module, entityClass, fallback, results::add);
         return results;
@@ -74,7 +74,7 @@ public final class FlexibleExcelImporter {
      */
     public static <T> void read(InputStream inputStream, int headRow,
                                 TaskModuleEnum module, Class<T> entityClass,
-                                AiHeaderMatcher fallback,
+                                AiHeaderMatcherImpl fallback,
                                 java.util.function.Consumer<ImportResult<T>> resultConsumer) {
         FlexibleListener<T> listener = new FlexibleListener<>(
                 headRow, module, entityClass, fallback, resultConsumer);
@@ -101,27 +101,19 @@ public final class FlexibleExcelImporter {
         public boolean isSuccess() { return entity != null; }
     }
 
-    /**
-     * AI 兜底匹配接口：传入未知列名 + 可用字段列表，返回匹配的字段名或 null。
-     */
-    @FunctionalInterface
-    public interface AiHeaderMatcher {
-        String match(String headerText, List<String> availableFields);
-    }
-
     // ==================== internal ====================
 
     private static class FlexibleListener<T> extends AnalysisEventListener<Map<Integer, String>> {
         private final int headRow;
         private final TaskModuleEnum module;
         private final Class<T> entityClass;
-        private final AiHeaderMatcher fallback;
+        private final AiHeaderMatcherImpl fallback;
         private final java.util.function.Consumer<ImportResult<T>> resultConsumer;
         private final Map<Integer, String> columnIndexToField = new LinkedHashMap<>();
         private int rowCount;
 
         FlexibleListener(int headRow, TaskModuleEnum module, Class<T> entityClass,
-                         AiHeaderMatcher fallback,
+                         AiHeaderMatcherImpl fallback,
                          java.util.function.Consumer<ImportResult<T>> resultConsumer) {
             this.headRow = headRow;
             this.module = module;

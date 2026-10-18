@@ -8,13 +8,14 @@ import com.qiujie.chat.llm.ChatLlm;
 import com.qiujie.chat.mapper.ChatMessageMapper;
 import com.qiujie.chat.mapper.ChatSessionMapper;
 import com.qiujie.chat.service.IntentGate.GateResult;
-import com.qiujie.chat.service.KnowledgeSearchProvider.SearchResult;
 import com.qiujie.staff.mapper.StaffMapper;
 import com.qiujie.staff.service.SecurityUtil;
 import com.qiujie.staff.vo.StaffDeptVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -44,44 +45,31 @@ public class ChatQaService {
     private static final long SSE_TIMEOUT = 300_000L;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final IntentGate intentGate;
-    private final ConversationWindow conversationWindow;
-    private final ChatLlm chatLlm;
-    private final KnowledgeSearchProvider searchProvider;
-    private final EvidenceAssessmentService evidenceService;
-    private final QaRecordRepository qaRecordRepository;
-    private final ChatMessageMapper messageMapper;
-    private final ChatSessionMapper sessionMapper;
-    private final StaffMapper staffMapper;
-    private final SecurityUtil securityUtil;
-    private final ChatProperties chatProperties;
-    private final ThreadPoolTaskExecutor fileTaskExecutor;
-
-    public ChatQaService(IntentGate intentGate,
-                         ConversationWindow conversationWindow,
-                         ChatLlm chatLlm,
-                         KnowledgeSearchProvider searchProvider,
-                         EvidenceAssessmentService evidenceService,
-                         QaRecordRepository qaRecordRepository,
-                         ChatMessageMapper messageMapper,
-                         ChatSessionMapper sessionMapper,
-                         StaffMapper staffMapper,
-                         SecurityUtil securityUtil,
-                         ChatProperties chatProperties,
-                         ThreadPoolTaskExecutor fileTaskExecutor) {
-        this.intentGate = intentGate;
-        this.conversationWindow = conversationWindow;
-        this.chatLlm = chatLlm;
-        this.searchProvider = searchProvider;
-        this.evidenceService = evidenceService;
-        this.qaRecordRepository = qaRecordRepository;
-        this.messageMapper = messageMapper;
-        this.sessionMapper = sessionMapper;
-        this.staffMapper = staffMapper;
-        this.securityUtil = securityUtil;
-        this.chatProperties = chatProperties;
-        this.fileTaskExecutor = fileTaskExecutor;
-    }
+    @Autowired
+    private IntentGate intentGate;
+    @Autowired
+    private ConversationWindow conversationWindow;
+    @Autowired
+    private ChatLlm chatLlm;
+    @Autowired
+    private HybridRetrievalService searchProvider;
+    @Autowired
+    private EvidenceAssessmentService evidenceService;
+    @Autowired
+    private QaRecordRepository qaRecordRepository;
+    @Autowired
+    private ChatMessageMapper messageMapper;
+    @Autowired
+    private ChatSessionMapper sessionMapper;
+    @Autowired
+    private StaffMapper staffMapper;
+    @Autowired
+    private SecurityUtil securityUtil;
+    @Autowired
+    private ChatProperties chatProperties;
+    @Autowired
+    @Qualifier("fileTaskExecutor")
+    private ThreadPoolTaskExecutor fileTaskExecutor;
 
     /**
      * 核心问答接口，返回 SSE 流式结果。

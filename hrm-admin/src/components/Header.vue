@@ -20,7 +20,7 @@
           <!-- 通知列表 -->
           <div class="notif-list">
             <div v-if="notifications.length === 0" class="notif-empty">暂无通知</div>
-            <div v-for="(item, index) in notifications" :key="index" class="notif-item" @click.stop>
+            <div v-for="(item, index) in notifications" :key="item.id || index" class="notif-item" @click.stop>
               <div class="notif-title">{{ item.title }}</div>
               <div class="notif-body">{{ item.body }}</div>
               <div class="notif-time">{{ item.time }}</div>
@@ -277,7 +277,7 @@
 </template>
 <script>
 import { validate, edit, reset } from '@/api/staff'
-import { queryByDeptId } from '@/api/leave'
+import { queryByDeptId, queryDateConfig } from '@/api/leave'
 import { queryTimeOffDaysByStaffId } from '@/api/staffOvertime'
 import { apply, cancel, complete, del, queryByStaffId } from '@/api/staffLeave'
 import { mapGetters } from 'vuex'
@@ -286,6 +286,7 @@ import moment from 'moment'
 import 'moment/locale/zh-cn'
 import { setAvatar } from '@/utils/avatar'
 import { BASE_API } from '@/utils/request'
+import { pageNotifications, unreadCount as fetchUnreadCount, markAllRead } from '@/api/notification'
 
 moment.locale('zh-cn')
 
@@ -327,7 +328,7 @@ export default {
         if (this.leaveForm.formData.typeNum === '调休') {
           let count = 0
           for (let i = 0; i < value; i++) {
-            if (this.isNotWeekend(moment(this.leaveForm.formData.startDate).add(i, 'days'))) {
+            if (this.isWorkday(moment(this.leaveForm.formData.startDate).add(i, 'days'))) {
               count++
             }
           }
@@ -347,7 +348,7 @@ export default {
         if (this.leaveInfoForm.formData.typeNum === '调休') {
           let count = 0
           for (let i = 0; i < value; i++) {
-            if (this.isNotWeekend(moment(this.leaveInfoForm.formData.startDate).add(i, 'days'))) {
+            if (this.isWorkday(moment(this.leaveInfoForm.formData.startDate).add(i, 'days'))) {
               count++
             }
           }
@@ -388,6 +389,8 @@ export default {
       row: {},
       timeOffDays: 0,
       leaveTypeList: [],
+      holidayList: [],
+      makeupWorkdayList: [],
       leaveForm: {
         isShow: false,
         inline: false,
@@ -455,12 +458,34 @@ export default {
   },
   mounted () {
     setAvatar(this.$refs.img)
+    this.loadNotifications()
     this.connectSse()
   },
   beforeDestroy () {
     this.disconnectSse()
   },
   methods: {
+    // 拉取离线期间的通知，并合并尚未入库的实时任务进度项
+    loadNotifications () {
+      pageNotifications({ current: 1, size: 20 }).then(response => {
+        if (response.code !== 200) return
+        const records = (response.data && response.data.records) || []
+        const persisted = records.map(item => ({
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          body: item.body,
+          time: item.createTime,
+          readFlag: item.readFlag
+        }))
+        const persistedIds = new Set(persisted.map(item => item.id))
+        const liveItems = this.notifications.filter(item => !item.id || !persistedIds.has(item.id))
+        this.notifications = [...liveItems.filter(item => !item.id), ...persisted].slice(0, 20)
+      }).catch(() => {})
+      fetchUnreadCount().then(response => {
+        if (response.code === 200) this.unreadCount = response.data
+      }).catch(() => {})
+    },
     connectSse () {
       const baseUrl = BASE_API || ''
       this.eventSource = new EventSource(baseUrl + '/notification/subscribe')
@@ -468,6 +493,8 @@ export default {
       this.eventSource.addEventListener('notification', (event) => {
         try {
           const data = JSON.parse(event.data)
+          // 与已拉取的历史通知去重
+          if (data.id && this.notifications.some(n => n.id === data.id)) return
           this.notifications.unshift(data)
           if (this.notifications.length > 20) this.notifications.pop()
           this.unreadCount++
@@ -512,11 +539,22 @@ export default {
       }
     },
     onDropdownVisible (visible) {
-      if (visible) this.unreadCount = 0
+      if (!visible) return
+      // 打开通知面板即视为已读，并同步一次离线通知
+      this.unreadCount = 0
+      markAllRead().finally(() => this.loadNotifications())
     },
     // 不是周末
     isNotWeekend (day) {
       return moment(day).weekday() !== 5 && moment(day).weekday() !== 6
+    },
+    // 工作日：补班的周末，或 既非周末也非法定节假日（与后端 isWorkday 同口径）
+    isWorkday (day) {
+      const d = moment(day).format('YYYY-MM-DD')
+      if (this.makeupWorkdayList.includes(d)) {
+        return true
+      }
+      return this.isNotWeekend(day) && !this.holidayList.includes(d)
     },
     handleDelete (row) {
       del(row.staffLeave.id).then(response => {
@@ -607,6 +645,13 @@ export default {
             this.timeOffDays = response.data
           } else {
             this.$message.error('加载失败！')
+          }
+        })
+        // 节假日与补班日清单：调休折算工作日用
+        queryDateConfig().then(response => {
+          if (response.code === 200) {
+            this.holidayList = (response.data && response.data.holidays) || []
+            this.makeupWorkdayList = (response.data && response.data.makeupWorkdays) || []
           }
         })
       } else {

@@ -5,6 +5,7 @@ import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.mapper.FileTaskMapper;
 import com.qiujie.filetask.store.ArtifactStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,17 +19,12 @@ import java.util.List;
 @Component
 public class FileTaskCleanupJob {
 
-    private final FileTaskMapper fileTaskMapper;
-    private final FileTaskErrorService fileTaskErrorService;
-    private final ArtifactStore artifactStore;
-
-    public FileTaskCleanupJob(FileTaskMapper fileTaskMapper,
-                              FileTaskErrorService fileTaskErrorService,
-                              ArtifactStore artifactStore) {
-        this.fileTaskMapper = fileTaskMapper;
-        this.fileTaskErrorService = fileTaskErrorService;
-        this.artifactStore = artifactStore;
-    }
+    @Autowired
+    private FileTaskMapper fileTaskMapper;
+    @Autowired
+    private FileTaskErrorService fileTaskErrorService;
+    @Autowired
+    private ArtifactStore artifactStore;
 
     @Scheduled(cron = "0 0 3 * * ?")
     public void cleanExpiredTaskFiles() {

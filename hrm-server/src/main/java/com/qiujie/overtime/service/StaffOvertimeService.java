@@ -269,8 +269,17 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
      * @return
      */
     public ResponseDTO queryTimeOffDaysByStaffId(Integer id) {
-        Long days = this.staffOvertimeMapper.selectCount(new QueryWrapper<StaffOvertime>().eq("staff_id", id).eq("status", OvertimeStatusEnum.TIME_OFF));
-        return Response.success(days);
+        return Response.success(countTimeOffDays(id));
+    }
+
+    /**
+     * 统计员工的调休余额（调休记录条数）
+     *
+     * @param staffId 员工id
+     * @return 调休余额（天）
+     */
+    public long countTimeOffDays(Integer staffId) {
+        return this.staffOvertimeMapper.selectCount(new QueryWrapper<StaffOvertime>().eq("staff_id", staffId).eq("status", OvertimeStatusEnum.TIME_OFF));
     }
 
     // ==================== 异步导入导出 ====================

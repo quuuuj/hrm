@@ -47,7 +47,7 @@ export default {
     return {
       staff: {
         code: 'admin',
-        password: '123'
+        password: '123456'
       },
       // 效验规则
       rules: {

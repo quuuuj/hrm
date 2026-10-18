@@ -14,6 +14,7 @@ import com.qiujie.filetask.mapper.FileTaskMapper;
 import com.qiujie.filetask.store.ArtifactStore;
 import com.qiujie.staff.service.SecurityUtil;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -31,23 +32,16 @@ import java.util.Map;
 @Service
 public class FileTaskQueryService {
 
-    private final FileTaskMapper fileTaskMapper;
-    private final FileTaskErrorService fileTaskErrorService;
-    private final ArtifactStore artifactStore;
-    private final SseService sseService;
-    private final SecurityUtil securityUtil;
-
-    public FileTaskQueryService(FileTaskMapper fileTaskMapper,
-                                FileTaskErrorService fileTaskErrorService,
-                                ArtifactStore artifactStore,
-                                SseService sseService,
-                                SecurityUtil securityUtil) {
-        this.fileTaskMapper = fileTaskMapper;
-        this.fileTaskErrorService = fileTaskErrorService;
-        this.artifactStore = artifactStore;
-        this.sseService = sseService;
-        this.securityUtil = securityUtil;
-    }
+    @Autowired
+    private FileTaskMapper fileTaskMapper;
+    @Autowired
+    private FileTaskErrorService fileTaskErrorService;
+    @Autowired
+    private ArtifactStore artifactStore;
+    @Autowired
+    private SseService sseService;
+    @Autowired
+    private SecurityUtil securityUtil;
 
     public ResponseDTO list(Integer current, Integer size, String taskType, String module) {
         QueryWrapper<FileTask> queryWrapper = new QueryWrapper<>();

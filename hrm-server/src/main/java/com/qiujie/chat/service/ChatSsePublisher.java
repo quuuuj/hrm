@@ -2,6 +2,8 @@ package com.qiujie.chat.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,11 +27,9 @@ public class ChatSsePublisher {
     /** SSE 超时：5 分钟 */
     private static final long SSE_TIMEOUT = 300_000L;
 
-    private final ThreadPoolTaskExecutor fileTaskExecutor;
-
-    public ChatSsePublisher(ThreadPoolTaskExecutor fileTaskExecutor) {
-        this.fileTaskExecutor = fileTaskExecutor;
-    }
+    @Autowired
+    @Qualifier("fileTaskExecutor")
+    private ThreadPoolTaskExecutor fileTaskExecutor;
 
     /** 创建 SSE 发射器（5 分钟超时）。 */
     public SseEmitter newEmitter() {

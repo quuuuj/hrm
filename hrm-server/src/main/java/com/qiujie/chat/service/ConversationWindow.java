@@ -8,6 +8,7 @@ import com.qiujie.staff.vo.StaffDeptVO;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -28,13 +29,10 @@ import java.util.List;
 @Component
 public class ConversationWindow {
 
-    private final ChatMessageMapper messageMapper;
-    private final ChatProperties chatProperties;
-
-    public ConversationWindow(ChatMessageMapper messageMapper, ChatProperties chatProperties) {
-        this.messageMapper = messageMapper;
-        this.chatProperties = chatProperties;
-    }
+    @Autowired
+    private ChatMessageMapper messageMapper;
+    @Autowired
+    private ChatProperties chatProperties;
 
     /**
      * 获取截断后的历史对话消息。

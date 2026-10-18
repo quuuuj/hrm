@@ -1,13 +1,9 @@
 package com.qiujie.chat.service;
 
-import com.qiujie.chat.service.EvidenceLevel;
-import com.qiujie.chat.service.KnowledgeSearchProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-
-import com.qiujie.chat.service.KnowledgeSearchProvider.SearchResult;
 
 /**
  * 证据充分度评估服务。

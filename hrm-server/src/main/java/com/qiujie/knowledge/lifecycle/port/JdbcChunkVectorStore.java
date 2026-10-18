@@ -5,6 +5,8 @@ import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.entity.DocumentChunk;
 import com.qiujie.knowledge.lifecycle.VectorMetadata;
 import com.qiujie.knowledge.mapper.DocumentChunkMapper;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -21,13 +23,20 @@ import java.util.List;
 @Component
 public class JdbcChunkVectorStore implements ChunkVectorStore {
 
-    private final DocumentChunkMapper chunkMapper;
-    private final JdbcTemplate kbJdbc;
+    @Autowired
+    private DocumentChunkMapper chunkMapper;
 
-    public JdbcChunkVectorStore(DocumentChunkMapper chunkMapper,
-                                @Qualifier("kbDataSource") DataSource kbDataSource) {
-        this.chunkMapper = chunkMapper;
-        this.kbJdbc = new JdbcTemplate(kbDataSource);
+    @Autowired
+    @Qualifier("kbDataSource")
+    private DataSource kbDataSource;
+
+    private JdbcTemplate kbJdbc;
+
+    @PostConstruct
+    public void init() {
+        if (kbDataSource != null) {
+            this.kbJdbc = new JdbcTemplate(kbDataSource);
+        }
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.qiujie.knowledge.lifecycle.port;
 
 import com.qiujie.common.storage.MinioStorageService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
@@ -11,11 +12,8 @@ import java.io.InputStream;
 @Component
 public class MinioObjectStore implements ObjectStore {
 
-    private final MinioStorageService storageService;
-
-    public MinioObjectStore(MinioStorageService storageService) {
-        this.storageService = storageService;
-    }
+    @Autowired
+    private MinioStorageService storageService;
 
     @Override
     public InputStream getObject(String key) {
