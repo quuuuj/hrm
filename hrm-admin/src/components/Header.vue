@@ -18,16 +18,39 @@
         </span>
         <el-dropdown-menu slot="dropdown">
           <!-- 通知列表 -->
-          <div class="notif-list">
-            <div v-if="notifications.length === 0" class="notif-empty">暂无通知</div>
-            <div v-for="(item, index) in notifications" :key="item.id || index" class="notif-item" @click.stop>
-              <div class="notif-title">{{ item.title }}</div>
-              <div class="notif-body">{{ item.body }}</div>
-              <div class="notif-time">{{ item.time }}</div>
-              <div v-if="item.taskId" class="notif-task">
-                <span v-if="item.status === 'SUCCESS' || item.status === 'PARTIAL_SUCCESS'" style="color:#67c23a">完成</span>
-                <span v-else-if="item.status === 'FAILED'" style="color:#f56c6c">失败</span>
-                <span v-else style="color:#409eff">{{ item.processed }}/{{ item.total }}</span>
+          <div class="notif-panel">
+            <div class="notif-head">
+              <span class="notif-head-title">通知</span>
+              <el-button
+                type="text"
+                size="mini"
+                class="notif-read-all"
+                :disabled="unreadCount === 0"
+                @click.stop="handleMarkAllRead"
+              >全部已读</el-button>
+            </div>
+            <div class="notif-list">
+              <div v-if="notifications.length === 0" class="notif-empty">暂无通知</div>
+              <div
+                v-for="item in notifications"
+                :key="item.kind === 'task' ? 'task-' + item.taskId : 'notification-' + item.id"
+                class="notif-item"
+                :class="{
+                  'notif-item--unread': item.kind === 'persisted' && item.readFlag === 0,
+                  'notif-item--task': item.kind === 'task'
+                }"
+                @click.stop="handleNotificationClick(item)"
+              >
+                <div class="notif-title">
+                  <span class="notif-dot" :class="'notif-dot--' + (item.category || 'INFO').toLowerCase()"></span>
+                  <span class="notif-title-text">{{ item.title }}</span>
+                </div>
+                <div class="notif-body">{{ item.body }}</div>
+                <div
+                  v-if="item.kind === 'task' && item.status !== 'SUCCESS' && item.status !== 'PARTIAL_SUCCESS' && item.status !== 'FAILED'"
+                  class="notif-task"
+                >已处理 {{ item.processed || 0 }} / {{ item.total || '?' }}</div>
+                <div class="notif-time">{{ item.time }}</div>
               </div>
             </div>
           </div>
@@ -285,8 +308,10 @@ import moment from 'moment'
 // 切换到中国时间
 import 'moment/locale/zh-cn'
 import { setAvatar } from '@/utils/avatar'
-import { BASE_API } from '@/utils/request'
-import { pageNotifications, unreadCount as fetchUnreadCount, markAllRead } from '@/api/notification'
+import { pageNotifications, unreadCount as fetchUnreadCount, markRead, markAllRead } from '@/api/notification'
+import { detail as fileTaskDetail } from '@/api/fileTask'
+import { routeForModule } from '@/utils/fileTaskModule'
+import { on as onSse, off as offSse } from '@/utils/sse'
 
 moment.locale('zh-cn')
 
@@ -443,8 +468,7 @@ export default {
         }
       },
       notifications: [],
-      unreadCount: 0,
-      eventSource: null
+      unreadCount: 0
     }
   },
   computed: {
@@ -459,90 +483,160 @@ export default {
   mounted () {
     setAvatar(this.$refs.img)
     this.loadNotifications()
-    this.connectSse()
+    this.onSseNotification = data => this.handleNotification(data)
+    this.onSseTaskUpdate = task => this.handleTaskUpdate(task)
+    this.onSseConnected = () => this.loadNotifications()
+    onSse('notification', this.onSseNotification)
+    onSse('task-update', this.onSseTaskUpdate)
+    onSse('connected', this.onSseConnected)
   },
   beforeDestroy () {
-    this.disconnectSse()
+    offSse('notification', this.onSseNotification)
+    offSse('task-update', this.onSseTaskUpdate)
+    offSse('connected', this.onSseConnected)
   },
   methods: {
-    // 拉取离线期间的通知，并合并尚未入库的实时任务进度项
+    // 拉取离线期间的通知，保留尚未被终态通知替换的瞬态任务项
     loadNotifications () {
       pageNotifications({ current: 1, size: 20 }).then(response => {
         if (response.code !== 200) return
         const records = (response.data && response.data.records) || []
         const persisted = records.map(item => ({
+          kind: 'persisted',
           id: item.id,
           type: item.type,
+          category: item.category || 'INFO',
           title: item.title,
           body: item.body,
-          time: item.createTime,
-          readFlag: item.readFlag
+          bizType: item.bizType,
+          bizId: item.bizId,
+          readFlag: item.readFlag,
+          time: item.createTime
         }))
         const persistedIds = new Set(persisted.map(item => item.id))
-        const liveItems = this.notifications.filter(item => !item.id || !persistedIds.has(item.id))
-        this.notifications = [...liveItems.filter(item => !item.id), ...persisted].slice(0, 20)
+        const fileTaskIds = new Set(
+          persisted
+            .filter(item => item.bizType === 'FILE_TASK' && item.bizId != null)
+            .map(item => Number(item.bizId))
+        )
+        // 分页请求期间新增、尚未出现在本次结果里的持久化通知
+        const recent = this.notifications.filter(item =>
+          item.kind === 'persisted' && !persistedIds.has(item.id)
+        )
+        const transient = this.notifications.filter(item =>
+          item.kind === 'task' && !fileTaskIds.has(item.taskId)
+        )
+        this.notifications = [...transient, ...recent, ...persisted].slice(0, 20)
       }).catch(() => {})
       fetchUnreadCount().then(response => {
         if (response.code === 200) this.unreadCount = response.data
       }).catch(() => {})
     },
-    connectSse () {
-      const baseUrl = BASE_API || ''
-      this.eventSource = new EventSource(baseUrl + '/notification/subscribe')
-      this.eventSource.addEventListener('connected', () => {})
-      this.eventSource.addEventListener('notification', (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          // 与已拉取的历史通知去重
-          if (data.id && this.notifications.some(n => n.id === data.id)) return
-          this.notifications.unshift(data)
-          if (this.notifications.length > 20) this.notifications.pop()
-          this.unreadCount++
-        } catch (e) { /* ignore */ }
-      })
-      this.eventSource.addEventListener('task-update', (event) => {
-        try {
-          const task = JSON.parse(event.data)
-          const existing = this.notifications.find(n => n.taskId === task.id)
-          const item = {
-            title: task.taskType === 'IMPORT' ? '导入任务' : '导出任务',
-            body: task.fileName || '',
-            time: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
-            taskId: task.id,
-            status: task.status,
-            processed: task.processedCount,
-            total: task.totalCount
-          }
-          if (existing) {
-            const idx = this.notifications.indexOf(existing)
-            if (idx >= 0) this.$set(this.notifications, idx, item)
-          } else {
-            this.notifications.unshift(item)
-            if (this.notifications.length > 20) this.notifications.pop()
-            this.unreadCount++
-          }
-          // 任务完成时广播事件，让各模块页面自动刷新数据
-          if (task.status === 'SUCCESS' || task.status === 'PARTIAL_SUCCESS') {
-            this.$root.$emit('task-completed', task)
-          }
-        } catch (e) { /* ignore */ }
-      })
-      this.eventSource.onerror = () => {
-        this.eventSource.close()
-        setTimeout(() => this.connectSse(), 10000)
+    handleNotification (data) {
+      if (!data || data.id == null) return
+      const exists = this.notifications.some(item => item.kind === 'persisted' && item.id === data.id)
+      if (!exists) {
+        this.notifications.unshift({
+          kind: 'persisted',
+          id: data.id,
+          type: data.type,
+          category: data.category || 'INFO',
+          title: data.title,
+          body: data.body,
+          bizType: data.bizType,
+          bizId: data.bizId,
+          readFlag: 0,
+          time: data.time
+        })
+        if (this.notifications.length > 20) this.notifications.pop()
+        this.unreadCount++
+      }
+      // 终态通知到达后替换对应的瞬态进度项
+      if (data.bizType === 'FILE_TASK' && data.bizId != null) {
+        const taskId = Number(data.bizId)
+        this.notifications = this.notifications.filter(item =>
+          !(item.kind === 'task' && item.taskId === taskId)
+        )
       }
     },
-    disconnectSse () {
-      if (this.eventSource) {
-        this.eventSource.close()
-        this.eventSource = null
+    handleTaskUpdate (task) {
+      if (!task || task.id == null) return
+      const taskId = Number(task.id)
+      const typeLabel = task.taskType === 'IMPORT' ? '导入任务' : '导出任务'
+      const statusLabel = {
+        PENDING: '等待中',
+        RUNNING: '处理中',
+        SUCCESS: '成功',
+        PARTIAL_SUCCESS: '部分成功',
+        FAILED: '失败'
+      }[task.status] || task.status
+      const category = {
+        SUCCESS: 'SUCCESS',
+        PARTIAL_SUCCESS: 'WARNING',
+        FAILED: 'ERROR'
+      }[task.status] || 'INFO'
+      const item = {
+        kind: 'task',
+        taskId,
+        taskType: task.taskType,
+        fileName: task.fileName,
+        status: task.status,
+        processed: task.processedCount,
+        total: task.totalCount,
+        category,
+        title: typeLabel + ' · ' + statusLabel,
+        body: task.fileName || '',
+        time: new Date().toLocaleTimeString('zh-CN', { hour12: false })
       }
+      const index = this.notifications.findIndex(entry => entry.kind === 'task' && entry.taskId === taskId)
+      if (index >= 0) {
+        this.$set(this.notifications, index, item)
+      } else {
+        this.notifications.unshift(item)
+        if (this.notifications.length > 20) this.notifications.pop()
+      }
+    },
+    handleNotificationClick (item) {
+      if (!item || item.kind !== 'persisted') return
+      if (item.readFlag === 0) {
+        markRead(item.id).then(() => {
+          item.readFlag = 1
+          if (this.unreadCount > 0) this.unreadCount--
+        }).catch(() => {})
+      }
+      if (item.bizType === 'FILE_TASK' && item.bizId != null) {
+        this.openFileTask(item.bizId)
+      } else if (item.bizType === 'LEAVE') {
+        this.$router.push('/performance/leave')
+      }
+    },
+    openFileTask (taskId) {
+      fileTaskDetail(taskId).then(response => {
+        if (response.code !== 200 || !response.data) {
+          this.$message.warning('任务已过期或已被清理')
+          return
+        }
+        const route = routeForModule(response.data.module)
+        // 目标路由未注册（无菜单权限）时路由名为空，不跳转
+        if (!route || !this.$router.resolve(route).route.name) {
+          this.$message.warning('无权访问该模块')
+          return
+        }
+        this.$router.push({ path: route, query: { taskId: String(taskId) } })
+      }).catch(() => {})
+    },
+    handleMarkAllRead () {
+      markAllRead().then(() => {
+        this.notifications.forEach(item => {
+          if (item.kind === 'persisted') item.readFlag = 1
+        })
+        this.unreadCount = 0
+      }).catch(() => {})
     },
     onDropdownVisible (visible) {
       if (!visible) return
-      // 打开通知面板即视为已读，并同步一次离线通知
-      this.unreadCount = 0
-      markAllRead().finally(() => this.loadNotifications())
+      // 打开面板只刷新列表，不再自动全部已读
+      this.loadNotifications()
     },
     // 不是周末
     isNotWeekend (day) {
@@ -743,19 +837,75 @@ header {
   position: relative;
 }
 
+.notif-panel {
+  width: 300px;
+}
+
+.notif-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px 6px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.notif-head-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #303133;
+}
+
 .notif-list {
   max-height: 240px;
   overflow-y: auto;
   padding: 0 12px;
 }
+
 .notif-item {
   padding: 6px 0;
   border-bottom: 1px solid #ebeef5;
+  cursor: pointer;
 }
+
 .notif-item:last-child { border-bottom: none; }
-.notif-title { font-weight: 600; font-size: 13px; }
+
+.notif-item--unread .notif-title-text {
+  font-weight: 600;
+}
+
+.notif-item--task {
+  cursor: default;
+}
+
+.notif-title {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #303133;
+}
+
+.notif-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notif-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background-color: #909399;
+}
+
+.notif-dot--info { background-color: #909399; }
+.notif-dot--success { background-color: #67c23a; }
+.notif-dot--warning { background-color: #e6a23c; }
+.notif-dot--error { background-color: #f56c6c; }
+
 .notif-body { color: #606266; font-size: 12px; margin-top: 2px; }
 .notif-time { color: #c0c4cc; font-size: 11px; margin-top: 2px; }
-.notif-task { font-size: 12px; margin-top: 2px; }
+.notif-task { font-size: 12px; margin-top: 2px; color: #409eff; }
 .notif-empty { color: #909399; text-align: center; padding: 12px; font-size: 13px; }
 </style>

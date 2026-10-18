@@ -11,8 +11,11 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.enums.TaskStatusEnum;
+import com.qiujie.filetask.notify.FileTaskNotifier;
 import com.qiujie.filetask.store.ArtifactStore;
 import com.qiujie.filetask.store.TaskRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +33,8 @@ import java.util.List;
 @Service
 public class FileTaskEngine {
 
+    private static final Logger log = LoggerFactory.getLogger(FileTaskEngine.class);
+
     private static final int DB_BATCH_SIZE = 200;
     private static final int EXPORT_PAGE_SIZE = 500;
 
@@ -41,6 +46,9 @@ public class FileTaskEngine {
 
     @Autowired
     private ArtifactStore artifactStore;
+
+    @Autowired
+    private FileTaskNotifier fileTaskNotifier;
 
     /**
      * 执行异步导入。
@@ -84,14 +92,19 @@ public class FileTaskEngine {
                 taskRepository.generateErrorFile(taskId);
                 taskRepository.finish(taskId, TaskStatusEnum.PARTIAL_SUCCESS);
             } else {
-                // 导入完全成功时立即删除源文件，避免敏感数据长期驻留磁盘
-                taskRepository.deleteSourceFile(taskId);
                 taskRepository.finish(taskId, TaskStatusEnum.SUCCESS);
             }
         } catch (Exception e) {
             taskRepository.fail(taskId, e);
         } finally {
             deleteTemporaryFile(sourceFile, temporarySource);
+            // 所有终态都清理源文件，避免敏感数据长期驻留
+            try {
+                taskRepository.deleteSourceFile(taskId);
+            } catch (Exception e) {
+                log.warn("Failed to delete source file: taskId={}", taskId, e);
+            }
+            fileTaskNotifier.onTaskTerminal(taskId);
         }
     }
 
@@ -158,10 +171,14 @@ public class FileTaskEngine {
         } catch (Exception e) {
             taskRepository.fail(taskId, e);
         } finally {
-            if (excelWriter != null) {
-                excelWriter.finish();
+            try {
+                if (excelWriter != null) {
+                    excelWriter.finish();
+                }
+            } finally {
+                deleteTemporaryFile(resultFile, true);
+                fileTaskNotifier.onTaskTerminal(taskId);
             }
-            deleteTemporaryFile(resultFile, true);
         }
     }
 

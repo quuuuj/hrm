@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.qiujie.notification.enums.NotificationCategoryEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,6 +38,10 @@ public class Notification implements Serializable {
     @TableField("type")
     private String type;
 
+    @Schema(description = "通知类别：INFO/SUCCESS/WARNING/ERROR")
+    @TableField("category")
+    private NotificationCategoryEnum category;
+
     @Schema(description = "通知标题")
     @TableField("title")
     private String title;
@@ -51,7 +56,7 @@ public class Notification implements Serializable {
 
     @Schema(description = "业务主键")
     @TableField("biz_id")
-    private Integer bizId;
+    private Long bizId;
 
     @Schema(description = "是否已读，0未读，1已读")
     @TableField("read_flag")

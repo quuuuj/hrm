@@ -1255,17 +1255,20 @@ DROP TABLE IF EXISTS `sys_notification`;
 CREATE TABLE `sys_notification`  (
   `id` int UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '通知id',
   `staff_id` int UNSIGNED NOT NULL COMMENT '接收人员工id',
-  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知类型，如 LEAVE_SUBMITTED',
+  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知类型，如 LEAVE_SUBMITTED / FILE_TASK_SUCCESS',
+  `category` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'INFO' COMMENT '通知类别：INFO/SUCCESS/WARNING/ERROR',
   `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知标题',
   `body` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '通知内容',
-  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '业务类型，如 LEAVE',
-  `biz_id` int UNSIGNED NULL DEFAULT NULL COMMENT '业务主键',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '业务类型，如 LEAVE / FILE_TASK',
+  `biz_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '业务主键',
   `read_flag` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否已读，0未读，1已读',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_deleted` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '逻辑删除，0未删除，1已删除',
   PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_notification_staff_read` (`staff_id`, `read_flag`, `create_time`)
+  KEY `idx_notification_staff_read` (`staff_id`, `read_flag`, `create_time`) USING BTREE,
+  KEY `idx_notification_biz` (`biz_type`, `biz_id`) USING BTREE,
+  KEY `idx_notification_create_time` (`create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '站内通知表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------

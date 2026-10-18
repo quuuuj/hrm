@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 
@@ -113,11 +112,6 @@ public class FileTaskCoordinator implements AsyncFileTasks {
         fileTaskExecutor.execute(() -> fileTaskEngine.runExport(
                 task.getId(), processor, command.queryParams(), command.fileName()));
         return new TaskSubmission(task.getId(), task);
-    }
-
-    /** 订阅当前操作者的任务状态事件。 */
-    public SseEmitter subscribe() {
-        return queryService.subscribeSse();
     }
 
     /** 查询当前操作者可访问的任务列表。 */
