@@ -18,7 +18,7 @@
 - **业务流程深度解耦与纯计算领域设计**：
   - 考勤核算、加班计算（`OvertimeCalculator`）以及薪资核算（`SalaryCalculation`）全面收敛为无框架依赖的纯函数领域模型，具备极高的单测覆盖与维护确定性。
 - **Flowable 8.0 流程引擎原生适配**：
-  - 深度整合 Spring Boot 3.4 与 Flowable 引擎，基于双 MySQL 独立数据源设计（业务主库 + 流程引擎专库），保证核心工作流数据自治与平滑伸缩。
+  - 深度整合 Spring Boot 3.4 与 Flowable 引擎，流程表独立存放于 `hrm_flowable` 库；通过表前缀复用业务主数据源，业务状态与流程推进共享同一个本地事务，一侧失败时两边一起回滚。
 - **双 Token 自动无感续期机制**：
   - 基于 httpOnly Cookie 的双 Token（Access Token + Refresh Token）鉴权体系，前端拦截器透明处理并发无感刷新，阻断 XSS 与 Token 劫持风险。
 - **混合持久化与企业级 RAG 知识检索**：
@@ -189,7 +189,7 @@ graph TB
     StaffSvc --> DB_Master
     AttendanceSvc --> DB_Master
     Salary --> DB_Master
-    FlowEngine --> DB_Flowable
+    FlowEngine -->|同一连接与事务| DB_Flowable
     
     KnowledgeSvc --> Storage_MinIO
     KnowledgeSvc --> Embed

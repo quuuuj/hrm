@@ -2,11 +2,13 @@ package com.qiujie.leave.service;
 import com.qiujie.leave.entity.Leave;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.security.ServiceException;
 import com.qiujie.staff.entity.Staff;
 import com.qiujie.leave.entity.Leave;
 import com.qiujie.leave.entity.StaffLeave;
@@ -24,6 +26,9 @@ import com.qiujie.staff.service.SecurityUtil;
 import com.qiujie.leave.vo.StaffLeaveVO;
 import com.qiujie.util.DatetimeUtil;
 import cn.hutool.core.date.DateUtil;
+import org.flowable.common.engine.api.FlowableException;
+import org.flowable.common.engine.api.FlowableOptimisticLockingException;
+import org.flowable.common.engine.api.FlowableTaskAlreadyClaimedException;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.runtime.ProcessInstance;
@@ -323,6 +328,13 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
             return Response.error("你有待审核、被驳回、正在审核中的请假申请！");
         }
 
+        // 先确认人事审批人：查不到时不能保存请假或启动流程（业务库与流程库共用同一事务）
+        List<Staff> hrStaffList = this.staffMapper.queryByRole("hr");
+        if (hrStaffList.isEmpty()) {
+            log.warn("No HR staff found for approval");
+            return Response.error("未找到人事审批人员，请联系管理员");
+        }
+
         // 保存请假记录
         if (!save(staffLeave)) {
             return Response.error("提交失败！");
@@ -341,32 +353,24 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
             Task task = this.taskService.createTaskQuery().processDefinitionKey("leave")
                     .processInstanceBusinessKey(String.valueOf(staffLeave.getId()))
                     .taskAssignee(code).singleResult();
-            List<Staff> staffList = null;
-            if (task != null) {
-                staffList = this.staffMapper.queryByRole("hr");
-                if (staffList.isEmpty()) {
-                    log.warn("No HR staff found for approval");
-                    return Response.error("未找到人事审批人员，请联系管理员");
-                }
-
-                Map<String, Object> map1 = new HashMap<>();
-                map1.put("hr", staffList.stream().map(Staff::getCode).collect(Collectors.joining(",")));
-                taskService.complete(task.getId(), map1);
-
-                log.info("Completed leave apply task: taskId={}, hrCount={}", task.getId(), staffList.size());
+            if (task == null) {
+                throw new IllegalStateException("Leave apply task not found after process start: businessKey=" + staffLeave.getId());
             }
+
+            Map<String, Object> hrVariables = new HashMap<>();
+            hrVariables.put("hr", hrStaffList.stream().map(Staff::getCode).collect(Collectors.joining(",")));
+            taskService.complete(task.getId(), hrVariables);
+
+            log.info("Completed leave apply task: taskId={}, hrCount={}", task.getId(), hrStaffList.size());
 
             // 推送通知（不阻塞主流程）
-            if (staffList != null) {
-                leaveNotifier.onLeaveSubmitted(staffLeave, staffList.stream().map(Staff::getId).collect(Collectors.toList()));
-            }
+            leaveNotifier.onLeaveSubmitted(staffLeave, hrStaffList.stream().map(Staff::getId).collect(Collectors.toList()));
 
             return Response.success();
         } catch (Exception e) {
             log.error("Failed to start leave process: staffLeaveId={}", staffLeave.getId(), e);
-            // 回滚请假记录
-            removeById(staffLeave.getId());
-            return Response.error("流程启动失败，请稍后再试");
+            // 同一事务内抛出，请假记录与流程实例一起回滚
+            throw new ServiceException(BusinessStatusEnum.ERROR.getCode(), "流程启动失败，请稍后再试");
         }
     }
 
@@ -382,12 +386,11 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
         if (code == null) {
             return Response.error(BusinessStatusEnum.UNAUTHORIZED);
         }
-
-        staffLeave.setStatus(AuditStatusEnum.AUDITING);
-        if (!updateById(staffLeave)) {
-            return Response.error();
+        if (staffLeave.getId() == null) {
+            return Response.error("请假记录不存在");
         }
 
+        // 先校验任务，任务不存在时不能把业务状态改错
         Task task = this.taskService.createTaskQuery().processDefinitionKey("leave")
                 .processInstanceBusinessKey(staffLeave.getId().toString())
                 .taskCandidateUser(code).singleResult();
@@ -395,7 +398,24 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
             return Response.error("任务不存在或无权拾取");
         }
 
-        this.taskService.claim(task.getId(), code);
+        // 条件更新充当并发闸门：只有把状态从待审改为审核中的请求才继续 claim
+        boolean updated = this.update(new LambdaUpdateWrapper<StaffLeave>()
+                .eq(StaffLeave::getId, staffLeave.getId())
+                .eq(StaffLeave::getStatus, AuditStatusEnum.UNAUDITED)
+                .set(StaffLeave::getStatus, AuditStatusEnum.AUDITING));
+        if (!updated) {
+            return Response.error("任务状态已变更，请刷新后重试");
+        }
+
+        try {
+            this.taskService.claim(task.getId(), code);
+        } catch (FlowableTaskAlreadyClaimedException e) {
+            log.warn("Leave task already claimed: taskId={}, staff={}", task.getId(), code);
+            throw new ServiceException(BusinessStatusEnum.ERROR.getCode(), "任务已被他人拾取，请刷新后重试");
+        } catch (FlowableOptimisticLockingException e) {
+            log.warn("Leave task claim conflict: taskId={}, staff={}", task.getId(), code);
+            throw new ServiceException(BusinessStatusEnum.ERROR.getCode(), "任务已被他人处理，请刷新后重试");
+        }
         log.info("Claimed leave task: taskId={}, staff={}", task.getId(), code);
 
         return Response.success();
@@ -414,12 +434,11 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
         if (code == null) {
             return Response.error(BusinessStatusEnum.UNAUTHORIZED);
         }
-
-        staffLeave.setStatus(AuditStatusEnum.UNAUDITED);
-        if (!updateById(staffLeave)) {
-            return Response.error();
+        if (staffLeave.getId() == null) {
+            return Response.error("请假记录不存在");
         }
 
+        // 只有任务当前受理人才能归还，未持有任务时不能改业务状态
         Task task = this.taskService.createTaskQuery().processDefinitionKey("leave")
                 .processInstanceBusinessKey(staffLeave.getId().toString())
                 .taskAssignee(code).singleResult();
@@ -427,7 +446,20 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
             return Response.error("任务不存在或未分配给你");
         }
 
-        this.taskService.setAssignee(task.getId(), null);
+        boolean updated = this.update(new LambdaUpdateWrapper<StaffLeave>()
+                .eq(StaffLeave::getId, staffLeave.getId())
+                .eq(StaffLeave::getStatus, AuditStatusEnum.AUDITING)
+                .set(StaffLeave::getStatus, AuditStatusEnum.UNAUDITED));
+        if (!updated) {
+            return Response.error("任务状态已变更，请刷新后重试");
+        }
+
+        try {
+            this.taskService.setAssignee(task.getId(), null);
+        } catch (FlowableException e) {
+            log.warn("Leave task revert conflict: taskId={}, staff={}", task.getId(), code, e);
+            throw new ServiceException(BusinessStatusEnum.ERROR.getCode(), "任务状态已变更，请刷新后重试");
+        }
         log.info("Reverted leave task: taskId={}, staff={}", task.getId(), code);
 
         return Response.success();
@@ -464,7 +496,8 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
         // 请求体通常只带 id + status，通知所需的 staffId/days 从库中重新加载
         StaffLeave persisted = this.getById(staffLeave.getId());
         if (persisted == null) {
-            return Response.error("请假记录不存在");
+            // 与 updateById 同一事务，抛异常回滚
+            throw new ServiceException(BusinessStatusEnum.ERROR.getCode(), "请假记录不存在");
         }
 
         Map<String, Object> map = new HashMap<>();
@@ -477,8 +510,8 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
         boolean hrStage = Objects.equals(task.getTaskDefinitionKey(), "hr_audit");
         boolean approved = AuditStatusEnum.APPROVE.equals(persisted.getStatus());
 
-        // 经理候选人需在流程推进前查询：Flowable 与业务库事务独立，
-        // taskService.complete 提交后若再抛异常，流程状态会与业务状态不一致
+        // 经理候选人需在流程推进前查询：查询失败时流程尚未流转，
+        // 不会出现流程已进入经理审批、通知所需数据却未取到的状态
         List<Integer> managerIds = null;
         if (hrStage && approved) {
             managerIds = staffMapper.queryByRole("manager").stream()
@@ -508,18 +541,24 @@ public class StaffLeaveService extends ServiceImpl<StaffLeaveMapper, StaffLeave>
      */
     @Transactional
     public ResponseDTO cancel(StaffLeave staffLeave) {
+        if (staffLeave.getId() == null) {
+            return Response.error("请假记录不存在");
+        }
+
+        // 先确认流程实例存在：流程已结束时不能把业务状态改成撤销
+        ProcessInstance instance = this.runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey("leave")
+                .processInstanceBusinessKey(staffLeave.getId().toString()).singleResult();
+        if (instance == null) {
+            return Response.error();
+        }
+
         staffLeave.setStatus(AuditStatusEnum.CANCEL);
         if (!updateById(staffLeave)) {
             return Response.error();
         }
-        ProcessInstance instance = this.runtimeService.createProcessInstanceQuery()
-                .processDefinitionKey("leave")
-                .processInstanceBusinessKey(staffLeave.getId().toString()).singleResult();
-        if (instance != null) {
-            runtimeService.deleteProcessInstance(instance.getProcessInstanceId(), staffLeave.getStatus().getMessage());
-            return Response.success();
-        }
-        return Response.error();
+        runtimeService.deleteProcessInstance(instance.getProcessInstanceId(), staffLeave.getStatus().getMessage());
+        return Response.success();
     }
 
 }
