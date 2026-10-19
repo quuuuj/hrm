@@ -12,12 +12,6 @@ spring:
       password: 123456
       driver-class-name: com.mysql.cj.jdbc.Driver
       type: com.zaxxer.hikari.HikariDataSource
-    flowable:
-      jdbc-url: jdbc:mysql://localhost:3306/hrm_flowable?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-      username: root
-      password: 123456
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      type: com.zaxxer.hikari.HikariDataSource
     kb:
       jdbc-url: jdbc:postgresql://localhost:5432/hrm_kb
       username: hrm
@@ -57,7 +51,9 @@ server:
   port: 8888
 
 flowable:
-  database-schema-update: true
+  # 表前缀即库名（hrm_flowable.ACT_*），复用 master 数据源；引擎表结构由 hrm_flowable.sql 初始化
+  table-prefix: hrm_flowable.
+  database-schema-update: false
   dmn:
     enabled: false
   form:
@@ -183,7 +179,6 @@ makeup-workdays:
   - 2026-01-04
   - 2026-02-14
   - 2026-02-28
-  - 2026-04-26
   - 2026-05-09
   - 2026-09-20
   - 2026-10-10

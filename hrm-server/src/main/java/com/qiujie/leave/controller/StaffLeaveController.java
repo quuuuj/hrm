@@ -133,7 +133,7 @@ public class StaffLeaveController {
 
     @Operation(summary = "归还请假任务")
     @PostMapping("/revert")
-    @PreAuthorize("hasAnyAuthority('performance:leave:claim')")
+    @PreAuthorize("hasAnyAuthority('performance:leave:revert')")
     public ResponseDTO revert(@RequestBody StaffLeave staffLeave) {
         return this.staffLeaveService.revert(staffLeave);
     }
