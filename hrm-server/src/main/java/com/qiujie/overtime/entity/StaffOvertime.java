@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import com.alibaba.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.qiujie.overtime.enums.OvertimeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -48,40 +47,34 @@ public class StaffOvertime implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
-    @ExcelProperty("员工id")
     @Schema(description = "员工id")
     @TableField("staff_id")
     private Integer staffId;
 
-    @ExcelProperty("上午上班时间")
     @Schema(description = "上午上班时间")
     @DateTimeFormat(pattern = "HH:mm")
     @JsonFormat(pattern = "HH:mm", timezone = "GMT+8")
     @TableField("mor_start_time")
     private Timestamp morStartTime;
 
-    @ExcelProperty("上午下班时间")
     @Schema(description = "上午下班时间")
     @DateTimeFormat(pattern = "HH:mm")
     @JsonFormat(pattern = "HH:mm", timezone = "GMT+8")
     @TableField("mor_end_time")
     private Timestamp morEndTime;
 
-    @ExcelProperty("下午上班时间")
     @Schema(description = "下午上班时间")
     @DateTimeFormat(pattern = "HH:mm")
     @JsonFormat(pattern = "HH:mm", timezone = "GMT+8")
     @TableField("aft_start_time")
     private Timestamp aftStartTime;
 
-    @ExcelProperty("下午下班时间")
     @Schema(description = "下午下班时间")
     @DateTimeFormat(pattern = "HH:mm")
     @JsonFormat(pattern = "HH:mm", timezone = "GMT+8")
     @TableField("aft_end_time")
     private Timestamp aftEndTime;
 
-    @ExcelProperty("加班日期")
     @Schema(description = "加班日期")
     @TableField("overtime_date")
     private Date overtimeDate;

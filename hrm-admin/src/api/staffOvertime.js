@@ -1,4 +1,4 @@
-import request, { BASE_API } from '../utils/request'
+import request from '../utils/request'
 
 const url = '/staff-overtime'
 
@@ -76,20 +76,7 @@ export const setOvertime = (data) => {
   })
 }
 
-export const exp = (month, filename) => {
-  return request({
-    url: url + '/export/' + month + '/' + filename,
-    method: 'get',
-    responseType: 'blob'
-  })
-}
-
-// 数据导入
-export const getImportApi = () => {
-  return BASE_API + url + '/import'
-}
-
-// 异步导入（大文件）
+// 异步导入（分块上传后提交任务）
 export const getAsyncImportApi = () => {
   return url + '/import/task'
 }
