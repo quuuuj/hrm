@@ -128,7 +128,7 @@ if (token == null) {
 三层的原因是不同客户端设置 Header 的能力不同：
 
 - **Header 层**：标准 axios/fetch 请求，前端可在拦截器中统一加 `Authorization: Bearer xxx`；
-- **Query 层**：`<a href="/api/file/download?token=xxx">` 这类浏览器直接下载的场景无法加 Header；第 25 期的 SSE（Server-Sent Events）中，`EventSource` API 也不支持自定义 Header；
+- **Query 层**：`<a href="/api/file/download?token=xxx">` 这类浏览器直接下载的场景无法加 Header；第 24 期的 SSE（Server-Sent Events）中，`EventSource` API 也不支持自定义 Header；
 - **Cookie 层**：兜底——浏览器自动携带，前端无需处理。
 
 拿到 token 后的处理是关键差异点（`JwtAuthenticationFilter.java:80-96`）：
@@ -164,7 +164,7 @@ protected boolean shouldNotFilterAsyncDispatch() {
 }
 ```
 
-默认情况下 `OncePerRequestFilter` 会跳过 ASYNC dispatch 类型，而 SSE 在长连接期间会触发多次 ASYNC dispatch——若跳过过滤器，`SecurityContext` 为空，后续 `@PreAuthorize` 全部失败。`return false` 使 SSE 请求也能携带认证信息，第 26 期故障复盘会展开。
+默认情况下 `OncePerRequestFilter` 会跳过 ASYNC dispatch 类型，而 SSE 在长连接期间会触发多次 ASYNC dispatch——若跳过过滤器，`SecurityContext` 为空，后续 `@PreAuthorize` 全部失败。`return false` 使 SSE 请求也能携带认证信息，第 25 期故障复盘会展开。
 
 ## /refresh 端点：换 Token 时重新校验员工状态
 
