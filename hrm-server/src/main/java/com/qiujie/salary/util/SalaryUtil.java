@@ -1,5 +1,4 @@
-package com.qiujie.salary.calculation;
-import com.qiujie.salary.service.SalaryService;
+package com.qiujie.salary.util;
 
 import com.qiujie.salary.entity.Salary;
 import com.qiujie.attendance.enums.AttendanceStatusEnum;
@@ -20,9 +19,9 @@ import java.util.Map;
  * </ul>
  * </p>
  */
-public final class SalaryCalculation {
+public final class SalaryUtil {
 
-    private SalaryCalculation() {
+    private SalaryUtil() {
     }
 
     /**
@@ -36,12 +35,12 @@ public final class SalaryCalculation {
      * @param deductRates      扣款配置：{@link DeductEnum} code → 金额（缺失回退 {@link DeductEnum#getDefaultValue()}）
      * @return 已填充的 vo
      */
-    public static StaffSalaryVO compute(StaffSalaryVO vo,
-                                        Map<Integer, Integer> attendanceCounts,
-                                        int leaveWorkdayCount,
-                                        BigDecimal monthOvertime,
-                                        Salary monthSalary,
-                                        Map<Integer, Integer> deductRates) {
+    public static StaffSalaryVO calculate(StaffSalaryVO vo,
+                                          Map<Integer, Integer> attendanceCounts,
+                                          int leaveWorkdayCount,
+                                          BigDecimal monthOvertime,
+                                          Salary monthSalary,
+                                          Map<Integer, Integer> deductRates) {
         BigDecimal lateDeduct = deduct(vo, AttendanceStatusEnum.LATE, attendanceCounts, deductRates);
         BigDecimal earlyDeduct = deduct(vo, AttendanceStatusEnum.LEAVE_EARLY, attendanceCounts, deductRates);
         BigDecimal absenteeismDeduct = deduct(vo, AttendanceStatusEnum.ABSENTEEISM, attendanceCounts, deductRates);
