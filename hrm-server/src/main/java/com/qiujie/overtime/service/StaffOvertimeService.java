@@ -15,25 +15,27 @@ import com.qiujie.filetask.spi.AsyncFileTasks;
 import com.qiujie.filetask.spi.ExportProcessor;
 import com.qiujie.filetask.spi.FlexibleExcelImportReader;
 import com.qiujie.filetask.spi.ImportProcessor;
-import com.qiujie.overtime.calculation.OvertimeCalculator;
-import com.qiujie.overtime.calculation.OvertimeResult;
 import com.qiujie.overtime.dto.OvertimeImportRow;
 import com.qiujie.overtime.entity.Overtime;
 import com.qiujie.overtime.entity.StaffOvertime;
 import com.qiujie.overtime.enums.OvertimeEnum;
 import com.qiujie.overtime.enums.OvertimeStatusEnum;
+import com.qiujie.overtime.mapper.OvertimeMapper;
 import com.qiujie.overtime.mapper.StaffOvertimeMapper;
 import com.qiujie.overtime.vo.OvertimeMonthVO;
 import com.qiujie.overtime.vo.StaffOvertimeVO;
 import com.qiujie.salary.entity.Salary;
+import com.qiujie.salary.mapper.SalaryMapper;
 import com.qiujie.staff.entity.Staff;
 import com.qiujie.staff.mapper.StaffMapper;
 import com.qiujie.filetask.excel.AiHeaderMatcherImpl;
 import com.qiujie.util.DatetimeUtil;
+import com.qiujie.overtime.util.OvertimeUtil;
 import com.qiujie.staff.service.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.*;
 import java.util.function.Consumer;
@@ -71,7 +73,10 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
     private AiHeaderMatcherImpl aiHeaderMatcher;
 
     @Autowired
-    private OvertimeCalculator overtimeCalculator;
+    private OvertimeMapper overtimeMapper;
+
+    @Autowired
+    private SalaryMapper salaryMapper;
 
     public ResponseDTO add(StaffOvertime staffOvertime) {
         if (save(staffOvertime)) {
@@ -167,14 +172,9 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
         StaffOvertime staffOvertime = this.staffOvertimeMapper.queryByStaffIdAndDate(id, date.replace("-", ""));
         if (staffOvertime == null) {
             staffOvertime = new StaffOvertime();
-            staffOvertime.setStaffId(id).setOvertimeDate(DateUtil.parseDate(date).toSqlDate());
-            if (this.datetimeUtil.isHoliday(DateUtil.parseDate(date).toSqlDate())) {
-                staffOvertime.setTypeNum(OvertimeEnum.HOLIDAY_OVERTIME);
-            } else if (DateUtil.isWeekend(DateUtil.parseDate(date))) {
-                staffOvertime.setTypeNum(OvertimeEnum.DAY_OFF_OVERTIME);
-            } else {
-                staffOvertime.setTypeNum(OvertimeEnum.WORKDAY_OVERTIME);
-            }
+            Date day = DateUtil.parseDate(date).toSqlDate();
+            staffOvertime.setStaffId(id).setOvertimeDate(day);
+            staffOvertime.setTypeNum(OvertimeUtil.classifyType(day, datetimeUtil::isHoliday));
         }
         return Response.success(staffOvertime);
     }
@@ -187,11 +187,23 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
      * @return
      */
     public ResponseDTO setOvertime(StaffOvertime staffOvertime) {
-        OvertimeResult result = overtimeCalculator.compute(staffOvertime.getStaffId(), staffOvertime);
-        staffOvertime.setTypeNum(result.typeNum())
-                .setStatus(result.status())
-                .setTotalOvertime(result.totalOvertime())
-                .setOvertimeSalary(result.overtimeSalary());
+        Staff staff = staffMapper.selectById(staffOvertime.getStaffId());
+        if (staff == null) {
+            return Response.error("员工不存在");
+        }
+        // 先定类型（手动指定优先，否则按日期分类），配置按「部门 + 类型」查找
+        OvertimeEnum type = OvertimeUtil.resolveType(staffOvertime, datetimeUtil::isHoliday);
+        Overtime config = overtimeMapper.selectOne(new QueryWrapper<Overtime>()
+                .eq("type_num", type).eq("dept_id", staff.getDeptId()));
+        Salary latestSalary = salaryMapper.selectList(new QueryWrapper<Salary>()
+                .eq("staff_id", staffOvertime.getStaffId()).orderByDesc("month"))
+                .stream().findFirst().orElse(null);
+        Map<String, Object> result = OvertimeUtil.calculate(staffOvertime, staff, config,
+                latestSalary, datetimeUtil::isHoliday);
+        staffOvertime.setTypeNum((OvertimeEnum) result.get("typeNum"))
+                .setStatus((OvertimeStatusEnum) result.get("status"))
+                .setTotalOvertime((BigDecimal) result.get("totalOvertime"))
+                .setOvertimeSalary((BigDecimal) result.get("overtimeSalary"));
         QueryWrapper<StaffOvertime> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("staff_id", staffOvertime.getStaffId()).eq("overtime_date",
                 staffOvertime.getOvertimeDate());
@@ -292,12 +304,21 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
                             .setAftEndTime(row.getAftEndTime())
                             .setOvertimeDate(row.getOvertimeDate());
                     // 加班类型由日期分类得出（无人工指定）
-                    OvertimeResult result = overtimeCalculator.compute(row.getStaffId(), entity,
-                            staffMap, overtimeConfigCache, salaryCache);
-                    entity.setTypeNum(result.typeNum())
-                            .setStatus(result.status())
-                            .setTotalOvertime(result.totalOvertime())
-                            .setOvertimeSalary(result.overtimeSalary());
+                    OvertimeEnum type = OvertimeUtil.resolveType(entity, datetimeUtil::isHoliday);
+                    String configKey = staff.getDeptId() + "_" + type.getCode();
+                    Overtime config = overtimeConfigCache.computeIfAbsent(configKey,
+                            k -> overtimeMapper.selectOne(new QueryWrapper<Overtime>()
+                                    .eq("type_num", type).eq("dept_id", staff.getDeptId())));
+                    Salary salary = salaryCache.computeIfAbsent(row.getStaffId(),
+                            sid -> salaryMapper.selectList(new QueryWrapper<Salary>()
+                                    .eq("staff_id", sid).orderByDesc("month"))
+                                    .stream().findFirst().orElse(null));
+                    Map<String, Object> result = OvertimeUtil.calculate(entity, staff, config,
+                            salary, datetimeUtil::isHoliday);
+                    entity.setTypeNum((OvertimeEnum) result.get("typeNum"))
+                            .setStatus((OvertimeStatusEnum) result.get("status"))
+                            .setTotalOvertime((BigDecimal) result.get("totalOvertime"))
+                            .setOvertimeSalary((BigDecimal) result.get("overtimeSalary"));
                     validList.add(entity);
                 } catch (Exception e) {
                     errorCollector.accept(new FileTaskError()
