@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
-import com.qiujie.common.enums.BusinessStatusEnum;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.enums.TaskModuleEnum;
 import com.qiujie.filetask.service.FileUploadService;
@@ -31,16 +30,10 @@ import com.qiujie.staff.entity.Staff;
 import com.qiujie.staff.mapper.StaffMapper;
 import com.qiujie.filetask.excel.AiHeaderMatcherImpl;
 import com.qiujie.util.DatetimeUtil;
-import com.qiujie.util.EasyExcelUtil;
 import com.qiujie.staff.service.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Date;
 import java.util.*;
 import java.util.function.Consumer;
@@ -170,60 +163,6 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
     }
 
 
-    /**
-     * 导出员工月加班报表
-     *
-     * @param response
-     * @param month
-     * @return
-     */
-    public void export(HttpServletResponse response, String month, String filename) throws IOException {
-        List<OvertimeMonthVO> list = this.staffOvertimeMapper.queryOvertimeMonthVO();
-        for (OvertimeMonthVO overtimeMonthVO : list) {
-            // 设置加班次数
-            overtimeMonthVO.setOvertimeTimes(this.staffOvertimeMapper.countTimes(overtimeMonthVO.getStaffId(),
-                    OvertimeStatusEnum.OVERTIME.getCode(), month));
-            // 设置调休次数
-            overtimeMonthVO.setTimeOffDays(this.staffOvertimeMapper.countTimes(overtimeMonthVO.getStaffId(),
-                    OvertimeStatusEnum.TIME_OFF.getCode(), month));
-        }
-        EasyExcelUtil.write(response, list, filename, OvertimeMonthVO.class);
-    }
-
-    /**
-     * 数据导入
-     *
-     * @param file
-     * @return
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public ResponseDTO imp(MultipartFile file) throws IOException {
-        InputStream inputStream = file.getInputStream();
-        List<StaffOvertime> list = EasyExcelUtil.read(inputStream, 1, StaffOvertime.class);
-        for (StaffOvertime staffOvertime : list) {
-            if (staffOvertime.getStaffId() == null
-                    || staffOvertime.getOvertimeDate() == null
-                    || staffOvertime.getMorStartTime() == null
-                    || staffOvertime.getMorEndTime() == null
-                    || staffOvertime.getAftStartTime() == null
-                    || staffOvertime.getAftEndTime() == null) {
-                continue;
-            }
-            OvertimeResult result = overtimeCalculator.compute(staffOvertime.getStaffId(), staffOvertime);
-            staffOvertime.setTypeNum(result.typeNum())
-                    .setStatus(result.status())
-                    .setTotalOvertime(result.totalOvertime())
-                    .setOvertimeSalary(result.overtimeSalary());
-            QueryWrapper<StaffOvertime> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("staff_id", staffOvertime.getStaffId()).eq("overtime_date",
-                    staffOvertime.getOvertimeDate());
-            if (!update(staffOvertime, queryWrapper) || save(staffOvertime)) {
-                return Response.error(BusinessStatusEnum.DATA_IMPORT_ERROR);
-            }
-        }
-        return Response.success();
-    }
-
     public ResponseDTO queryByStaffIdAndDate(Integer id, String date) {
         StaffOvertime staffOvertime = this.staffOvertimeMapper.queryByStaffIdAndDate(id, date.replace("-", ""));
         if (staffOvertime == null) {
@@ -345,7 +284,13 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
                                 .setRawData(JSON.toJSONString(row)).setErrorMessage("员工不存在"));
                         continue;
                     }
-                    StaffOvertime entity = toEntity(row);
+                    StaffOvertime entity = new StaffOvertime()
+                            .setStaffId(row.getStaffId())
+                            .setMorStartTime(row.getMorStartTime())
+                            .setMorEndTime(row.getMorEndTime())
+                            .setAftStartTime(row.getAftStartTime())
+                            .setAftEndTime(row.getAftEndTime())
+                            .setOvertimeDate(row.getOvertimeDate());
                     // 加班类型由日期分类得出（无人工指定）
                     OvertimeResult result = overtimeCalculator.compute(row.getStaffId(), entity,
                             staffMap, overtimeConfigCache, salaryCache);
@@ -367,16 +312,6 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
                     if (!update(entity, qw)) { save(entity); }
                 }
             }
-        }
-
-        private StaffOvertime toEntity(OvertimeImportRow row) {
-            return new StaffOvertime()
-                    .setStaffId(row.getStaffId())
-                    .setMorStartTime(row.getMorStartTime())
-                    .setMorEndTime(row.getMorEndTime())
-                    .setAftStartTime(row.getAftStartTime())
-                    .setAftEndTime(row.getAftEndTime())
-                    .setOvertimeDate(row.getOvertimeDate());
         }
     }
 

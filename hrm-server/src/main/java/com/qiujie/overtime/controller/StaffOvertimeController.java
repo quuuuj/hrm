@@ -8,11 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.List;
 
 
@@ -67,21 +63,6 @@ public class StaffOvertimeController {
     @PreAuthorize("hasAnyAuthority('performance:overtime:list','performance:overtime:search')")
     public ResponseDTO list(@RequestParam(defaultValue = "1") Integer current, @RequestParam(defaultValue = "10") Integer size, String name, Integer deptId,String month) {
         return this.staffOvertimeService.list(current, size, name,deptId ,month);
-    }
-
-    @Operation(summary = "数据导出接口")
-    @GetMapping("/export/{month}/{filename}")
-    @PreAuthorize("hasAnyAuthority('performance:overtime:export')")
-    public void export(HttpServletResponse response, @PathVariable String month,@PathVariable String filename) throws IOException {
-         this.staffOvertimeService.export(response, month,filename);
-    }
-
-    @Operation(summary = "数据导入接口")
-    @PostMapping("/import")
-    @PreAuthorize("hasAnyAuthority('performance:overtime:import')")
-
-    public ResponseDTO imp(MultipartFile file) throws IOException {
-        return this.staffOvertimeService.imp(file);
     }
 
     @Operation(summary = "异步导入")
