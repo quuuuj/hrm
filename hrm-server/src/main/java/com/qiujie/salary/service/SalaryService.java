@@ -12,7 +12,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qiujie.salary.entity.Salary;
 import com.qiujie.salary.entity.SalaryDeduct;
-import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.attendance.enums.AttendanceStatusEnum;
 import com.qiujie.salary.enums.DeductEnum;
 import com.qiujie.filetask.enums.TaskModuleEnum;
@@ -21,7 +20,7 @@ import com.qiujie.attendance.mapper.AttendanceMapper;
 import com.qiujie.salary.mapper.SalaryMapper;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
-import com.qiujie.salary.calculation.SalaryCalculation;
+import com.qiujie.salary.util.SalaryUtil;
 import com.qiujie.util.EasyExcelUtil;
 import com.qiujie.staff.service.SecurityUtil;
 import com.qiujie.salary.vo.StaffSalaryVO;
@@ -30,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
@@ -197,7 +195,7 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
             BigDecimal monthOvertime = this.salaryMapper.sumMonthOvertimeSalary(
                     staffSalaryVO.getStaffId(), month);
             // 纯计算委托
-            SalaryCalculation.compute(staffSalaryVO, attendanceCounts, leaveWorkdayCount,
+            SalaryUtil.calculate(staffSalaryVO, attendanceCounts, leaveWorkdayCount,
                     monthOvertime, monthSalary, deductRates);
         }
     }
