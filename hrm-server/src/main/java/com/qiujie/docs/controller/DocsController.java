@@ -109,10 +109,12 @@ public class DocsController {
 
 
     @Operation(summary = "文件下载")
-    @GetMapping("/download/{filename}")
+    // 对象键形如 docs/{staffId}/{uploadId}/{uuid}.{ext}，含斜杠，需用通配捕获整段路径
+    @GetMapping("/download/{*filename}")
     @PreAuthorize("hasAnyAuthority('system:docs:download')")
     public void download(@PathVariable String filename, HttpServletResponse response) throws IOException {
-        this.docsService.download(filename, response);
+        // 通配捕获值带前导斜杠，去掉后才是对象键
+        this.docsService.download(filename.startsWith("/") ? filename.substring(1) : filename, response);
     }
 
     @Operation(summary = "头像下载")
