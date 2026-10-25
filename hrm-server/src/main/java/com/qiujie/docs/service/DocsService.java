@@ -96,12 +96,7 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
             if (header.length == 4
                     && header[0] == (byte) 0x28 && header[1] == (byte) 0xB5
                     && header[2] == 0x2F && header[3] == (byte) 0xFD) {
-                // 压缩数据：流式解压输出
-                // 查询原始大小用于 Content-Length
-                Docs docs = getOne(new QueryWrapper<Docs>().eq("name", filename));
-                if (docs != null && docs.getSize() != null) {
-                    response.setHeader("Content-Length", String.valueOf(docs.getSize() * 1024));
-                }
+                // 压缩数据：流式解压输出；原始字节数未落库，不设 Content-Length，交给分块传输
                 // 拼接回 magic bytes + 剩余流，再解压
                 try (ByteArrayInputStream headerStream = new ByteArrayInputStream(header);
                      InputStream fullStream = new java.io.SequenceInputStream(headerStream, in);
