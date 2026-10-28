@@ -5,7 +5,7 @@ const url = '/overtime'
 // 得到
 export const queryByDeptIdAndTypeNum = (deptId, typeNum) => {
   return request({
-    url: url + '/' + deptId + '/' + typeNum
+    url: url + '/by-dept-type/' + deptId + '/' + typeNum
   })
 }
 
