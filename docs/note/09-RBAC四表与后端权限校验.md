@@ -51,7 +51,7 @@ erDiagram
 
 两条竖线加一个鸦爪符号表示“一对多”：`SYS_STAFF ||--o{ PER_STAFF_ROLE` 读作“一个员工可以出现在 `per_staff_role` 的零到多行里”。关系线上标的是连接用的外键列名——`per_role` 与 `per_staff_role`、`per_role` 与 `per_role_menu` 之间隔着员工和菜单，等式两端的角色 id 相同才建立联系。
 
-**`per_menu` 一张表装两样东西。** 关键在 `level` 列（`db/mysql/hrm.sql:365`）：`0` 是一级目录（“系统管理”、“考勤管理”这类只分组不可点的），`1` 是二级菜单（对应前端一个页面），`2` 是权限点（对应页面里的一个按钮或一个接口）。种子数据示例（`hrm.sql:393`）：
+**`per_menu` 一张表装两样东西。** 关键在 `level` 列（`db/mysql/hrm.sql:367`）：`0` 是一级目录（“系统管理”、“考勤管理”这类只分组不可点的），`1` 是二级菜单（对应前端一个页面），`2` 是权限点（对应页面里的一个按钮或一个接口）。种子数据示例（`hrm.sql:394`）：
 
 ```sql
 INSERT INTO `per_menu` VALUES (23, 'staff_add', '新增员工', 'circle-plus-outline', 'system:staff:add', 1, 2, 1, ...);
@@ -62,7 +62,7 @@ INSERT INTO `per_menu` VALUES (23, 'staff_add', '新增员工', 'circle-plus-out
 
 `system:staff:add` 这个字符串就是权限点本身——它同时出现在三个位置：`per_menu.permission` 列、后端 `@PreAuthorize` 注解、前端 `v-permission` 指令（下一期）。三处使用同一字符串，构成本系统的权限协议。
 
-**两张关系表结构最简。** `per_staff_role`（`hrm.sql:856`）只有 `staff_id` 和 `role_id` 两列，`per_role_menu`（`hrm.sql:526`）只有 `role_id` 和 `menu_id`。没有 `is_deleted`、没有审计列——关系表要么存在要么不存在，不需要逻辑删除。给角色分配权限是往 `per_role_menu` 插行，撤销是删行。
+**两张关系表结构最简。** `per_staff_role`（`hrm.sql:857`）只有 `staff_id` 和 `role_id` 两列，`per_role_menu`（`hrm.sql:527`）只有 `role_id` 和 `menu_id`。没有 `is_deleted`、没有审计列——关系表要么存在要么不存在，不需要逻辑删除。给角色分配权限是往 `per_role_menu` 插行，撤销是删行。
 
 **为什么没有 `per_permission` 表？** 与多数 RBAC 教程不同，权限点不是独立实体，而是 `per_menu` 的一行。理由：本系统的权限始终跟着页面走，“能不能导出员工”只在员工管理页存在，不存在脱离菜单的孤立权限。权限点放进菜单表后，`per_role_menu` 一张表同时表达“这个角色能看到哪些页面”和“这个角色能点哪些按钮”——第 10 期前端动态路由用到前者，本期的 `@PreAuthorize` 用到后者。
 
@@ -175,6 +175,6 @@ admin 调同一导出接口能拿到文件流——同一个接口、同一套�
 - **`@PreAuthorize` + `hasAnyAuthority` 做接口级拦截**，失败的 `AccessDeniedException` 统一渲染成 `code=1300`，与 `1200` 的“重新登录”在前端分流；
 - **权限变更靠续期生效**：`/refresh` 重查 `queryPermission` 重发 token，15 分钟为权限生效的最坏延迟。
 
-后端拦截已完成，但用户还看不到这套权限——菜单是全量渲染的、按钮点击后才报错。下一期处理前端对接：登录后按权限动态生成路由、`v-permission` 指令使无权限的按钮不渲染。权限点字符串的三处协议（表、注解、指令）届时闭环。
+后端拦截已完成，但用户还看不到这套权限——菜单是全量渲染的、按钮点击后才报错。下一期处理前端对接：登录后按权限动态生成路由、`v-permission` 指令使无权限的按钮不渲染。权限点字符串的三处协议（表、注解、指令）届时对齐。
 
 **GitHub**：https://github.com/quuuuj/hrm

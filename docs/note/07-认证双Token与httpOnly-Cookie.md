@@ -14,7 +14,7 @@
 
 ## 双 Token：身份与续期资格分离
 
-本期第一个术语：**双 Token（Access/Refresh Token）** 指系统同时签发两个不同寿命、不同用途的 JWT——短命的 Access Token 用于日常 API 调用，长命的 Refresh Token 只用于换取新的 Access Token。
+本期第一个术语：**双 Token（Access/Refresh Token）** 指系统同时签发两个不同寿命、不同用途的 JWT，短命的 Access Token 用于日常 API 调用，长命的 Refresh Token 只用于换取新的 Access Token。
 
 `hrm-server/src/main/java/com/qiujie/util/JwtUtil.java:26` 中两个寿命常数固定了该分工：
 
