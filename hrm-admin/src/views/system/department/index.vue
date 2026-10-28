@@ -501,10 +501,11 @@ export default {
     },
     changeOvertimeType (typeNum) {
       this.$refs.overtimeForm.clearValidate()
-      this.settingDialog.overtimeForm.overtimeType = this.settingDialog.overtimeForm.overtimeTypeList.find(item => item.code === typeNum)
-      queryOvertimeByDeptIdAndTypeNum(this.deptId, typeNum).then(response => {
+      const overtimeType = this.settingDialog.overtimeForm.overtimeTypeList.find(item => item.code === typeNum)
+      this.settingDialog.overtimeForm.overtimeType = overtimeType
+      queryOvertimeByDeptIdAndTypeNum(this.deptId, overtimeType.message).then(response => {
         if (response.code === 200) {
-          this.settingDialog.overtimeForm.formData = response.data
+          this.settingDialog.overtimeForm.formData = { ...response.data, typeNum }
         } else {
           this.settingDialog.overtimeForm.formData = {
             typeNum: typeNum,

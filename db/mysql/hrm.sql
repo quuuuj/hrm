@@ -320,6 +320,7 @@ CREATE TABLE `att_staff_overtime`  (
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `is_deleted` tinyint UNSIGNED NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_overtime_staff_date_active` (((CASE WHEN `is_deleted` = 0 THEN `staff_id` END)), `overtime_date`) USING BTREE,
   KEY `idx_overtime_staff_date` (`staff_id`, `overtime_date`),
   KEY `idx_overtime_staff_status_date` (`staff_id`, `status`, `overtime_date`)
 ) ENGINE = InnoDB AUTO_INCREMENT = 301 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '员工加班表' ROW_FORMAT = DYNAMIC;
@@ -848,6 +849,10 @@ INSERT INTO `per_role_menu` VALUES (3773, 4, 121);
 INSERT INTO `per_role_menu` VALUES (3774, 4, 122);
 INSERT INTO `per_role_menu` VALUES (3775, 7, 121);
 INSERT INTO `per_role_menu` VALUES (3776, 7, 122);
+INSERT INTO `per_role_menu` VALUES (3777, 3, 109);
+INSERT INTO `per_role_menu` VALUES (3778, 5, 109);
+INSERT INTO `per_role_menu` VALUES (3779, 7, 109);
+INSERT INTO `per_role_menu` VALUES (3780, 8, 109);
 
 -- ----------------------------
 -- Table structure for per_staff_role

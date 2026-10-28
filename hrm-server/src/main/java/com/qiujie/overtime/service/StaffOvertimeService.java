@@ -33,6 +33,7 @@ import com.qiujie.util.DatetimeUtil;
 import com.qiujie.overtime.util.OvertimeUtil;
 import com.qiujie.staff.service.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -79,10 +80,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
     private SalaryMapper salaryMapper;
 
     public ResponseDTO add(StaffOvertime staffOvertime) {
-        if (save(staffOvertime)) {
-            return Response.success();
-        }
-        return Response.error();
+        return setOvertime(staffOvertime);
     }
 
     public ResponseDTO delete(Integer id) {
@@ -101,10 +99,23 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
 
 
     public ResponseDTO edit(StaffOvertime staffOvertime) {
-        if (updateById(staffOvertime)) {
-            return Response.success();
+        if (staffOvertime.getId() == null) {
+            return Response.error("加班记录id不能为空");
         }
-        return Response.error();
+        StaffOvertime existing = getById(staffOvertime.getId());
+        if (existing == null) {
+            return Response.error("加班记录不存在");
+        }
+        if (staffOvertime.getStaffId() != null
+                && !staffOvertime.getStaffId().equals(existing.getStaffId())) {
+            return Response.error("员工不可修改");
+        }
+        if (staffOvertime.getOvertimeDate() != null
+                && !staffOvertime.getOvertimeDate().equals(existing.getOvertimeDate())) {
+            return Response.error("加班日期不可修改");
+        }
+        staffOvertime.setStaffId(existing.getStaffId()).setOvertimeDate(existing.getOvertimeDate());
+        return setOvertime(staffOvertime);
     }
 
 
@@ -187,6 +198,9 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
      * @return
      */
     public ResponseDTO setOvertime(StaffOvertime staffOvertime) {
+        if (staffOvertime.getStaffId() == null || staffOvertime.getOvertimeDate() == null) {
+            return Response.error("员工与加班日期不能为空");
+        }
         Staff staff = staffMapper.selectById(staffOvertime.getStaffId());
         if (staff == null) {
             return Response.error("员工不存在");
@@ -204,13 +218,30 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
                 .setStatus((OvertimeStatusEnum) result.get("status"))
                 .setTotalOvertime((BigDecimal) result.get("totalOvertime"))
                 .setOvertimeSalary((BigDecimal) result.get("overtimeSalary"));
-        QueryWrapper<StaffOvertime> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("staff_id", staffOvertime.getStaffId()).eq("overtime_date",
-                staffOvertime.getOvertimeDate());
-        if (update(staffOvertime, queryWrapper) || save(staffOvertime)) {
+        if (saveOrUpdateByStaffAndDate(staffOvertime)) {
             return Response.success();
         }
         return Response.error();
+    }
+
+    /**
+     * 按「员工 + 日期」更新，更新不到再插入。
+     * 并发插入同一员工同一天时，唯一索引会拦下后到的 insert，此时改为更新。
+     */
+    private boolean saveOrUpdateByStaffAndDate(StaffOvertime staffOvertime) {
+        staffOvertime.setId(null);
+        staffOvertime.setDeleteFlag(0);
+        QueryWrapper<StaffOvertime> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("staff_id", staffOvertime.getStaffId())
+                .eq("overtime_date", staffOvertime.getOvertimeDate());
+        if (update(staffOvertime, queryWrapper)) {
+            return true;
+        }
+        try {
+            return save(staffOvertime);
+        } catch (DuplicateKeyException e) {
+            return update(staffOvertime, queryWrapper);
+        }
     }
 
     /**
@@ -326,12 +357,8 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
                             .setRawData(JSON.toJSONString(row)).setErrorMessage(e.getMessage()));
                 }
             }
-            if (!validList.isEmpty()) {
-                for (StaffOvertime entity : validList) {
-                    QueryWrapper<StaffOvertime> qw = new QueryWrapper<>();
-                    qw.eq("staff_id", entity.getStaffId()).eq("overtime_date", entity.getOvertimeDate());
-                    if (!update(entity, qw)) { save(entity); }
-                }
+            for (StaffOvertime entity : validList) {
+                saveOrUpdateByStaffAndDate(entity);
             }
         }
     }
