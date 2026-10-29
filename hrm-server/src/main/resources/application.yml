@@ -137,6 +137,11 @@ knowledge:
     keyword-top-k: 20
     rrf-k: 60
     window-size: 1
+    rerank:
+      enabled: true
+      model: ${LLM_RERANK_MODEL:qwen3.7-text-rerank}
+      # RRF 融合后进入精排的候选数量；需 ≥ top-k 才有精排意义
+      candidate-pool-size: 30
   qa:
     evidence-none-threshold: 0.0
     evidence-weak-threshold: 0.3

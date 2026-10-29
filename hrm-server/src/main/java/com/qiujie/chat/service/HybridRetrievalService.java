@@ -16,9 +16,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 混合检索服务：向量检索 + 关键词检索 → RRF 融合。
+ * 混合检索服务：向量检索 + 关键词检索 → RRF 融合 → 重排序精排。
  * <p>
  * 遵循 RFC #69：关键词检索改从合并后的 {@code sys_docs} 表关联查询。
+ * RRF 只看排名不看语义相关度，精排由 DashScope rerank 模型补足；重排不可用时
+ * 自动退回 RRF 顺序，检索链路不中断。
  * </p>
  */
 @Service
@@ -28,6 +30,9 @@ public class HybridRetrievalService {
 
     @Autowired
     private DashScopeEmbeddingClient embeddingClient;
+
+    @Autowired
+    private DashScopeRerankClient rerankClient;
 
     @Autowired
     @Qualifier("kbDataSource")
@@ -57,6 +62,9 @@ public class HybridRetrievalService {
     @Value("${knowledge.retrieval.window-size}")
     private int windowSize;
 
+    @Value("${knowledge.retrieval.rerank.candidate-pool-size}")
+    private int rerankPoolSize;
+
     public List<SearchResult> search(List<String> queries) {
         List<SearchResult> allResults = new ArrayList<>();
         for (String query : queries) {
@@ -66,8 +74,13 @@ public class HybridRetrievalService {
         if (allResults.isEmpty()) return List.of();
         List<SearchResult> fused = rrfFuse(allResults);
         fused.sort((a, b) -> Double.compare(b.score(), a.score()));
-        if (fused.size() > topK) fused = fused.subList(0, topK);
-        return expandNeighborWindows(fused);
+
+        // 先精排再截断：RRF 只看名次，topK 以内的语义顺序由重排模型决定
+        List<SearchResult> pool = fused.size() > rerankPoolSize ? fused.subList(0, rerankPoolSize) : fused;
+        String primaryQuery = queries.isEmpty() ? null : queries.get(0);
+        List<SearchResult> ranked = rerankClient.rerank(primaryQuery, pool, topK);
+        if (ranked.size() > topK) ranked = new ArrayList<>(ranked.subList(0, topK));
+        return expandNeighborWindows(ranked);
     }
 
     private List<SearchResult> vectorSearch(String query) {
