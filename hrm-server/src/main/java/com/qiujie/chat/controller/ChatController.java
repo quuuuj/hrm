@@ -60,7 +60,7 @@ public class ChatController {
     @GetMapping("/conversations/{id}/messages")
     public ResponseDTO listMessages(@PathVariable Long id,
                                     @RequestParam(defaultValue = "15") int size,
-                                    @RequestParam(required = false) String before) {
+                                    @RequestParam(required = false) Long before) {
         return Response.success(chatService.listMessages(id, before, size));
     }
 

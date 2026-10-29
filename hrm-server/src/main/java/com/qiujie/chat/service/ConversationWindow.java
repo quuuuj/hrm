@@ -43,11 +43,11 @@ public class ConversationWindow {
             return List.of();
         }
         int maxChars = chatProperties.getWindowMaxChars();
-        // 拉取最近最多 30 条消息（按时间倒序）
+        // 拉取最近最多 30 条消息（按自增 id 倒序：同一轮问答的 user/assistant 共用 create_time）
         List<ChatMessage> recentMessages = messageMapper.selectList(
                 new QueryWrapper<ChatMessage>()
                         .eq("session_id", sessionId)
-                        .orderByDesc("create_time")
+                        .orderByDesc("id")
                         .last("LIMIT 30"));
 
         if (recentMessages == null || recentMessages.isEmpty()) {

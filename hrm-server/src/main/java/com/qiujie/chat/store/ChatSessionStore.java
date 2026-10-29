@@ -28,10 +28,13 @@ public interface ChatSessionStore {
 
     /**
      * 游标分页消息历史。
+     * <p>游标为消息自增主键 {@code id}：同一轮的 user/assistant 消息可能共享
+     * 同一 {@code create_time}，用时间戳做游标会漏掉同时间戳的兄弟消息。</p>
      *
-     * @return { records(升序), hasMore, nextCursor }
+     * @param before 上一页最早一条消息的 id，null 表示取最新一页
+     * @return { records(升序), hasMore, nextCursor(id) }
      */
-    Map<String, Object> listMessages(Long sessionId, String before, int size);
+    Map<String, Object> listMessages(Long sessionId, Long before, int size);
 
     /** 删除会话——级联删除其下的所有消息。 */
     void delete(Long sessionId);
