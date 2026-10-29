@@ -3,6 +3,9 @@
 # 通过 hrm-server/.env 注入（兼容任意 cwd：项目根目录或 hrm-server/，IDEA/命令行均可启动）
 
 spring:
+  application:
+    # 同时充当 Redis key 前缀：共享实例上按 `hrm:` 隔离
+    name: hrm
   config:
     import: optional:file:.env[.properties],optional:file:hrm-server/.env[.properties]
   datasource:
@@ -28,6 +31,8 @@ spring:
   redis:
     host: 127.0.0.1
     port: 6379
+    # 本地单实例无 ACL 用户，留空；共享实例走 ACL 账号时由生产配置覆盖
+    username:
     password:
     database: 0
     lettuce:
