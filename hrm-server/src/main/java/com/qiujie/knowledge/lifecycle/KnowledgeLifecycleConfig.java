@@ -54,14 +54,16 @@ public class KnowledgeLifecycleConfig {
                 ingestExecutor, pipeline, purgeHandler);
     }
 
-    /** 启动恢复：仅在知识库启用时注册（四步恢复覆盖三个崩溃窗口）。 */
+    /** 启动恢复：仅在知识库启用时注册（四步崩溃窗口 + 孤儿索引核对）。 */
     @Bean
     @ConditionalOnExpression("${knowledge.enabled:false}")
     public StartupRecovery startupRecovery(DocsMapper documentMapper,
                                            IngestionJobMapper jobMapper,
                                            IngestionPipeline pipeline,
                                            DocumentPurgeHandler purgeHandler,
+                                           ChunkVectorStore chunkVectorStore,
                                            @Qualifier("fileTaskExecutor") Executor executor) {
-        return new StartupRecovery(documentMapper, jobMapper, pipeline, purgeHandler, executor);
+        return new StartupRecovery(documentMapper, jobMapper, pipeline, purgeHandler,
+                chunkVectorStore, executor);
     }
 }
