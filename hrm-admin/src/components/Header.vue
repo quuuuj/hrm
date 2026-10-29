@@ -13,7 +13,7 @@
       <el-dropdown trigger="hover" size="mini" @command="handleCommand" @visible-change="onDropdownVisible">
         <span>
           <el-badge :value="unreadCount" :hidden="unreadCount === 0" is-dot>
-            <img ref="img" src="" alt="头像" class="avatar"/>
+            <img ref="img" :src="defaultAvatar" alt="头像" class="avatar"/>
           </el-badge>
         </span>
         <el-dropdown-menu slot="dropdown">
@@ -307,7 +307,7 @@ import { mapGetters } from 'vuex'
 import moment from 'moment'
 // 切换到中国时间
 import 'moment/locale/zh-cn'
-import { setAvatar } from '@/utils/avatar'
+import { setAvatar, defaultAvatar } from '@/utils/avatar'
 import { pageNotifications, unreadCount as fetchUnreadCount, markRead, markAllRead } from '@/api/notification'
 import { detail as fileTaskDetail } from '@/api/fileTask'
 import { routeForModule } from '@/utils/fileTaskModule'
@@ -386,6 +386,7 @@ export default {
       }
     }
     return {
+      defaultAvatar,
       infoForm: {
         isShow: false,
         formData: {}

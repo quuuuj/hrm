@@ -85,11 +85,13 @@ instance.interceptors.response.use(response => {
   }
   // 业务错误
   if (res.code === 400 || res.code === 500 || res.code === 1300) {
-    ElementUI.Message({
-      message: res.message,
-      type: 'error',
-      duration: 5 * 1000
-    })
+    if (!response.config.silent) {
+      ElementUI.Message({
+        message: res.message,
+        type: 'error',
+        duration: 5 * 1000
+      })
+    }
     return Promise.reject(res.message)
   }
   return res
@@ -128,11 +130,13 @@ instance.interceptors.response.use(response => {
       })
     }
   }
-  ElementUI.Message({
-    message: error.message,
-    type: 'error',
-    duration: 5 * 1000
-  })
+  if (!error.config.silent) {
+    ElementUI.Message({
+      message: error.message,
+      type: 'error',
+      duration: 5 * 1000
+    })
+  }
   return Promise.reject(error)
 })
 
