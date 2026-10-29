@@ -27,6 +27,30 @@ function toLogin () {
 }
 
 /**
+ * 解析包成 Blob 的 JSON 错误体，取后端 message 弹提示；非 JSON 时回落到 error.message。
+ * 后端对文件接口的失败响应是统一 ResponseDTO（如 {"code":600,"message":"文件不存在"}）。
+ */
+function showBlobError (error) {
+  const blob = error.response && error.response.data
+  const fallback = () => {
+    ElementUI.Message({ message: error.message, type: 'error', duration: 5 * 1000 })
+  }
+  if (!(blob instanceof Blob) || blob.type.indexOf('json') === -1) {
+    fallback()
+    return
+  }
+  blob.text().then(text => {
+    let message = ''
+    try {
+      message = JSON.parse(text).message || ''
+    } catch (e) {
+      message = ''
+    }
+    ElementUI.Message({ message: message || error.message, type: 'error', duration: 5 * 1000 })
+  }).catch(fallback)
+}
+
+/**
  * request 拦截器
  */
 instance.interceptors.request.use(config => {
@@ -131,11 +155,9 @@ instance.interceptors.response.use(response => {
     }
   }
   if (!error.config.silent) {
-    ElementUI.Message({
-      message: error.message,
-      type: 'error',
-      duration: 5 * 1000
-    })
+    // 文件类请求（responseType=blob）出错时响应体也是 Blob，直接读 error.message
+    // 只能得到 "Request failed with status code 404"，解析出后端 message 更可读
+    showBlobError(error)
   }
   return Promise.reject(error)
 })
