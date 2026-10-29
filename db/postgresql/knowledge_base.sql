@@ -65,16 +65,3 @@ CREATE TABLE IF NOT EXISTS kb_document (
     is_deleted      INT DEFAULT 0
 );
 
--- 知识库问答记录表
-CREATE TABLE IF NOT EXISTS kb_qa_record (
-    id              BIGSERIAL PRIMARY KEY,
-    question        TEXT NOT NULL,
-    answer          TEXT,
-    staff_id        INT,
-    evidence_level  VARCHAR(20),
-    answered        BOOLEAN DEFAULT FALSE,
-    citation_count  INT DEFAULT 0,
-    endpoint        VARCHAR(100),
-    success         BOOLEAN DEFAULT TRUE,
-    create_time     TIMESTAMP NOT NULL DEFAULT NOW()
-);

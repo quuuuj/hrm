@@ -62,7 +62,7 @@ public class ChatQaService {
     @Autowired
     private EvidenceAssessmentService evidenceService;
     @Autowired
-    private QaRecordRepository qaRecordRepository;
+    private QaRecordWriter qaRecordWriter;
     @Autowired
     private ChatMessageMapper messageMapper;
     @Autowired
@@ -121,7 +121,7 @@ public class ChatQaService {
 
         // 分支 A: 无关/恶意输入，固定文案，零大模型调用
         if (gateResult.intent() == IntentGate.Intent.IRRELEVANT) {
-            finish(emitter, sessionId, userQuestion, IRRELEVANT_REPLY, staffId, null);
+            finish(emitter, sessionId, userQuestion, IRRELEVANT_REPLY, staffId, null, List.of(), false);
             return;
         }
 
@@ -132,11 +132,12 @@ public class ChatQaService {
         if (gateResult.intent() == IntentGate.Intent.CHATTING) {
             String systemPrompt = conversationWindow.buildSystemPrompt(staffInfo, null);
             String answer = stream(sessionId, userQuestion, history, systemPrompt, emitter);
-            if (answer == null) {
+            boolean llmAnswered = answer != null;
+            if (!llmAnswered) {
                 answer = CHATTING_FALLBACK;
                 push(emitter, answer);
             }
-            finish(emitter, sessionId, userQuestion, answer, staffId, null);
+            finish(emitter, sessionId, userQuestion, answer, staffId, null, List.of(), llmAnswered);
             return;
         }
 
@@ -148,14 +149,16 @@ public class ChatQaService {
         List<SearchResult> searchResults = searchProvider.search(List.of(queryToSearch));
         EvidenceAssessmentService.Assessment assessment = evidenceService.assess(searchResults);
 
-        String kbContext = buildKbContext(searchResults);
-        String systemPrompt = conversationWindow.buildSystemPrompt(staffInfo, kbContext);
+        KbContext context = buildKbContext(searchResults);
+        String systemPrompt = conversationWindow.buildSystemPrompt(staffInfo, context.text());
         String answer = stream(sessionId, userQuestion, history, systemPrompt, emitter);
-        if (answer == null) {
+        boolean llmAnswered = answer != null;
+        if (!llmAnswered) {
             answer = KNOWLEDGE_FALLBACK;
             push(emitter, answer);
         }
-        finish(emitter, sessionId, userQuestion, answer, staffId, assessment);
+        finish(emitter, sessionId, userQuestion, answer, staffId, assessment,
+                context.usedResults(), llmAnswered);
     }
 
     /** 拉取当前员工档案；取不到时返回 null，系统提示词跳过档案段落。 */
@@ -176,9 +179,16 @@ public class ChatQaService {
         }
     }
 
-    /** 按字符预算拼装检索上下文。 */
-    private String buildKbContext(List<SearchResult> searchResults) {
+    /**
+     * 按字符预算拼装检索上下文。
+     * <p>
+     * 返回的 {@code usedResults} 是真正拼进提示词的子集——被预算截掉的结果不算引用，
+     * 引用快照据此写入，保证「引用了几条」与「模型看到几条」口径一致。
+     * </p>
+     */
+    private KbContext buildKbContext(List<SearchResult> searchResults) {
         StringBuilder kbContext = new StringBuilder();
+        List<SearchResult> used = new ArrayList<>();
         int maxContext = chatProperties.getMaxContextChars();
         int currentLen = 0;
         for (SearchResult sr : searchResults) {
@@ -191,9 +201,14 @@ public class ChatQaService {
             }
             kbContext.append("【来源: ").append(sr.documentName()).append("】\n")
                     .append(chunk).append("\n\n");
+            used.add(sr);
             currentLen += chunk.length();
         }
-        return kbContext.toString();
+        return new KbContext(kbContext.toString(), used);
+    }
+
+    /** 拼装后的知识上下文与其实际采用的检索结果。 */
+    private record KbContext(String text, List<SearchResult> usedResults) {
     }
 
     /**
@@ -211,12 +226,22 @@ public class ChatQaService {
         }
     }
 
-    /** 推送完成事件并落库回答。 */
+    /**
+     * 推送完成事件并落库回答。
+     *
+     * @param llmAnswered 模型是否真的产出了回答（兜底文案为 false）
+     * @param usedResults 实际进入提示词的检索结果
+     */
     private void finish(SseEmitter emitter, Long sessionId, String userQuestion, String answer,
-                        Integer staffId, EvidenceAssessmentService.Assessment assessment) throws Exception {
+                        Integer staffId, EvidenceAssessmentService.Assessment assessment,
+                        List<SearchResult> usedResults, boolean llmAnswered) throws Exception {
         saveAssistantMessage(sessionId, answer);
-        qaRecordRepository.save(userQuestion, answer,
-                assessment == null ? null : assessment.level().name());        emitter.send(SseEmitter.event().name("meta")
+        String evidenceLevel = assessment == null ? null : assessment.level().name();
+        // 「作答」= 模型确实产出了回答且证据不是 NONE；兜底文案与无证据都不算
+        boolean answered = llmAnswered && assessment != null
+                && assessment.level() != EvidenceLevel.NONE;
+        qaRecordWriter.save(userQuestion, answer, staffId, evidenceLevel, answered, usedResults);
+        emitter.send(SseEmitter.event().name("meta")
                 .data(MAPPER.writeValueAsString(Map.of("conversationId", sessionId))));
         emitter.complete();
     }

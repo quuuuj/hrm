@@ -95,7 +95,8 @@ public class HybridRetrievalService {
                     double sim = rs.getDouble("similarity");
                     VectorMetadata meta = VectorMetadata.fromJson(metaStr);
                     list.add(new SearchResult(rs.getString("content"),
-                            meta.documentName(), meta.documentId(), meta.chunkId(), sim, "vector"));
+                            meta.documentName(), meta.documentId(), meta.chunkId(), sim, "vector", sim,
+                            SearchResult.ChannelScores.vector(sim)));
                 }
                 return list;
             }, pgVec, pgVec, vectorTopK);
@@ -125,7 +126,7 @@ public class HybridRetrievalService {
                 int count = countMatches(text.toLowerCase(), query.toLowerCase());
                 double relevance = 0.6 + Math.min(count * 0.1, 0.3);
                 return new SearchResult(text, rs.getString(2), rs.getLong(3), rs.getLong(4),
-                        relevance, "keyword", relevance);
+                        relevance, "keyword", relevance, SearchResult.ChannelScores.keyword(relevance));
             }, pattern, keywordTopK);
         } catch (Exception e) {
             log.warn("Keyword search failed: {}", e.getMessage());
@@ -146,7 +147,7 @@ public class HybridRetrievalService {
             SearchResult r = vectorRanked.get(i);
             String key = r.documentId() + ":" + r.chunkId();
             fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
-                    1.0 / (k + i + 1), "rrf", r.relevance()));
+                    1.0 / (k + i + 1), "rrf", r.relevance(), r.channels()));
         }
         for (int i = 0; i < keywordRanked.size(); i++) {
             SearchResult r = keywordRanked.get(i);
@@ -154,19 +155,25 @@ public class HybridRetrievalService {
             double rrf = 1.0 / (k + i + 1);
             if (fused.containsKey(key)) {
                 SearchResult existing = fused.get(key);
+                // 两路都命中的切片：保留两边原始分，供引用快照标注 BOTH
                 fused.put(key, new SearchResult(existing.chunkText(), existing.documentName(),
                         existing.documentId(), existing.chunkId(), existing.score() + rrf, "rrf",
-                        Math.max(existing.relevance(), r.relevance())));
+                        Math.max(existing.relevance(), r.relevance()),
+                        existing.channels() == null ? r.channels() : existing.channels().merge(r.channels())));
             } else {
                 fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
-                        rrf, "rrf", r.relevance()));
+                        rrf, "rrf", r.relevance(), r.channels()));
             }
         }
         // score 归一化到 [0,1] 仅用于排序/展示；relevance 保持通道原始相关度供证据评估使用
         double maxScore = fused.values().stream().mapToDouble(SearchResult::score).max().orElse(1.0);
         return fused.values().stream()
-                .map(r -> new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
-                        r.score() / maxScore, "rrf", r.relevance()))
+                .map(r -> r.channels() == null
+                        ? new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
+                                r.score() / maxScore, "rrf", r.relevance())
+                        : new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
+                                r.score() / maxScore, "rrf", r.relevance(),
+                                r.channels().withHybrid(r.score() / maxScore)))
                 .sorted((a, b) -> Double.compare(b.score(), a.score())).collect(Collectors.toList());
     }
 
@@ -188,7 +195,8 @@ public class HybridRetrievalService {
                     String key = rs.getLong(3) + ":" + rs.getLong(4);
                     if (!existingKeys.contains(key)) {
                         existingKeys.add(key);
-                        expanded.add(new SearchResult(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), r.score() * 0.8, "neighbor", r.relevance()));
+                        expanded.add(new SearchResult(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4),
+                                r.score() * 0.8, "neighbor", r.relevance(), r.channels()));
                     }
                     return null;
                 }, r.documentId(), windowSize, r.chunkId(), windowSize, r.chunkId());
