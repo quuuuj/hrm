@@ -11,7 +11,7 @@
                        :limit="1">
               <i class="el-icon-edit"></i>
             </el-upload>
-            <img ref="img" src="" alt="头像"/>
+            <img ref="img" :src="defaultAvatar" alt="头像"/>
             <div class="userinfo">
               <p style="margin-bottom: 15px;font-weight: bold;">{{ currentDateInfo }}</p>
               <p class="name">{{ staff.name }}</p>
@@ -68,13 +68,14 @@ import * as echarts from 'echarts'
 import { queryCount, queryCity, queryStaff, queryAttendance, queryDepartment } from '@/api/home'
 import { getUploadApi } from '@/api/docs'
 import { edit, queryInfo } from '@/api/staff'
-import { setAvatar } from '@/utils/avatar'
+import { setAvatar, defaultAvatar } from '@/utils/avatar'
 import { mapGetters } from 'vuex'
 
 export default {
   name: 'Home',
   data () {
     return {
+      defaultAvatar,
       dayOfWeek: ['星期天', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
       attendanceData: {
         date: '',

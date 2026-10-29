@@ -61,7 +61,9 @@ export const getAvatar = (filename) => {
   return request({
     url: url + '/avatar/' + filename,
     method: 'get',
-    responseType: 'blob'
+    responseType: 'blob',
+    // 头像属装饰性资源：对象缺失时不弹全局错误提示，由调用方回落默认头像
+    silent: true
   })
 }
 
