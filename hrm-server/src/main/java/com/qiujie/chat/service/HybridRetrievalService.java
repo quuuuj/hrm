@@ -35,14 +35,6 @@ public class HybridRetrievalService {
 
     private JdbcTemplate kbJdbc;
 
-    public HybridRetrievalService() {
-    }
-
-    HybridRetrievalService(DataSource kbDataSource) {
-        this.kbDataSource = kbDataSource;
-        this.kbJdbc = new JdbcTemplate(kbDataSource);
-    }
-
     @PostConstruct
     public void init() {
         if (this.kbJdbc == null && this.kbDataSource != null) {
@@ -109,17 +101,18 @@ public class HybridRetrievalService {
                     SELECT c.chunk_text, COALESCE(d.old_name, ''), c.document_id, c.id
                     FROM document_chunk c
                     LEFT JOIN kb_document d ON d.id = c.document_id
-                    WHERE c.chunk_text ILIKE ?
+                    WHERE c.chunk_text ILIKE ? ESCAPE '\\'
                     ORDER BY length(c.chunk_text) ASC
                     LIMIT ?
                     """;
-            String pattern = "%" + query.replace("%", "\\%").replace("_", "\\_") + "%";
+            String pattern = "%" + query.replace("\\", "\\\\")
+                    .replace("%", "\\%").replace("_", "\\_") + "%";
             return kbJdbc.query(sql, (rs, rowNum) -> {
-                double score = 0.6;
                 String text = rs.getString(1);
                 int count = countMatches(text.toLowerCase(), query.toLowerCase());
-                score += Math.min(count * 0.1, 0.3);
-                return new SearchResult(text, rs.getString(2), rs.getLong(3), rs.getLong(4), score, "keyword");
+                double relevance = 0.6 + Math.min(count * 0.1, 0.3);
+                return new SearchResult(text, rs.getString(2), rs.getLong(3), rs.getLong(4),
+                        relevance, "keyword", relevance);
             }, pattern, keywordTopK);
         } catch (Exception e) {
             log.warn("Keyword search failed: {}", e.getMessage());
@@ -131,15 +124,16 @@ public class HybridRetrievalService {
         Map<String, List<SearchResult>> bySource = results.stream()
                 .collect(Collectors.groupingBy(SearchResult::source));
         List<SearchResult> vectorRanked = bySource.getOrDefault("vector", List.of())
-                .stream().sorted((a, b) -> Double.compare(b.score(), a.score())).toList();
+                .stream().sorted((a, b) -> Double.compare(b.relevance(), a.relevance())).toList();
         List<SearchResult> keywordRanked = bySource.getOrDefault("keyword", List.of())
-                .stream().sorted((a, b) -> Double.compare(b.score(), a.score())).toList();
+                .stream().sorted((a, b) -> Double.compare(b.relevance(), a.relevance())).toList();
         Map<String, SearchResult> fused = new LinkedHashMap<>();
         int k = rrfK;
         for (int i = 0; i < vectorRanked.size(); i++) {
             SearchResult r = vectorRanked.get(i);
             String key = r.documentId() + ":" + r.chunkId();
-            fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(), 1.0 / (k + i + 1), "rrf"));
+            fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
+                    1.0 / (k + i + 1), "rrf", r.relevance()));
         }
         for (int i = 0; i < keywordRanked.size(); i++) {
             SearchResult r = keywordRanked.get(i);
@@ -147,14 +141,19 @@ public class HybridRetrievalService {
             double rrf = 1.0 / (k + i + 1);
             if (fused.containsKey(key)) {
                 SearchResult existing = fused.get(key);
-                fused.put(key, new SearchResult(existing.chunkText(), existing.documentName(), existing.documentId(), existing.chunkId(), existing.score() + rrf, "rrf"));
+                fused.put(key, new SearchResult(existing.chunkText(), existing.documentName(),
+                        existing.documentId(), existing.chunkId(), existing.score() + rrf, "rrf",
+                        Math.max(existing.relevance(), r.relevance())));
             } else {
-                fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(), rrf, "rrf"));
+                fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
+                        rrf, "rrf", r.relevance()));
             }
         }
+        // score 归一化到 [0,1] 仅用于排序/展示；relevance 保持通道原始相关度供证据评估使用
         double maxScore = fused.values().stream().mapToDouble(SearchResult::score).max().orElse(1.0);
         return fused.values().stream()
-                .map(r -> new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(), r.score() / maxScore, "rrf"))
+                .map(r -> new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
+                        r.score() / maxScore, "rrf", r.relevance()))
                 .sorted((a, b) -> Double.compare(b.score(), a.score())).collect(Collectors.toList());
     }
 
@@ -176,7 +175,7 @@ public class HybridRetrievalService {
                     String key = rs.getLong(3) + ":" + rs.getLong(4);
                     if (!existingKeys.contains(key)) {
                         existingKeys.add(key);
-                        expanded.add(new SearchResult(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), r.score() * 0.8, "neighbor"));
+                        expanded.add(new SearchResult(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), r.score() * 0.8, "neighbor", r.relevance()));
                     }
                     return null;
                 }, r.documentId(), windowSize, r.chunkId(), windowSize, r.chunkId());

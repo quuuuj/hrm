@@ -8,12 +8,13 @@ import java.util.List;
 /**
  * 证据充分度评估服务。
  * 基于检索结果的数量、分数分布、文档多样性，判定证据等级。
+ * <p>
+ * 打分使用 {@link SearchResult#relevance()}（通道原始相关度），而不是 RRF 归一化后的
+ * {@code score}：后者会把本批首条结果强制拉成 1.0，拿它评估会让单条结果也判为「充分」。
+ * </p>
  */
 @Service
 public class EvidenceAssessmentService {
-
-    @Value("${knowledge.qa.evidence-none-threshold}")
-    private double noneThreshold;
 
     @Value("${knowledge.qa.evidence-weak-threshold}")
     private double weakThreshold;
@@ -30,13 +31,13 @@ public class EvidenceAssessmentService {
      * 根据检索结果评估证据充分度。
      */
     public Assessment assess(List<SearchResult> results) {
-        if (results.isEmpty()) {
+        if (results == null || results.isEmpty()) {
             return new Assessment(EvidenceLevel.NONE, "知识库中未找到相关信息");
         }
 
-        double maxScore = results.get(0).score();
-        double avgScore = results.stream().mapToDouble(r -> r.score()).average().orElse(0);
-        long uniqueDocs = results.stream().map(r -> r.documentId()).distinct().count();
+        double maxScore = results.stream().mapToDouble(SearchResult::relevance).max().orElse(0);
+        double avgScore = results.stream().mapToDouble(SearchResult::relevance).average().orElse(0);
+        long uniqueDocs = results.stream().map(SearchResult::documentId).distinct().count();
         int count = results.size();
 
         // 多因素综合判定
@@ -56,7 +57,6 @@ public class EvidenceAssessmentService {
             return new Assessment(EvidenceLevel.WEAK,
                     String.format("仅找到 %d 条弱相关结果，信息可能不准确", count));
         }
-        // NONE 只在真的没有任何结果时才触发，这里理论上不会到（results 非空）
         return new Assessment(EvidenceLevel.WEAK, "检索结果相关性较弱");
     }
 }

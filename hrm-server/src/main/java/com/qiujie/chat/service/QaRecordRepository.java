@@ -16,6 +16,8 @@ import javax.sql.DataSource;
  * <p>
  * kb_qa_record 在 PostgreSQL 数据库中，
  * 使用 JdbcTemplate（与 {@link com.qiujie.chat.service.HybridRetrievalService} 一致）。
+ * 三个分支（IRRELEVANT / CHATTING / KNOWLEDGE）都写入：被意图闸门误判成无关的真实业务问题
+ * 恰恰是最需要被发现的，只记知识问答会让审计数据失真。
  * </p>
  */
 @Component
@@ -44,22 +46,19 @@ public class QaRecordRepository {
      *
      * @param question      用户问题
      * @param answer        LLM 回答
-     * @param evidenceLevel 证据等级
-     * @param citationCount 引用数量
+     * @param evidenceLevel 证据等级；非知识问答分支为 null
      */
-    public void save(String question, String answer, String evidenceLevel, int citationCount) {
-        if (kbJdbc == null) return;
+    public void save(String question, String answer, String evidenceLevel) {
+        if (kbJdbc == null) {
+            return;
+        }
         try {
             Integer staffId = securityUtil.getCurrentOperatorId();
-            boolean answered = answer != null && !answer.startsWith("抱歉");
-
-            // 使用 @SuppressWarnings 抑制 varargs 泛型警告
-            @SuppressWarnings("ConstantConditions")
             int updated = kbJdbc.update(
                     "INSERT INTO kb_qa_record (question, answer, staff_id, evidence_level,"
                     + " answered, citation_count, endpoint, success) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     question, answer, staffId, evidenceLevel,
-                    answered, citationCount, "qa/stream", true);
+                    answer != null, 0, "chat", true);
             if (updated != 1) {
                 log.warn("Unexpected QA record insert row count: {}", updated);
             }
