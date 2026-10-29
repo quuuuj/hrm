@@ -63,9 +63,6 @@
           </div>
           <div class="chat-bubble">
             <div class="chat-text" v-html="renderMessage(msg.content)" />
-            <div v-if="msg.role !== 'USER' && msg.llmEnhanced === false" class="chat-meta">
-              基础知识库检索
-            </div>
           </div>
         </div>
 
@@ -118,6 +115,7 @@
 <script>
 import { chatStream, deleteConversation, listConversations, queryMessages } from '@/api/chat'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 marked.setOptions({
   breaks: true,
@@ -164,8 +162,18 @@ export default {
     handleConversationSelect (id) {
       if (this.conversationId === id || this.streaming) return
       this.conversationId = id
+      this.refreshMessages(id)
+    },
+
+    /**
+     * 拉取指定会话的最新一页消息并替换当前列表。
+     * 与 handleConversationSelect 分开：流式结束后服务端已落库，需要无视
+     * 「同会话 + streaming 中」的守卫强制同步，否则本轮回答不会出现在界面上。
+     */
+    refreshMessages (id) {
+      if (!id) return Promise.resolve()
       this.loading = true
-      queryMessages(id, { size: 10 }).then(response => {
+      return queryMessages(id, { size: 10 }).then(response => {
         if (response.code === 200) {
           const data = response.data || {}
           this.messages = data.records || []
@@ -263,19 +271,25 @@ export default {
         },
         (meta) => {
           this.conversationId = meta.conversationId || this.conversationId
-          // 重新拉取以同步服务端持久化与元数据
-          this.handleConversationSelect(this.conversationId)
+          this.streaming = false
+          this.streamingText = ''
+          // 服务端已落库，强制重拉（不能走 handleConversationSelect：同会话 + 刚结束流式都会被守卫拦掉）
+          this.refreshMessages(this.conversationId)
           this.loadConversations()
-          this.streaming = false
-          this.streamingText = ''
         },
-        () => {
-          if (!this.streamingText) {
-            this.streamingText = '智能问答暂时不可用，请稍后再试。'
-          }
-          this.messages.push({ role: 'ASSISTANT', content: this.streamingText })
+        (err) => {
           this.streaming = false
-          this.streamingText = ''
+          if (this.streamingText) {
+            // 已收到部分回答：保留在界面上，不回退成错误提示
+            this.messages.push({ role: 'ASSISTANT', content: this.streamingText })
+            this.streamingText = ''
+            this.$message.error(err.message || '回答未完整生成，请重试')
+          } else {
+            this.streamingText = ''
+            this.$message.error(err.message || '智能问答暂时不可用，请稍后再试')
+          }
+          // 提问已经落库（服务端先写 USER 消息），同步一次以显示真实历史
+          this.refreshMessages(this.conversationId)
         }
       )
     },
@@ -288,10 +302,10 @@ export default {
       })
     },
 
-    /** Markdown 渲染 */
+    /** Markdown 渲染（DOMPurify 消毒，知识库文档内容会经模型回显，不可直接进 v-html） */
     renderMessage (content) {
       if (!content) return ''
-      return marked.parse(content)
+      return DOMPurify.sanitize(marked.parse(content))
     }
   }
 }
@@ -506,12 +520,6 @@ export default {
   50% {
     opacity: 0;
   }
-}
-
-.chat-meta {
-  margin-top: 6px;
-  color: #909399;
-  font-size: 12px;
 }
 
 /* 底部输入框 */
