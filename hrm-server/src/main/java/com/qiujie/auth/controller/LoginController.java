@@ -40,8 +40,8 @@ public class LoginController {
 
     @PostMapping("/login/{validateCode}")
     public ResponseDTO login(@RequestBody Staff staff, @PathVariable String validateCode,
-                             HttpServletResponse response) {
-        return this.loginService.login(staff, validateCode, response);
+                             HttpServletRequest request, HttpServletResponse response) {
+        return this.loginService.login(staff, validateCode, request, response);
     }
 
     @GetMapping("/validate/code")
@@ -93,6 +93,7 @@ public class LoginController {
             String newAccessToken = JwtUtil.generateAccessToken(staffId, permissions, username);
             Cookie accessCookie = new Cookie("token", newAccessToken);
             accessCookie.setHttpOnly(true);
+            accessCookie.setSecure(request.isSecure());
             accessCookie.setPath("/");
             accessCookie.setMaxAge((int) (JwtUtil.ACCESS_EXPIRATION / 1000));
             response.addCookie(accessCookie);
@@ -104,16 +105,18 @@ public class LoginController {
 
     @Operation(summary = "登出")
     @PostMapping("/logout")
-    public ResponseDTO logout(HttpServletResponse response) {
+    public ResponseDTO logout(HttpServletRequest request, HttpServletResponse response) {
         // 清除 httpOnly Cookie
         Cookie accessTokenCookie = new Cookie("token", "");
         accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(request.isSecure());
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0);
 
         Cookie refreshTokenCookie = new Cookie("refreshToken", "");
         refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setPath("/refresh");
+        refreshTokenCookie.setSecure(request.isSecure());
+        refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge(0);
 
         response.addCookie(accessTokenCookie);

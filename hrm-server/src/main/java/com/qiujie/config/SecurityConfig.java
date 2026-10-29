@@ -54,7 +54,8 @@ public class SecurityConfig {
             "http://localhost:*",          // 本地开发
             "https://localhost:*",         // 本地HTTPS
             "http://127.0.0.1:*",          // 本地开发
-            "https://qiujie.net.cn"        // 生产环境
+            "https://qiujie.net.cn",       // 生产环境
+            "https://hrm.qiujie.net.cn"    // 生产环境（HRM 子域）
         ));
         corsConfiguration.setAllowedHeaders(List.of("*"));
         corsConfiguration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));

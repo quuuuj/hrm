@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import javax.imageio.ImageIO;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
@@ -40,7 +41,8 @@ public class LoginService extends ServiceImpl<StaffMapper, Staff> {
     @Autowired
     private RedisUtil redisUtil;
 
-    public ResponseDTO login(Staff staff, String validateCode, HttpServletResponse response) {
+    public ResponseDTO login(Staff staff, String validateCode, HttpServletRequest request,
+                             HttpServletResponse response) {
         // 校验验证码——Redis key 自带 TTL，过期自动删除，无需单独存储过期时间
         Object codeObj = redisUtil.get("validate:code");
         if (codeObj == null) {
@@ -68,16 +70,20 @@ public class LoginService extends ServiceImpl<StaffMapper, Staff> {
                 staffDetails);
         Cookie accessCookie = new Cookie("token", accessToken);
         accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(request.isSecure());
         accessCookie.setPath("/");
         accessCookie.setMaxAge((int) (JwtUtil.ACCESS_EXPIRATION / 1000));
         response.addCookie(accessCookie);
 
-        // Refresh Token —— 7 天有效期，仅 /refresh 路径发送，用于续期
+        // Refresh Token —— 7 天有效期，HttpOnly 且仅 HTTPS 下发
+        // Path 必须是 "/"：生产前端走 /api 前缀，刷新请求路径是 /api/refresh，
+        // 若写成 /refresh 浏览器不会带上该 Cookie，静默续期会一直失败
         String refreshToken = JwtUtil.generateRefreshToken(
                 staffDeptVO.getId(), permissions, staffDetails);
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setPath("/refresh");
+        refreshCookie.setSecure(request.isSecure());
+        refreshCookie.setPath("/");
         refreshCookie.setMaxAge((int) (JwtUtil.REFRESH_EXPIRATION / 1000));
         response.addCookie(refreshCookie);
 
