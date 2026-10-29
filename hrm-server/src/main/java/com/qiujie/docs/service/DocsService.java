@@ -79,9 +79,13 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
      * @throws IOException
      */
     public void download(String filename, HttpServletResponse response) throws IOException {
-        // 先判存在再写响应头：否则文件缺失时会把 attachment 头带到错误响应上
         if (!storageService.exists(filename)) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND, BusinessStatusEnum.FILE_NOT_EXIST);
+            // 不能用 sendError：容器 ERROR dispatch 会重入安全过滤器链，而 OncePerRequestFilter
+            // 默认跳过 ERROR dispatch，JwtAuthenticationFilter 不参与 → SecurityContext 为空
+            // → 未认证处理器把响应改写成 200 + 1200「认证失败」，真实 404 语义被吃掉
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.setContentType("application/json;charset=utf-8");
+            response.getWriter().write(JSON.toJSONString(Response.error(BusinessStatusEnum.FILE_NOT_EXIST)));
             return;
         }
 
@@ -112,19 +116,6 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
             }
             out.flush();
         }
-    }
-
-    /**
-     * 直接写出错误响应，不用 {@code sendError}。
-     * <p>
-     * 容器 ERROR dispatch 会重入安全过滤器链，而 {@code OncePerRequestFilter} 默认跳过
-     * ERROR dispatch，JwtAuthenticationFilter 不参与 → SecurityContext 为空 → 未认证处理
-     * 器把响应改写成 200 + 1200「认证失败」，真实的 404 语义被吃掉。
-     */
-    private void writeError(HttpServletResponse response, int status, BusinessStatusEnum e) throws IOException {
-        response.setStatus(status);
-        response.setContentType("application/json;charset=utf-8");
-        response.getWriter().write(JSON.toJSONString(Response.error(e)));
     }
 
 
