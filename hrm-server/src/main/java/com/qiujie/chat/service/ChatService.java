@@ -3,10 +3,11 @@ package com.qiujie.chat.service;
 import com.qiujie.chat.dto.ChatRequest;
 import com.qiujie.chat.entity.ChatSession;
 import com.qiujie.chat.store.ChatSessionStore;
+import com.qiujie.common.enums.BusinessStatusEnum;
+import com.qiujie.security.ServiceException;
 import com.qiujie.staff.service.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -21,6 +22,8 @@ import java.util.Map;
 @Service
 public class ChatService {
 
+    public static final int MAX_MESSAGE_LENGTH = 1000;
+
     @Autowired
     private ChatSessionStore sessionStore;
     @Autowired
@@ -30,16 +33,25 @@ public class ChatService {
 
     /**
      * 流式对话入口。
+     * <p>不加 {@code @Transactional}：会话行必须在异步问答任务开始前已提交，
+     * 否则任务里的 {@code selectById} 读不到新会话，{@code message_count} 与时间戳都不会更新。</p>
      */
-    @Transactional
     public SseEmitter chat(ChatRequest request) {
+        String message = request.getMessage();
+        if (message == null || message.isBlank()) {
+            throw new ServiceException(BusinessStatusEnum.ERROR.getCode(), "消息不能为空");
+        }
+        if (message.length() > MAX_MESSAGE_LENGTH) {
+            throw new ServiceException(BusinessStatusEnum.ERROR.getCode(),
+                    "消息过长，请控制在 " + MAX_MESSAGE_LENGTH + " 字以内");
+        }
         Integer staffId = currentStaffId();
         // 1. 获取或创建会话
         ChatSession session = sessionStore.openOrCreate(
-                request.getSessionId(), request.getMessage(), staffId);
+                request.getSessionId(), message, staffId);
 
         // 2. 委托统一问答管线执行
-        return chatQaService.streamAnswer(session.getId(), request.getMessage());
+        return chatQaService.streamAnswer(session.getId(), message);
     }
 
     // ==================== 查询（会话管理） ====================
@@ -53,7 +65,7 @@ public class ChatService {
         return owns(session) ? session : null;
     }
 
-    public Map<String, Object> listMessages(Long sessionId, String before, int size) {
+    public Map<String, Object> listMessages(Long sessionId, Long before, int size) {
         if (!owns(sessionStore.getById(sessionId))) {
             Map<String, Object> empty = new java.util.HashMap<>();
             empty.put("records", List.of());

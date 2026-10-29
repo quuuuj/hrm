@@ -18,6 +18,8 @@ import java.util.Objects;
 
 /**
  * 会话存储 JDBC 适配器——{@link ChatSessionStore} 的生产实现。
+ * <p>消息分页与窗口一律按自增 {@code id} 排序/游标：同一轮问答的两条消息共用
+ * {@code create_time}，时间戳无法区分先后，也无法安全作为游标。</p>
  */
 @Component
 public class JdbcChatSessionStore implements ChatSessionStore {
@@ -65,23 +67,23 @@ public class JdbcChatSessionStore implements ChatSessionStore {
     }
 
     @Override
-    public Map<String, Object> listMessages(Long sessionId, String before, int size) {
+    public Map<String, Object> listMessages(Long sessionId, Long before, int size) {
         int limit = Math.min(size, MAX_PAGE_SIZE);
         var qw = new QueryWrapper<ChatMessage>()
                 .eq("session_id", sessionId);
         if (before != null) {
-            qw.lt("create_time", before);
+            qw.lt("id", before);
         }
-        qw.orderByDesc("create_time").last("LIMIT " + (limit + 1));
+        qw.orderByDesc("id").last("LIMIT " + (limit + 1));
 
         List<ChatMessage> desc = messageMapper.selectList(qw);
         boolean hasMore = desc.size() > limit;
         if (hasMore) desc = desc.subList(0, limit);
         Collections.reverse(desc);
 
-        String nextCursor = null;
-        if (!desc.isEmpty() && desc.get(0).getCreateTime() != null) {
-            nextCursor = desc.get(0).getCreateTime().toString();
+        Long nextCursor = null;
+        if (!desc.isEmpty()) {
+            nextCursor = desc.get(0).getId();
         }
 
         Map<String, Object> result = new HashMap<>();
