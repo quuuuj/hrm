@@ -4,6 +4,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.lang.Nullable;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 统一问答 LLM 调用领域端口（Port）。
@@ -24,6 +25,20 @@ public interface ChatLlm {
      */
     @Nullable
     String chat(List<Message> historyMessages, String userMessage, @Nullable String systemPrompt);
+
+    /**
+     * 主对话流式调用：模型每产出一段文本就交给 {@code onDelta}，返回完整回答。
+     * <p>回调在调用线程上同步执行（SSE 推送是阻塞写），实现方不要额外切换线程。</p>
+     *
+     * @param historyMessages 历史消息窗口（已按字符预算截断）
+     * @param userMessage     当前用户输入
+     * @param systemPrompt    系统提示词（含员工档案注入或检索上下文）
+     * @param onDelta         增量文本回调
+     * @return 完整回答文本；失败或全程为空返回 null
+     */
+    @Nullable
+    String chatStream(List<Message> historyMessages, String userMessage, @Nullable String systemPrompt,
+                      Consumer<String> onDelta);
 
     /**
      * 轻量单次文本调用（用于意图闸门、查询改写等短提示）。
