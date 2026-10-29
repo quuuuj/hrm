@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * 知识库全量回填重建 Runner：
- * 当配置 chat.knowledge.rebuild-on-start=true 时，开机扫描所有 kb_status IS NOT NULL 的 sys_docs，
+ * 当配置 knowledge.rebuild-on-start=true 时，开机扫描所有 kb_status IS NOT NULL 的 sys_docs，
  * 通过 DocumentLifecycleService.retry() 触发完整 ETL（支持 zstd 解压重读），重建 PG 切片与向量。
  * 默认 false（按需手动开启一次性回填）。
  */
@@ -23,7 +23,7 @@ public class KnowledgeReindexRunner implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeReindexRunner.class);
 
-    @Value("${chat.knowledge.rebuild-on-start}")
+    @Value("${knowledge.rebuild-on-start}")
     private boolean rebuildOnStart;
 
     @Autowired

@@ -51,6 +51,13 @@ spring:
       chat:
         options:
           model: ${LLM_CHAT_MODEL:qwen3.7-flash}
+    # 模型端点故障时默认重试 10 次、指数退避，用户会长时间停在「思考中」
+    retry:
+      max-attempts: 2
+      backoff:
+        initial-interval: 500ms
+        multiplier: 2
+        max-interval: 2s
 
 server:
   port: 8888
@@ -97,11 +104,8 @@ notification:
 file-task:
   retention-days: 30
 
+# Excel 列名 AI 匹配（AiHeaderMatcherImpl 直连 OpenAI 兼容端点，与 Spring AI 客户端相互独立）
 chat:
-  enabled: true
-  timeout-seconds: 15
-  knowledge:
-    rebuild-on-start: false
   provider:
     base-url: ${LLM_BASE_URL:}
     api-key: ${LLM_API_KEY:}
@@ -118,6 +122,8 @@ storage:
 # 知识库模块配置
 knowledge:
   enabled: true
+  # 开机全量回填重建：扫描 kb_status 非空的文档并重跑 ETL（一次性运维开关，默认关闭）
+  rebuild-on-start: false
   chunk:
     max-size: 1000
     overlap: 100
