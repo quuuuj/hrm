@@ -47,6 +47,10 @@ public interface DocsMapper extends BaseMapper<Docs> {
     @Select("SELECT * FROM sys_docs WHERE is_deleted = 1 AND kb_status IS NOT NULL")
     List<Docs> selectDeleted();
 
+    /** 启动恢复：全部文档 id（含已删除），用于识别 PG 侧失去主表行引用的孤儿索引。 */
+    @Select("SELECT id FROM sys_docs")
+    List<Long> selectAllIds();
+
     /**
      * CAS 认领：仅当状态为 UPLOADED/FAILED 且未删除时置 PROCESSING。
      * 唯一的并发互斥原语——PROCESSING ⟺ 恰好一个管道拥有该文档。

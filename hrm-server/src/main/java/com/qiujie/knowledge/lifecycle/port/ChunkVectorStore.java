@@ -4,6 +4,7 @@ import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.entity.DocumentChunk;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * PG 切片与向量存储端口（document_chunk / vector_store / kb_document 镜像，kb 数据源；
@@ -37,6 +38,13 @@ public interface ChunkVectorStore {
 
     /** 只读：按 chunk_index 升序返回切片。 */
     List<DocumentChunk> listChunks(Long documentId);
+
+    /**
+     * 只读：PG 侧已建立索引的全部文档 id（切片 / 向量 / 镜像三者的并集）。
+     * <p>用于启动时核对索引与 {@code sys_docs} 的一致性——文档行被外部删除后，
+     * 其切片与向量会变成永不被检索、也永不被清理的孤儿数据。</p>
+     */
+    Set<Long> listIndexedDocumentIds();
 
     /**
      * 同步 PG kb_document 镜像行（ETL 成功后调用），供关键词检索/邻窗扩展本地 JOIN。

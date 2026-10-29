@@ -13,7 +13,9 @@ import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * ChunkVectorStore 生产适配器：JdbcTemplate 直连 kb 数据源（PG，autocommit 不可回滚）。
@@ -81,6 +83,18 @@ public class JdbcChunkVectorStore implements ChunkVectorStore {
     @Override
     public List<DocumentChunk> listChunks(Long documentId) {
         return chunkMapper.selectByDocumentIdOrderByChunkIndex(documentId);
+    }
+
+    @Override
+    public Set<Long> listIndexedDocumentIds() {
+        return new LinkedHashSet<>(kbJdbc.queryForList("""
+                SELECT document_id FROM document_chunk
+                UNION
+                SELECT (metadata ->> 'documentId')::bigint FROM vector_store
+                  WHERE metadata ->> 'documentId' ~ '^[0-9]+$'
+                UNION
+                SELECT id FROM kb_document
+                """, Long.class));
     }
 
     @Override
