@@ -65,7 +65,7 @@ public DataSource masterDataSource() {
 ```mermaid
 flowchart TD
     Sources["连接与存储划分<br/>DataSourceConfig + application.yml"]
-    Sources --> Master["master 连接 · @Primary<br/>MySQL hrm（25 张业务表）<br/>MySQL hrm_flowable（55 张引擎表）<br/>表前缀访问，同一本地事务"]
+    Sources --> Master["master 连接 · @Primary<br/>MySQL hrm（26 张业务表）<br/>MySQL hrm_flowable（55 张引擎表）<br/>表前缀访问，同一本地事务"]
     Sources --> Kb["kb 连接<br/>PostgreSQL hrm_kb<br/>向量表存储"]
 ```
 

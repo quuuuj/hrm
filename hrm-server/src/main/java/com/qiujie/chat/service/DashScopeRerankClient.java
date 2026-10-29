@@ -86,8 +86,9 @@ public class DashScopeRerankClient {
             SearchResult c = candidates.get(i);
             double score = scores.get(i);
             // score 决定排序，relevance 供证据充分度评估使用——重排分是真正的语义相关度
+            // channels 原样透传：重排不改变「这条从哪个检索通道来的」这一事实
             reranked.add(new SearchResult(c.chunkText(), c.documentName(), c.documentId(),
-                    c.chunkId(), score, "rerank", score));
+                    c.chunkId(), score, "rerank", score, c.channels()));
         }
         reranked.sort((a, b) -> Double.compare(b.score(), a.score()));
         log.info("Reranked {} candidates, top score={}", reranked.size(),

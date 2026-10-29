@@ -1,7 +1,7 @@
-package com.qiujie.knowledge.mapper;
+package com.qiujie.chat.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qiujie.knowledge.entity.KbQaRecord;
+import com.qiujie.chat.entity.KbQaRecord;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

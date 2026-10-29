@@ -1401,9 +1401,9 @@ DROP TABLE IF EXISTS `kb_qa_record`;
 CREATE TABLE `kb_qa_record` (
   `id`                bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
   `question`          text            NOT NULL COMMENT '用户原始问题',
-  `answer`            text            NOT NULL COMMENT '模型回答正文',
+  `answer`            text            DEFAULT NULL         COMMENT '模型回答正文（兜底文案也记）',
   `staff_id`          int             NOT NULL COMMENT '提问者',
-  `evidence_level`    varchar(20)     NOT NULL DEFAULT 'SUFFICIENT' COMMENT '证据充分性等级',
+  `evidence_level`    varchar(20)     DEFAULT NULL         COMMENT '证据充分性等级；非知识分支为空',
   `answered`          tinyint         NOT NULL DEFAULT 1   COMMENT '是否成功回答',
   `reason_code`       varchar(64)     DEFAULT NULL         COMMENT '拒答原因编码',
   `reason_message`    varchar(512)    DEFAULT NULL         COMMENT '拒答原因说明',
