@@ -112,7 +112,7 @@ llm:
   base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
   api-key: ${LLM_API_KEY:}
   chat-model: ${LLM_CHAT_MODEL:qwen3.7-flash}
-  embedding-model: ${LLM_EMBEDDING_MODEL:qwen3.7-text-embedding}
+  embedding-model: ${LLM_EMBEDDING_MODEL:qwen3.7-text-embedding-flash}
   rerank-model: ${LLM_RERANK_MODEL:qwen3.7-text-rerank}
 
 # MinIO 对象存储

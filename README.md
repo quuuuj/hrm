@@ -315,7 +315,7 @@ JWT_SECRET="<JWT_SECRET>"
 # 换 LLM 服务商/模型时再改这两项
 LLM_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode"
 LLM_CHAT_MODEL="qwen3.7-flash"
-LLM_EMBEDDING_MODEL="qwen3.7-text-embedding"
+LLM_EMBEDDING_MODEL="qwen3.7-text-embedding-flash"
 ```
 
 后端通过 `application.yml` 中的 `spring.config.import: optional:file:.env[.properties]` 读取 `.env`，无需手动 export。
