@@ -200,7 +200,7 @@ public File resolveSource(String source) {
 
 三处清理各管一段：
 
-- 过期上传会话：每小时扫描 `expires_at` 已过的会话，逐个删除分片对象与表记录（`hrm-server/src/main/java/com/qiujie/filetask/service/FileUploadService.java:280`）；
+- 过期上传会话：每小时扫描 `expire_time` 已过的会话，逐个删除分片对象与表记录（`hrm-server/src/main/java/com/qiujie/filetask/service/FileUploadService.java:280`）；
 - 任务产物：每日 3 点清理创建时间超过保留期的任务，删除源文件、结果文件、错行文件与关联通知，保留期由 `file-task.retention-days` 控制，默认 30 天（`hrm-server/src/main/java/com/qiujie/filetask/service/FileTaskCleanupJob.java:37`）；
 - 孤儿文件：每日 4 点扫描桶内所有对象键（`DocsService.java:245`）：
 
