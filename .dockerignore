@@ -1,0 +1,19 @@
+# 前端镜像构建以仓库根为 context，排除无需进入构建上下文的目录
+**/node_modules
+**/target
+**/dist
+.git
+.gitignore
+.idea
+.vscode
+.claude
+.codex
+.playwright-mcp
+.worktrees
+db
+docs
+img
+tmp
+*.bak
+*.log
+README.md
