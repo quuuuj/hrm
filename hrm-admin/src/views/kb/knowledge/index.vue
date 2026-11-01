@@ -3,7 +3,7 @@
     <div style="margin-bottom: 10px">
       <!-- 知识库摄入文档上传（自动触发分块与向量化） -->
       <ChunkedImportBtn
-        v-permission="['qa:knowledge:upload']"
+        v-permission="['kb:knowledge:upload']"
         :import-api="chunkedUploadApi"
         label="上传知识文档"
         accept=".pdf,.docx,.md,.txt"
@@ -19,7 +19,7 @@
         title="你确定删除吗？"
         @confirm="handleDeleteBatch"
       >
-        <el-button v-permission="['qa:knowledge:delete']" type="danger" size="mini" slot="reference">
+        <el-button v-permission="['kb:knowledge:delete']" type="danger" size="mini" slot="reference">
           批量删除 <i class="el-icon-remove-outline"></i>
         </el-button>
       </el-popconfirm>
@@ -99,7 +99,7 @@
             >分块</el-button>
             <el-button
               v-if="scope.row.kbStatus === 'FAILED'"
-              v-permission="['qa:knowledge:upload']"
+              v-permission="['kb:knowledge:upload']"
               size="mini"
               type="warning"
               @click="handleRetry(scope.row)"
@@ -112,7 +112,7 @@
               icon-color="red"
               title="你确定删除吗？"
               @confirm="handleDelete(scope.row.id)">
-              <el-button v-permission="['qa:knowledge:delete']" size="mini" type="danger" slot="reference">
+              <el-button v-permission="['kb:knowledge:delete']" size="mini" type="danger" slot="reference">
                 删除
               </el-button>
             </el-popconfirm>
@@ -160,7 +160,7 @@ import ChunkedImportBtn from '@/components/ChunkedImportBtn'
 import { write } from '@/utils/docs'
 
 export default {
-  name: 'QaKnowledge',
+  name: 'KbKnowledge',
   components: { ChunkedImportBtn },
   data () {
     return {

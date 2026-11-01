@@ -6,6 +6,6 @@
 
 <script>
 export default {
-  name: 'Qa'
+  name: 'Kb'
 }
 </script>

@@ -4,7 +4,7 @@ const url = '/chat'
 
 export const chat = (data) => {
   return request({
-    url: url + '/chat',
+    url,
     method: 'post',
     data
   })
@@ -25,7 +25,7 @@ export const chat = (data) => {
  * @returns {Promise} fetch 链式调用的 Promise
  */
 export const chatStream = (data, onToken, onMeta, onError) => {
-  return fetch('/api/chat/chat', {
+  return fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),

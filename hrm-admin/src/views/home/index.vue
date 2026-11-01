@@ -65,7 +65,7 @@
 </template>
 <script>
 import * as echarts from 'echarts'
-import { queryCount, queryCity, queryStaff, queryAttendance, queryDepartment } from '@/api/home'
+import { queryCount, queryCity, queryStaff, queryAttendance, queryDept } from '@/api/home'
 import { getUploadApi } from '@/api/docs'
 import { edit, queryInfo } from '@/api/staff'
 import { setAvatar, defaultAvatar } from '@/utils/avatar'
@@ -331,7 +331,7 @@ export default {
         }
       })
 
-      queryDepartment().then(response => {
+      queryDept().then(response => {
         if (response.code === 200) {
           this.departmentOption.series[0].data = response.data
           const departmentChart = echarts.init(this.$refs.department)
