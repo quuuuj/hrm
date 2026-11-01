@@ -1,6 +1,7 @@
 # 主配置（唯一配置文件）
-# 本地默认值直接写字面值；仅敏感项（LLM_API_KEY / JWT_SECRET / LLM_BASE_URL / LLM_CHAT_MODEL / LLM_EMBEDDING_MODEL）
-# 通过 hrm-server/.env 注入（兼容任意 cwd：项目根目录或 hrm-server/，IDEA/命令行均可启动）
+# 本地默认值直接写字面值；仅敏感项（LLM_API_KEY / JWT_SECRET / LLM_BASE_URL / LLM_CHAT_MODEL /
+# LLM_EMBEDDING_MODEL / LLM_RERANK_MODEL）通过 hrm-server/.env 注入，统一收敛到 llm.* 配置块
+# （兼容任意 cwd：项目根目录或 hrm-server/，IDEA/命令行均可启动）
 
 spring:
   application:
@@ -46,11 +47,12 @@ spring:
 
   ai:
     openai:
-      api-key: ${LLM_API_KEY:}
-      base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+      # 与 llm.* 同源，避免同一份凭据在多处重复声明
+      api-key: ${llm.api-key}
+      base-url: ${llm.base-url}
       chat:
         options:
-          model: ${LLM_CHAT_MODEL:qwen3.7-flash}
+          model: ${llm.chat-model}
     # 模型端点故障时默认重试 10 次、指数退避，用户会长时间停在「思考中」
     retry:
       max-attempts: 2
@@ -104,12 +106,14 @@ notification:
 file-task:
   retention-days: 30
 
-# Excel 列名 AI 匹配（AiHeaderMatcherImpl 直连 OpenAI 兼容端点，与 Spring AI 客户端相互独立）
-chat:
-  provider:
-    base-url: ${LLM_BASE_URL:}
-    api-key: ${LLM_API_KEY:}
-    model: ${LLM_CHAT_MODEL:}
+# 大模型公共凭据与模型名：问答（Spring AI）、嵌入、重排、Excel 表头匹配共用一套
+# 键名与 .env 中的 LLM_* 环境变量一一对应
+llm:
+  base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+  api-key: ${LLM_API_KEY:}
+  chat-model: ${LLM_CHAT_MODEL:qwen3.7-flash}
+  embedding-model: ${LLM_EMBEDDING_MODEL:qwen3.7-text-embedding}
+  rerank-model: ${LLM_RERANK_MODEL:qwen3.7-text-rerank}
 
 # MinIO 对象存储
 storage:
@@ -119,7 +123,7 @@ storage:
     secret-key: minioadmin
     bucket: hrm
 
-# 知识库模块配置
+# 知识库模块配置（仅保留知识库自身的开关与切片参数；检索与问答评估归 chat.*）
 knowledge:
   enabled: true
   # 开机全量回填重建：扫描 kb_status 非空的文档并重跑 ETL（一次性运维开关，默认关闭）
@@ -127,10 +131,11 @@ knowledge:
   chunk:
     max-size: 1000
     overlap: 100
-  embedding:
-    api-key: ${LLM_API_KEY:}
-    base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
-    model: ${LLM_EMBEDDING_MODEL:qwen3.7-text-embedding}
+
+# 问答模块配置：窗口预算 + 检索 + 证据评估（消费者均在 chat/service/）
+chat:
+  window-max-chars: 6000
+  max-context-chars: 3000
   retrieval:
     top-k: 10
     vector-top-k: 20
@@ -139,7 +144,6 @@ knowledge:
     window-size: 1
     rerank:
       enabled: true
-      model: ${LLM_RERANK_MODEL:qwen3.7-text-rerank}
       # RRF 融合后进入精排的候选数量；需 ≥ top-k 才有精排意义
       candidate-pool-size: 30
   qa:

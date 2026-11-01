@@ -118,13 +118,6 @@
             <version>1.0.0</version>
         </dependency>
 
-        <!-- Spring AI pgvector (按 Spring AI Alibaba BOM 对齐的 1.0.0 GA 版本) -->
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-
         <!-- StringTemplate -->
         <dependency>
             <groupId>org.antlr</groupId>

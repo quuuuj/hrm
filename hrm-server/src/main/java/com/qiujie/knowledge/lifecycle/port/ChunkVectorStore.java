@@ -1,58 +1,49 @@
 package com.qiujie.knowledge.lifecycle.port;
 
-import com.qiujie.knowledge.entity.Docs;
-import com.qiujie.knowledge.entity.DocumentChunk;
+import com.qiujie.knowledge.entity.KnowledgeChunk;
 
 import java.util.List;
 import java.util.Set;
 
 /**
- * PG 切片与向量存储端口（document_chunk / vector_store / kb_document 镜像，kb 数据源；
- * 镜像为 sys_docs 在 PG 侧的投影，表名保留 kb_document）。
+ * PG 切片与向量存储端口（单表 kb_chunk，kb 数据源）。
  * <p>
- * 全部写入幂等可清理——{@link #deleteChunks} 是重入与补偿的唯一清理入口（先向量后切片）。
- * 方法粒度为业务语义（storeChunks/deleteChunks），逐条 INSERT、自增 ID 回填等是适配器内部细节。
+ * 切片原文、文档名快照与向量存在同一行：一次 INSERT 即落库完整产物，检索两路都命中同一张表，
+ * 删除只需 {@code WHERE docs_id = ?}——不需要 JSONB 反查、不需要跨表对账。
+ * </p>
+ * <p>
+ * 全部写入幂等可清理——{@link #deleteChunks} 是重入与补偿的唯一清理入口。
+ * 逐条 INSERT、自增 ID 回填等是适配器内部细节。
  */
 public interface ChunkVectorStore {
 
-    /** 切片写入草稿。 */
-    record ChunkDraft(int chunkIndex, String chunkText, int tokenCount, int charStart, int charEnd) {}
+    /**
+     * 切片写入草稿。embedding 为 null 表示该切片向量化失败或未执行，
+     * 行仍然落库（切片原文可查、关键词检索可用），只是不参与向量检索。
+     */
+    record ChunkDraft(int chunkIndex, String chunkText, int tokenCount, int charStart, int charEnd,
+                      float[] embedding) {}
 
     /** 切片写入结果（携带 PG 生成 id）。 */
     record ChunkRecord(long id, ChunkDraft draft) {}
 
     /**
-     * 向量写入草稿。documentName 取 sys_docs.old_name 快照——
-     * 修复"写方只写 documentId/chunkId、读方读 documentName"的契约 bug。
+     * 批量写入切片（含向量）并回填 PG 自增 id。
+     *
+     * @param docsName 显示用文档名快照，取 sys_docs.old_name
      */
-    record VectorDraft(long documentId, long chunkId, String chunkText, String documentName, float[] embedding) {}
+    List<ChunkRecord> storeChunks(Long docsId, String docsName, List<ChunkDraft> drafts);
 
-    /** 批量写入切片并回填 PG 自增 id（向量写入需要 chunkId）。 */
-    List<ChunkRecord> storeChunks(Long documentId, List<ChunkDraft> drafts);
+    /** 幂等清理某文档全部切片与向量（不存在也成功）。 */
+    void deleteChunks(Long docsId);
 
-    /** 批量写入向量；metadata JSON 一律经 VectorMetadata 生成（形状单一事实来源）。 */
-    void storeVectors(List<VectorDraft> vectors);
-
-    /** 幂等清理某文档全部检索产物（先向量后切片，不存在也成功）。 */
-    void deleteChunks(Long documentId);
-
-    /** 只读：按 chunk_index 升序返回切片。 */
-    List<DocumentChunk> listChunks(Long documentId);
+    /** 只读：按 chunk_index 升序返回切片（不含向量列）。 */
+    List<KnowledgeChunk> listChunks(Long docsId);
 
     /**
-     * 只读：PG 侧已建立索引的全部文档 id（切片 / 向量 / 镜像三者的并集）。
+     * 只读：PG 侧已建立索引的全部文档 id。
      * <p>用于启动时核对索引与 {@code sys_docs} 的一致性——文档行被外部删除后，
      * 其切片与向量会变成永不被检索、也永不被清理的孤儿数据。</p>
      */
-    Set<Long> listIndexedDocumentIds();
-
-    /**
-     * 同步 PG kb_document 镜像行（ETL 成功后调用），供关键词检索/邻窗扩展本地 JOIN。
-     * MySQL 侧主表为 sys_docs；PG 侧镜像表仍叫 kb_document（字段语义对应）。
-     * 镜像此前从未被写入，导致关键词检索恒空。
-     */
-    void upsertDocumentMirror(Docs doc);
-
-    /** 删除镜像行（删除文档时调用）。 */
-    void deleteDocumentMirror(Long documentId);
+    Set<Long> listIndexedDocsIds();
 }

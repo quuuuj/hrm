@@ -11,12 +11,12 @@ import org.springframework.lang.Nullable;
  * </p>
  * <p>
  * {@code channels} 记录该切片在各检索通道上的原始得分，供引用快照回填
- * {@code kb_qa_citation} 的 vector_score / keyword_score / hybrid_score。
+ * {@code chat_qa_citation} 的 vector_score / keyword_score / hybrid_score。
  * 它不是评估依据（那些值在 {@code relevance} 里已经算过），只是审计用的旁路信息，
  * 因此整条链路允许它为 null。
  * </p>
  */
-public record SearchResult(String chunkText, String documentName, Long documentId,
+public record SearchResult(String chunkText, String docsName, Long docsId,
                            Long chunkId, double score, String source, double relevance,
                            @Nullable ChannelScores channels) {
 
@@ -66,20 +66,20 @@ public record SearchResult(String chunkText, String documentName, Long documentI
     }
 
     /** 原始相关度缺省等于排序分（关键词/邻窗等无独立相关度语义的场景）。 */
-    public SearchResult(String chunkText, String documentName, Long documentId,
+    public SearchResult(String chunkText, String docsName, Long docsId,
                         Long chunkId, double score, String source) {
-        this(chunkText, documentName, documentId, chunkId, score, source, score, null);
+        this(chunkText, docsName, docsId, chunkId, score, source, score, null);
     }
 
     /** 无通道得分的七参构造（历史调用点）。 */
-    public SearchResult(String chunkText, String documentName, Long documentId,
+    public SearchResult(String chunkText, String docsName, Long docsId,
                         Long chunkId, double score, String source, double relevance) {
-        this(chunkText, documentName, documentId, chunkId, score, source, relevance, null);
+        this(chunkText, docsName, docsId, chunkId, score, source, relevance, null);
     }
 
     /** 换一个排序分但保留通道得分（邻窗扩展、RRF 归一化等派生场景）。 */
     public SearchResult withScore(double newScore) {
-        return new SearchResult(chunkText, documentName, documentId, chunkId,
+        return new SearchResult(chunkText, docsName, docsId, chunkId,
                 newScore, source, relevance, channels);
     }
 }

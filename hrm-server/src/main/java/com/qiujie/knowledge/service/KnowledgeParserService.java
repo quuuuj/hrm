@@ -17,9 +17,9 @@ import java.nio.charset.StandardCharsets;
  * 支持 PDF / DOCX / MD / TXT，自动编码检测。
  */
 @Service
-public class DocumentParserService {
+public class KnowledgeParserService {
 
-    private static final Logger log = LoggerFactory.getLogger(DocumentParserService.class);
+    private static final Logger log = LoggerFactory.getLogger(KnowledgeParserService.class);
 
     public String parse(InputStream inputStream, String fileExt) {
         try {

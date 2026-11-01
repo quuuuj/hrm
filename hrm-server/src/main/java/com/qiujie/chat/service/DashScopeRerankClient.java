@@ -34,16 +34,16 @@ public class DashScopeRerankClient {
 
     private static final Logger log = LoggerFactory.getLogger(DashScopeRerankClient.class);
 
-    @Value("${knowledge.retrieval.rerank.enabled}")
+    @Value("${chat.retrieval.rerank.enabled}")
     private boolean enabled;
 
-    @Value("${knowledge.retrieval.rerank.model}")
+    @Value("${llm.rerank-model}")
     private String model;
 
-    @Value("${knowledge.embedding.api-key}")
+    @Value("${llm.api-key}")
     private String apiKey;
 
-    @Value("${knowledge.embedding.base-url}")
+    @Value("${llm.base-url}")
     private String baseUrl;
 
     private RestTemplate restTemplate;
@@ -75,8 +75,8 @@ public class DashScopeRerankClient {
         if (!enabled || candidates == null || candidates.isEmpty() || query == null || query.isBlank()) {
             return candidates;
         }
-        List<String> documents = candidates.stream().map(SearchResult::chunkText).toList();
-        List<Double> scores = requestScores(query, documents);
+        List<String> texts = candidates.stream().map(SearchResult::chunkText).toList();
+        List<Double> scores = requestScores(query, texts);
         if (scores == null) {
             return candidates;
         }
@@ -87,7 +87,7 @@ public class DashScopeRerankClient {
             double score = scores.get(i);
             // score 决定排序，relevance 供证据充分度评估使用——重排分是真正的语义相关度
             // channels 原样透传：重排不改变「这条从哪个检索通道来的」这一事实
-            reranked.add(new SearchResult(c.chunkText(), c.documentName(), c.documentId(),
+            reranked.add(new SearchResult(c.chunkText(), c.docsName(), c.docsId(),
                     c.chunkId(), score, "rerank", score, c.channels()));
         }
         reranked.sort((a, b) -> Double.compare(b.score(), a.score()));
@@ -97,14 +97,14 @@ public class DashScopeRerankClient {
     }
 
     /** 调重排接口拿逐条分数；失败返回 null（调用方原样返回候选）。 */
-    private List<Double> requestScores(String query, List<String> documents) {
+    private List<Double> requestScores(String query, List<String> texts) {
         try {
             Map<String, Object> input = new HashMap<>();
             input.put("query", query);
-            input.put("documents", documents);
+            input.put("documents", texts);
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("return_documents", false);
-            parameters.put("top_n", documents.size());
+            parameters.put("top_n", texts.size());
 
             Map<String, Object> body = new HashMap<>();
             body.put("model", model);
@@ -116,7 +116,7 @@ public class DashScopeRerankClient {
             headers.setBearerAuth(apiKey);
 
             String response = restTemplate.postForObject(rerankUrl, new HttpEntity<>(body, headers), String.class);
-            return parseScores(response, documents.size());
+            return parseScores(response, texts.size());
         } catch (Exception e) {
             log.warn("DashScope rerank failed, fallback to RRF order: {}", e.getMessage());
             return null;
@@ -124,7 +124,7 @@ public class DashScopeRerankClient {
     }
 
     /**
-     * 解析响应，返回与 documents 等长的分数表。
+     * 解析响应，返回与候选切片等长的分数表。
      * <p>
      * 响应形如 {@code {"output":{"results":[{"index":0,"relevance_score":0.89}]}}}；
      * 缺失的 index 记 0 分（保持位置对齐，避免错位打分）。

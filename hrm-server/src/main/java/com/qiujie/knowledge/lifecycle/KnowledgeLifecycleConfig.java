@@ -2,11 +2,11 @@ package com.qiujie.knowledge.lifecycle;
 
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
 import com.qiujie.knowledge.lifecycle.port.ObjectStore;
-import com.qiujie.knowledge.mapper.IngestionJobMapper;
+import com.qiujie.knowledge.mapper.KnowledgeIngestionTaskMapper;
 import com.qiujie.knowledge.mapper.DocsMapper;
 import com.qiujie.knowledge.service.ChunkService;
 import com.qiujie.knowledge.service.DashScopeEmbeddingClient;
-import com.qiujie.knowledge.service.DocumentParserService;
+import com.qiujie.knowledge.service.KnowledgeParserService;
 import com.qiujie.knowledge.service.TextCleanupService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -24,46 +24,46 @@ import java.util.concurrent.Executor;
 public class KnowledgeLifecycleConfig {
 
     @Bean
-    public IngestionPipeline ingestionPipeline(DocsMapper documentMapper,
-                                               IngestionJobMapper jobMapper,
+    public IngestionPipeline ingestionPipeline(DocsMapper docsMapper,
+                                               KnowledgeIngestionTaskMapper taskMapper,
                                                ChunkVectorStore chunkVectorStore,
                                                ObjectStore objectStore,
                                                DashScopeEmbeddingClient embeddingClient,
-                                               DocumentParserService parserService,
+                                               KnowledgeParserService parserService,
                                                TextCleanupService textCleanupService,
                                                ChunkService chunkService) {
-        return new IngestionPipeline(documentMapper, jobMapper, chunkVectorStore, objectStore,
+        return new IngestionPipeline(docsMapper, taskMapper, chunkVectorStore, objectStore,
                 embeddingClient, parserService, textCleanupService, chunkService);
     }
 
     @Bean
-    public DocumentPurgeHandler documentPurgeHandler(DocsMapper documentMapper,
+    public KnowledgePurgeHandler docsPurgeHandler(DocsMapper docsMapper,
                                                      ChunkVectorStore chunkVectorStore,
                                                      ObjectStore objectStore) {
-        return new DocumentPurgeHandler(documentMapper, chunkVectorStore, objectStore);
+        return new KnowledgePurgeHandler(docsMapper, chunkVectorStore, objectStore);
     }
 
     @Bean
-    public DocumentLifecycleService documentLifecycleService(DocsMapper documentMapper,
-                                                             IngestionJobMapper jobMapper,
+    public KnowledgeLifecycleService docsLifecycleService(DocsMapper docsMapper,
+                                                             KnowledgeIngestionTaskMapper taskMapper,
                                                              TransactionTemplate transactionTemplate,
                                                              @Qualifier("fileTaskExecutor") Executor ingestExecutor,
                                                              IngestionPipeline pipeline,
-                                                             DocumentPurgeHandler purgeHandler) {
-        return new DocumentLifecycleService(documentMapper, jobMapper, transactionTemplate,
+                                                             KnowledgePurgeHandler purgeHandler) {
+        return new KnowledgeLifecycleService(docsMapper, taskMapper, transactionTemplate,
                 ingestExecutor, pipeline, purgeHandler);
     }
 
     /** 启动恢复：仅在知识库启用时注册（四步崩溃窗口 + 孤儿索引核对）。 */
     @Bean
     @ConditionalOnExpression("${knowledge.enabled:false}")
-    public StartupRecovery startupRecovery(DocsMapper documentMapper,
-                                           IngestionJobMapper jobMapper,
+    public StartupRecovery startupRecovery(DocsMapper docsMapper,
+                                           KnowledgeIngestionTaskMapper taskMapper,
                                            IngestionPipeline pipeline,
-                                           DocumentPurgeHandler purgeHandler,
+                                           KnowledgePurgeHandler purgeHandler,
                                            ChunkVectorStore chunkVectorStore,
                                            @Qualifier("fileTaskExecutor") Executor executor) {
-        return new StartupRecovery(documentMapper, jobMapper, pipeline, purgeHandler,
+        return new StartupRecovery(docsMapper, taskMapper, pipeline, purgeHandler,
                 chunkVectorStore, executor);
     }
 }

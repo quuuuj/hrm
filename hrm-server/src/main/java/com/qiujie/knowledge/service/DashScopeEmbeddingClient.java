@@ -33,13 +33,13 @@ public class DashScopeEmbeddingClient {
     /** 每批次提交的文本数 */
     private static final int BATCH_SIZE = 10;
 
-    @Value("${knowledge.embedding.base-url}")
+    @Value("${llm.base-url}")
     private String baseUrl;
 
-    @Value("${knowledge.embedding.api-key}")
+    @Value("${llm.api-key}")
     private String apiKey;
 
-    @Value("${knowledge.embedding.model}")
+    @Value("${llm.embedding-model}")
     private String model;
 
     private RestTemplate restTemplate;

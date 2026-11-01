@@ -29,8 +29,8 @@ public class ChatSession implements Serializable {
     @TableField("status")
     private String status;
 
-    @TableField("last_message_at")
-    private LocalDateTime lastMessageAt;
+    @TableField("last_message_time")
+    private LocalDateTime lastMessageTime;
 
     @TableField("message_count")
     private Integer messageCount;

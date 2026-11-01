@@ -74,7 +74,7 @@ public class LeaveController {
 
     @Operation(summary = "设置假期")
     @PostMapping("/set")
-    @PreAuthorize("hasAnyAuthority('system:department:setting')")
+    @PreAuthorize("hasAnyAuthority('system:dept:setting')")
     public ResponseDTO setLeave(@RequestBody Leave leave) {
         return this.leaveService.setLeave(leave);
     }

@@ -1,6 +1,5 @@
 package com.qiujie.chat.service;
 
-import com.qiujie.knowledge.lifecycle.VectorMetadata;
 import com.qiujie.knowledge.service.DashScopeEmbeddingClient;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -18,7 +17,8 @@ import java.util.stream.Collectors;
 /**
  * 混合检索服务：向量检索 + 关键词检索 → RRF 融合 → 重排序精排。
  * <p>
- * 遵循 RFC #69：关键词检索改从合并后的 {@code sys_docs} 表关联查询。
+ * 两路检索都基于单表 {@code kb_chunk}（切片原文、文档名快照、向量同表）：
+ * 向量通道走 HNSW 部分索引，关键词通道走 ILIKE；融合键为 chunk id，不需要跨表 JOIN。
  * RRF 只看排名不看语义相关度，精排由 DashScope rerank 模型补足；重排不可用时
  * 自动退回 RRF 顺序，检索链路不中断。
  * </p>
@@ -47,22 +47,22 @@ public class HybridRetrievalService {
         }
     }
 
-    @Value("${knowledge.retrieval.top-k}")
+    @Value("${chat.retrieval.top-k}")
     private int topK;
 
-    @Value("${knowledge.retrieval.vector-top-k}")
+    @Value("${chat.retrieval.vector-top-k}")
     private int vectorTopK;
 
-    @Value("${knowledge.retrieval.keyword-top-k}")
+    @Value("${chat.retrieval.keyword-top-k}")
     private int keywordTopK;
 
-    @Value("${knowledge.retrieval.rrf-k}")
+    @Value("${chat.retrieval.rrf-k}")
     private int rrfK;
 
-    @Value("${knowledge.retrieval.window-size}")
+    @Value("${chat.retrieval.window-size}")
     private int windowSize;
 
-    @Value("${knowledge.retrieval.rerank.candidate-pool-size}")
+    @Value("${chat.retrieval.rerank.candidate-pool-size}")
     private int rerankPoolSize;
 
     public List<SearchResult> search(List<String> queries) {
@@ -87,15 +87,22 @@ public class HybridRetrievalService {
         try {
             float[] vec = embeddingClient.embed(List.of(query)).get(0);
             com.pgvector.PGvector pgVec = new com.pgvector.PGvector(vec);
-            String sql = "SELECT content, metadata, 1 - (embedding <=> ?) AS similarity FROM vector_store ORDER BY embedding <=> ? LIMIT ?";
+            // 切片与向量同表：一次查询直接拿到文本与展示名，无需回表或解析 JSON
+            String sql = """
+                    SELECT chunk_text, docs_name, docs_id, id,
+                           1 - (embedding <=> ?) AS similarity
+                    FROM kb_chunk
+                    WHERE embedding IS NOT NULL
+                    ORDER BY embedding <=> ?
+                    LIMIT ?
+                    """;
             return kbJdbc.query(sql, rs -> {
                 List<SearchResult> list = new ArrayList<>();
                 while (rs.next()) {
-                    String metaStr = rs.getString("metadata");
                     double sim = rs.getDouble("similarity");
-                    VectorMetadata meta = VectorMetadata.fromJson(metaStr);
-                    list.add(new SearchResult(rs.getString("content"),
-                            meta.documentName(), meta.documentId(), meta.chunkId(), sim, "vector", sim,
+                    list.add(new SearchResult(rs.getString("chunk_text"),
+                            rs.getString("docs_name"), rs.getLong("docs_id"),
+                            rs.getLong("id"), sim, "vector", sim,
                             SearchResult.ChannelScores.vector(sim)));
                 }
                 return list;
@@ -109,12 +116,9 @@ public class HybridRetrievalService {
     private List<SearchResult> keywordSearch(String query) {
         if (kbJdbc == null) return List.of();
         try {
-            // RFC #69: kb_document 吸收并入 sys_docs (PG端存储为 document_chunk 关联的文档视图或仅 chunk 查询)
-            // 在 PG 端若有 sys_docs 镜像或通过 chunk_text 直接查询
             String sql = """
-                    SELECT c.chunk_text, COALESCE(d.old_name, ''), c.document_id, c.id
-                    FROM document_chunk c
-                    LEFT JOIN kb_document d ON d.id = c.document_id
+                    SELECT c.chunk_text, c.docs_name, c.docs_id, c.id
+                    FROM kb_chunk c
                     WHERE c.chunk_text ILIKE ? ESCAPE '\\'
                     ORDER BY length(c.chunk_text) ASC
                     LIMIT ?
@@ -145,23 +149,23 @@ public class HybridRetrievalService {
         int k = rrfK;
         for (int i = 0; i < vectorRanked.size(); i++) {
             SearchResult r = vectorRanked.get(i);
-            String key = r.documentId() + ":" + r.chunkId();
-            fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
+            String key = String.valueOf(r.chunkId());
+            fused.put(key, new SearchResult(r.chunkText(), r.docsName(), r.docsId(), r.chunkId(),
                     1.0 / (k + i + 1), "rrf", r.relevance(), r.channels()));
         }
         for (int i = 0; i < keywordRanked.size(); i++) {
             SearchResult r = keywordRanked.get(i);
-            String key = r.documentId() + ":" + r.chunkId();
+            String key = String.valueOf(r.chunkId());
             double rrf = 1.0 / (k + i + 1);
             if (fused.containsKey(key)) {
                 SearchResult existing = fused.get(key);
                 // 两路都命中的切片：保留两边原始分，供引用快照标注 BOTH
-                fused.put(key, new SearchResult(existing.chunkText(), existing.documentName(),
-                        existing.documentId(), existing.chunkId(), existing.score() + rrf, "rrf",
+                fused.put(key, new SearchResult(existing.chunkText(), existing.docsName(),
+                        existing.docsId(), existing.chunkId(), existing.score() + rrf, "rrf",
                         Math.max(existing.relevance(), r.relevance()),
                         existing.channels() == null ? r.channels() : existing.channels().merge(r.channels())));
             } else {
-                fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
+                fused.put(key, new SearchResult(r.chunkText(), r.docsName(), r.docsId(), r.chunkId(),
                         rrf, "rrf", r.relevance(), r.channels()));
             }
         }
@@ -169,9 +173,9 @@ public class HybridRetrievalService {
         double maxScore = fused.values().stream().mapToDouble(SearchResult::score).max().orElse(1.0);
         return fused.values().stream()
                 .map(r -> r.channels() == null
-                        ? new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
+                        ? new SearchResult(r.chunkText(), r.docsName(), r.docsId(), r.chunkId(),
                                 r.score() / maxScore, "rrf", r.relevance())
-                        : new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
+                        : new SearchResult(r.chunkText(), r.docsName(), r.docsId(), r.chunkId(),
                                 r.score() / maxScore, "rrf", r.relevance(),
                                 r.channels().withHybrid(r.score() / maxScore)))
                 .sorted((a, b) -> Double.compare(b.score(), a.score())).collect(Collectors.toList());
@@ -179,17 +183,16 @@ public class HybridRetrievalService {
 
     private List<SearchResult> expandNeighborWindows(List<SearchResult> top) {
         if (kbJdbc == null || windowSize <= 0) return top;
-        Set<String> existingKeys = top.stream().map(r -> r.documentId() + ":" + r.chunkId()).collect(Collectors.toSet());
+        Set<String> existingKeys = top.stream().map(r -> r.docsId() + ":" + r.chunkId()).collect(Collectors.toSet());
         List<SearchResult> expanded = new ArrayList<>(top);
         for (SearchResult r : top) {
-            if (r.chunkId() == null || r.documentId() == null) continue;
+            if (r.chunkId() == null || r.docsId() == null) continue;
             try {
                 String sql = """
-                        SELECT c.chunk_text, COALESCE(d.old_name, ''), c.document_id, c.id, c.chunk_index
-                        FROM document_chunk c
-                        LEFT JOIN kb_document d ON d.id = c.document_id
-                        WHERE c.document_id = ? AND c.chunk_index BETWEEN (SELECT chunk_index - ? FROM document_chunk WHERE id = ?)
-                            AND (SELECT chunk_index + ? FROM document_chunk WHERE id = ?)
+                        SELECT c.chunk_text, c.docs_name, c.docs_id, c.id, c.chunk_index
+                        FROM kb_chunk c
+                        WHERE c.docs_id = ? AND c.chunk_index BETWEEN (SELECT chunk_index - ? FROM kb_chunk WHERE id = ?)
+                            AND (SELECT chunk_index + ? FROM kb_chunk WHERE id = ?)
                         """;
                 kbJdbc.query(sql, (rs, rowNum) -> {
                     String key = rs.getLong(3) + ":" + rs.getLong(4);
@@ -199,7 +202,7 @@ public class HybridRetrievalService {
                                 r.score() * 0.8, "neighbor", r.relevance(), r.channels()));
                     }
                     return null;
-                }, r.documentId(), windowSize, r.chunkId(), windowSize, r.chunkId());
+                }, r.docsId(), windowSize, r.chunkId(), windowSize, r.chunkId());
             } catch (Exception ignored) {}
         }
         return expanded;

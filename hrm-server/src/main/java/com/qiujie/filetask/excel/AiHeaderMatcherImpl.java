@@ -31,13 +31,13 @@ public class AiHeaderMatcherImpl {
 
     private static final Logger log = LoggerFactory.getLogger(AiHeaderMatcherImpl.class);
 
-    @Value("${chat.provider.base-url}")
+    @Value("${llm.base-url}")
     private String baseUrl;
 
-    @Value("${chat.provider.api-key}")
+    @Value("${llm.api-key}")
     private String apiKey;
 
-    @Value("${chat.provider.model}")
+    @Value("${llm.chat-model}")
     private String model;
 
     @Autowired

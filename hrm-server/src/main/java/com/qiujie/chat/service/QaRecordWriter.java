@@ -1,9 +1,9 @@
 package com.qiujie.chat.service;
 
-import com.qiujie.chat.entity.KbQaCitation;
-import com.qiujie.chat.entity.KbQaRecord;
-import com.qiujie.chat.mapper.KbQaCitationMapper;
-import com.qiujie.chat.mapper.KbQaRecordMapper;
+import com.qiujie.chat.entity.ChatQaCitation;
+import com.qiujie.chat.entity.ChatQaRecord;
+import com.qiujie.chat.mapper.ChatQaCitationMapper;
+import com.qiujie.chat.mapper.ChatQaRecordMapper;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 问答审计落库——一次问答写一行 {@code kb_qa_record} 与 N 行 {@code kb_qa_citation}。
+ * 问答审计落库——一次问答写一行 {@code chat_qa_record} 与 N 行 {@code chat_qa_citation}。
  * <p>
  * 记录与引用明细同事务写入：引用行失去主表会变成无法归属的垃圾数据，宁可整体回滚。
  * 失败只记日志不回抛——审计不是问答主流程的必要环节，用户不该因为审计写失败而看不到回答。
@@ -36,10 +36,10 @@ public class QaRecordWriter {
     private static final int SNAPSHOT_MAX_CHARS = 500;
 
     @Autowired
-    private KbQaRecordMapper recordMapper;
+    private ChatQaRecordMapper recordMapper;
 
     @Autowired
-    private KbQaCitationMapper citationMapper;
+    private ChatQaCitationMapper citationMapper;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -70,14 +70,14 @@ public class QaRecordWriter {
         List<SearchResult> cited = citable(usedResults);
         try {
             transactionTemplate.executeWithoutResult(status -> {
-                KbQaRecord record = new KbQaRecord()
+                ChatQaRecord record = new ChatQaRecord()
                         .setQuestion(question)
                         .setAnswer(answer)
                         .setStaffId(staffId)
                         .setEvidenceLevel(evidenceLevel)
                         .setAnswered(answered)
                         .setCitationCount(cited.size())
-                        .setEndpoint("chat/chat")
+                        .setEndpoint("chat")
                         .setSuccess(true)
                         .setCreateTime(LocalDateTime.now());
                 recordMapper.insert(record);
@@ -106,12 +106,12 @@ public class QaRecordWriter {
         return result;
     }
 
-    private KbQaCitation toCitation(Long recordId, SearchResult sr) {
+    private ChatQaCitation toCitation(Long recordId, SearchResult sr) {
         SearchResult.ChannelScores channels = sr.channels();
-        return new KbQaCitation()
+        return new ChatQaCitation()
                 .setQaRecordId(recordId)
                 .setChunkId(sr.chunkId())
-                .setDocumentName(sr.documentName())
+                .setDocsName(sr.docsName())
                 .setChunkText(truncate(sr.chunkText()))
                 .setRelevanceScore(sr.relevance())
                 .setRetrievalSource(channels == null ? null : channels.retrievalSource())
