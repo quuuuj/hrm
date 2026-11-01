@@ -1,8 +1,8 @@
 package com.qiujie.knowledge.lifecycle;
 
 import com.qiujie.knowledge.entity.Docs;
-import com.qiujie.knowledge.enums.DocumentStatusEnum;
-import com.qiujie.knowledge.mapper.IngestionJobMapper;
+import com.qiujie.knowledge.enums.KnowledgeStatusEnum;
+import com.qiujie.knowledge.mapper.KnowledgeIngestionTaskMapper;
 import com.qiujie.knowledge.mapper.DocsMapper;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -17,42 +17,42 @@ import java.util.concurrent.Executor;
  * 命令方法只做两件事：事务内写状态 + 注册「事务提交后」的异步任务；
  * ETL、清理、状态机补偿全部在模块内部，调用方不感知异步、不接触线程池。
  */
-public final class DocumentLifecycleService {
+public final class KnowledgeLifecycleService {
 
     /** 上传完成登记。name = mergedKey = MinIO 对象键（物理文件引用键）。 */
     public record RegisterCommand(String name, String oldName, String type,
                                   String fileHash, Long fileSize, Integer staffId) {}
 
     /** 登记成功：文档 UPLOADED，ETL 将在事务提交后异步执行。 */
-    public record RegisterResult(Long documentId, String status) {}
+    public record RegisterResult(Long docsId, String status) {}
 
     /** 重试命令。 */
-    public record RetryCommand(Long documentId) {}
+    public record RetryCommand(Long docsId) {}
 
     /** 重试裁决：accepted=false 时 reason 说明拒绝原因（预期场景用结果表达，不抛异常）。 */
-    public record RetryResult(Long documentId, boolean accepted, String reason) {}
+    public record RetryResult(Long docsId, boolean accepted, String reason) {}
 
     /** 删除命令。 */
-    public record DeleteCommand(Long documentId) {}
+    public record DeleteCommand(Long docsId) {}
 
     /** 删除裁决：幂等——不存在/已删除 → alreadyDeleted=true 仍算成功。 */
-    public record DeleteResult(Long documentId, boolean alreadyDeleted) {}
+    public record DeleteResult(Long docsId, boolean alreadyDeleted) {}
 
-    private final DocsMapper documentMapper;
-    private final IngestionJobMapper jobMapper;
+    private final DocsMapper docsMapper;
+    private final KnowledgeIngestionTaskMapper taskMapper;
     private final TransactionTemplate transactionTemplate;
     private final Executor ingestExecutor;
     private final IngestionPipeline pipeline;
-    private final DocumentPurgeHandler purgeHandler;
+    private final KnowledgePurgeHandler purgeHandler;
 
-    public DocumentLifecycleService(DocsMapper documentMapper,
-                                    IngestionJobMapper jobMapper,
+    public KnowledgeLifecycleService(DocsMapper docsMapper,
+                                    KnowledgeIngestionTaskMapper taskMapper,
                                     TransactionTemplate transactionTemplate,
                                     Executor ingestExecutor,
                                     IngestionPipeline pipeline,
-                                    DocumentPurgeHandler purgeHandler) {
-        this.documentMapper = documentMapper;
-        this.jobMapper = jobMapper;
+                                    KnowledgePurgeHandler purgeHandler) {
+        this.docsMapper = docsMapper;
+        this.taskMapper = taskMapper;
         this.transactionTemplate = transactionTemplate;
         this.ingestExecutor = ingestExecutor;
         this.pipeline = pipeline;
@@ -72,13 +72,13 @@ public final class DocumentLifecycleService {
                     .setFileHash(cmd.fileHash())
                     .setStoredSize(cmd.fileSize())
                     .setSize(cmd.fileSize() != null ? cmd.fileSize() / 1024 : null)
-                    .setKbStatus(DocumentStatusEnum.UPLOADED.name())
+                    .setKbStatus(KnowledgeStatusEnum.UPLOADED.name())
                     .setStaffId(cmd.staffId())
                     .setUploadTime(LocalDateTime.now());
-            documentMapper.insert(doc);
-            Long documentId = doc.getId().longValue();
-            scheduleAfterCommit(() -> pipeline.run(documentId));
-            return new RegisterResult(documentId, DocumentStatusEnum.UPLOADED.name());
+            docsMapper.insert(doc);
+            Long docsId = doc.getId().longValue();
+            scheduleAfterCommit(() -> pipeline.run(docsId));
+            return new RegisterResult(docsId, KnowledgeStatusEnum.UPLOADED.name());
         });
     }
 
@@ -89,35 +89,35 @@ public final class DocumentLifecycleService {
     public RetryResult retry(RetryCommand cmd) {
         return transactionTemplate.execute(status -> {
             // @TableLogic：已删除行 selectById 返回 null，与"不存在"同路拒绝
-            Docs doc = documentMapper.selectById(cmd.documentId());
+            Docs doc = docsMapper.selectById(cmd.docsId());
             if (doc == null) {
-                return new RetryResult(cmd.documentId(), false, "文档不存在或已删除");
+                return new RetryResult(cmd.docsId(), false, "文档不存在或已删除");
             }
-            if (DocumentStatusEnum.READY.name().equals(doc.getKbStatus())) {
-                return new RetryResult(cmd.documentId(), false, "已处理完成的文档无需重试");
+            if (KnowledgeStatusEnum.READY.name().equals(doc.getKbStatus())) {
+                return new RetryResult(cmd.docsId(), false, "已处理完成的文档无需重试");
             }
-            Long documentId = doc.getId().longValue();
-            scheduleAfterCommit(() -> pipeline.run(documentId));
-            return new RetryResult(documentId, true, null);
+            Long docsId = doc.getId().longValue();
+            scheduleAfterCommit(() -> pipeline.run(docsId));
+            return new RetryResult(docsId, true, null);
         });
     }
 
     /**
-     * 删除文档（幂等）：事务内 CAS 逻辑删 + 作废在途作业，提交后异步物理清理
+     * 删除文档（幂等）：事务内 CAS 逻辑删 + 作废在途任务，提交后异步物理清理
      * （引用计数 → MinIO → PG 切片/向量/镜像）。
      */
     public DeleteResult delete(DeleteCommand cmd) {
         return transactionTemplate.execute(status -> {
-            Docs doc = documentMapper.selectById(cmd.documentId());
-            if (doc == null || documentMapper.markDeleted(cmd.documentId()) == 0) {
+            Docs doc = docsMapper.selectById(cmd.docsId());
+            if (doc == null || docsMapper.markDeleted(cmd.docsId()) == 0) {
                 // 不存在或已删除（@TableLogic selectById 查不到已删行）：幂等成功
-                return new DeleteResult(cmd.documentId(), true);
+                return new DeleteResult(cmd.docsId(), true);
             }
-            // 作废在途作业，防 worker 在删除后继续写 PG
-            jobMapper.cancelActiveJobs(cmd.documentId());
+            // 作废在途任务，防 worker 在删除后继续写 PG
+            taskMapper.cancelActiveTasks(cmd.docsId());
             String storageKey = doc.getName();
-            scheduleAfterCommit(() -> purgeHandler.purge(cmd.documentId(), storageKey));
-            return new DeleteResult(cmd.documentId(), false);
+            scheduleAfterCommit(() -> purgeHandler.purge(cmd.docsId(), storageKey));
+            return new DeleteResult(cmd.docsId(), false);
         });
     }
 

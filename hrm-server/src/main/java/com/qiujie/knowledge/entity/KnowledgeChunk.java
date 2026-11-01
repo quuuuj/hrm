@@ -17,16 +17,20 @@ import java.time.LocalDateTime;
  */
 @Data
 @Accessors(chain = true)
-@TableName("document_chunk")
-public class DocumentChunk implements Serializable {
+@TableName("kb_chunk")
+public class KnowledgeChunk implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("document_id")
-    private Long documentId;
+    @TableField("docs_id")
+    private Long docsId;
+
+    /** 文档显示名快照（sys_docs.old_name），检索结果直接取用，无需回查 MySQL */
+    @TableField("docs_name")
+    private String docsName;
 
     @TableField("chunk_index")
     private Integer chunkIndex;
@@ -48,10 +52,6 @@ public class DocumentChunk implements Serializable {
     /** 切片在原文档中的结束字符位置 */
     @TableField("char_end")
     private Integer charEnd;
-
-    /** 切片元数据（JSONB → String） */
-    @TableField("metadata_json")
-    private String metadataJson;
 
     @TableField("create_time")
     private LocalDateTime createTime;

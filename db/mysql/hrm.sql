@@ -382,7 +382,7 @@ INSERT INTO `per_menu` VALUES (3, 'role', '角色管理', 's-custom', 'permissio
 INSERT INTO `per_menu` VALUES (4, 'menu', '菜单管理', 'collection', 'permission:menu:list', 6, 1, 1, NULL, '2022-01-27 14:32:37', '2024-04-11 16:50:27', 0);
 INSERT INTO `per_menu` VALUES (5, 'system', '系统管理', 's-management', '', 0, 0, 1, '', '2022-01-27 14:36:17', '2024-04-11 16:53:43', 0);
 INSERT INTO `per_menu` VALUES (6, 'permission', '权限管理', 's-cooperation\r\n', NULL, 0, 0, 1, NULL, '2022-11-20 18:00:21', '2024-04-10 14:49:53', 0);
-INSERT INTO `per_menu` VALUES (13, 'department', '部门管理', 's-operation', 'system:department:list', 5, 1, 1, NULL, '2022-03-07 15:36:59', '2024-04-11 16:50:38', 0);
+INSERT INTO `per_menu` VALUES (13, 'dept', '部门管理', 's-operation', 'system:dept:list', 5, 1, 1, NULL, '2022-03-07 15:36:59', '2024-04-11 16:50:38', 0);
 INSERT INTO `per_menu` VALUES (14, 'performance', '考勤管理', 's-check', NULL, 0, 0, 1, NULL, '2022-03-21 23:30:38', '2024-04-10 19:00:51', 0);
 INSERT INTO `per_menu` VALUES (15, 'insurance', '五险一金', 's-data', 'money:insurance:list', 17, 1, 1, NULL, '2022-03-21 23:33:59', '2024-04-11 16:50:53', 0);
 INSERT INTO `per_menu` VALUES (16, 'salary', '薪资管理', 'data-line', 'money:salary:list', 17, 1, 1, NULL, '2022-03-21 23:34:56', '2024-04-11 16:51:00', 0);
@@ -407,13 +407,13 @@ INSERT INTO `per_menu` VALUES (40, 'docs_download', '下载', 'download', 'syste
 INSERT INTO `per_menu` VALUES (41, 'role_edit', '编辑', 'edit', 'permission:role:edit', 3, 2, 1, NULL, '2024-04-10 21:36:15', '2024-04-11 23:03:51', 0);
 INSERT INTO `per_menu` VALUES (42, 'staff_set_role', '分配角色', 's-tools', 'system:staff:set_role', 1, 2, 1, NULL, '2024-04-11 12:02:23', '2024-04-11 22:23:22', 0);
 INSERT INTO `per_menu` VALUES (52, 'staff_enable', '启用禁用', 'open', 'system:staff:enable', 1, 2, 1, NULL, '2024-04-11 22:27:49', '2024-04-11 22:59:57', 0);
-INSERT INTO `per_menu` VALUES (53, 'department_add', '增加部门', 'circle-plus-outline', 'system:department:add', 13, 2, 1, NULL, '2024-04-11 22:32:50', '2024-04-11 22:54:20', 0);
-INSERT INTO `per_menu` VALUES (54, 'department_delete', '删除部门', 'remove-outline', 'system:department:delete', 13, 2, 1, NULL, '2024-04-11 22:39:29', '2024-04-11 22:54:36', 0);
-INSERT INTO `per_menu` VALUES (55, 'department_edit', '编辑', 'edit', 'system:department:edit', 13, 2, 1, NULL, '2024-04-11 22:40:41', '2024-04-11 22:54:56', 0);
-INSERT INTO `per_menu` VALUES (56, 'department_search', '查询', 'search', 'system:department:search', 13, 2, 1, NULL, '2024-04-11 22:42:03', '2024-04-13 11:23:32', 0);
-INSERT INTO `per_menu` VALUES (57, 'department_import', '导入', 'bottom', 'system:department:import', 13, 2, 1, NULL, '2024-04-11 22:43:38', '2024-04-11 22:55:24', 0);
-INSERT INTO `per_menu` VALUES (58, 'department_export', '导出', 'top', 'system:department:export', 13, 2, 1, NULL, '2024-04-11 22:44:16', '2024-04-11 22:55:34', 0);
-INSERT INTO `per_menu` VALUES (59, 'department_setting', '部门设置', 'setting', 'system:department:setting', 13, 2, 1, NULL, '2024-04-11 22:46:56', '2024-04-11 22:56:12', 0);
+INSERT INTO `per_menu` VALUES (53, 'dept_add', '增加部门', 'circle-plus-outline', 'system:dept:add', 13, 2, 1, NULL, '2024-04-11 22:32:50', '2024-04-11 22:54:20', 0);
+INSERT INTO `per_menu` VALUES (54, 'dept_delete', '删除部门', 'remove-outline', 'system:dept:delete', 13, 2, 1, NULL, '2024-04-11 22:39:29', '2024-04-11 22:54:36', 0);
+INSERT INTO `per_menu` VALUES (55, 'dept_edit', '编辑', 'edit', 'system:dept:edit', 13, 2, 1, NULL, '2024-04-11 22:40:41', '2024-04-11 22:54:56', 0);
+INSERT INTO `per_menu` VALUES (56, 'dept_search', '查询', 'search', 'system:dept:search', 13, 2, 1, NULL, '2024-04-11 22:42:03', '2024-04-13 11:23:32', 0);
+INSERT INTO `per_menu` VALUES (57, 'dept_import', '导入', 'bottom', 'system:dept:import', 13, 2, 1, NULL, '2024-04-11 22:43:38', '2024-04-11 22:55:24', 0);
+INSERT INTO `per_menu` VALUES (58, 'dept_export', '导出', 'top', 'system:dept:export', 13, 2, 1, NULL, '2024-04-11 22:44:16', '2024-04-11 22:55:34', 0);
+INSERT INTO `per_menu` VALUES (59, 'dept_setting', '部门设置', 'setting', 'system:dept:setting', 13, 2, 1, NULL, '2024-04-11 22:46:56', '2024-04-11 22:56:12', 0);
 INSERT INTO `per_menu` VALUES (60, 'role_add', '增加', 'circle-plus-outline', 'permission:role:add', 3, 2, 1, NULL, '2024-04-11 22:49:53', '2024-04-11 22:56:37', 0);
 INSERT INTO `per_menu` VALUES (61, 'role_delete', '删除', 'remove-outline', 'permission:role:delete', 3, 2, 1, NULL, '2024-04-11 22:50:27', '2024-04-11 22:56:53', 0);
 INSERT INTO `per_menu` VALUES (62, 'role_search', '查询', 'search', 'permission:role:search', 3, 2, 1, NULL, '2024-04-11 22:51:18', '2024-04-13 11:27:05', 0);
@@ -423,7 +423,7 @@ INSERT INTO `per_menu` VALUES (65, 'role_set_menu', '分配权限', 's-tools', '
 INSERT INTO `per_menu` VALUES (66, 'menu_add', '添加菜单', 'circle-plus-outline', 'permission:menu:add', 4, 2, 1, NULL, '2024-04-12 14:13:27', '2024-04-12 14:17:12', 0);
 INSERT INTO `per_menu` VALUES (67, 'menu_delete', '删除', 'remove-outline', 'permission:menu:delete', 4, 2, 1, NULL, '2024-04-12 14:14:11', '2024-04-12 14:17:34', 0);
 INSERT INTO `per_menu` VALUES (68, 'menu_edit', '编辑', 'edit', 'permission:menu:edit', 4, 2, 1, NULL, '2024-04-12 14:14:41', '2024-04-12 14:17:46', 0);
-INSERT INTO `per_menu` VALUES (69, 'meu_search', '查询', 'search', 'permission:menu:search', 4, 2, 1, NULL, '2024-04-12 14:15:36', '2024-04-13 11:27:01', 0);
+INSERT INTO `per_menu` VALUES (69, 'menu_search', '查询', 'search', 'permission:menu:search', 4, 2, 1, NULL, '2024-04-12 14:15:36', '2024-04-13 11:27:01', 0);
 INSERT INTO `per_menu` VALUES (70, 'menu_import', '导入', 'bottom', 'permission:menu:import', 4, 2, 1, NULL, '2024-04-12 14:16:21', '2024-04-12 14:18:10', 0);
 INSERT INTO `per_menu` VALUES (71, 'menu_export', '导出', 'top', 'permission:menu:export', 4, 2, 1, NULL, '2024-04-12 14:16:49', '2024-04-12 14:18:18', 0);
 INSERT INTO `per_menu` VALUES (72, 'leave_search', '查询', 'search', 'performance:leave:search', 19, 2, 1, NULL, '2024-04-12 15:10:32', '2024-04-13 11:26:52', 0);
@@ -486,11 +486,11 @@ VALUES
 ('leave_audit', '审批任务', 'check', 'performance:leave:audit', 19, 2, 1, NOW(), 0),
 ('leave_cancel', '撤销请假', 'close', 'performance:leave:cancel', 19, 2, 1, NOW(), 0);
 
-INSERT INTO `per_menu` VALUES (121, 'qa', '智能问答', 'chat-dot-round', NULL, 0, 0, 1, NULL, '2026-09-14 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (121, 'kb', '智能问答', 'chat-dot-round', NULL, 0, 0, 1, NULL, '2026-09-14 10:00:00', NULL, 0);
 INSERT INTO `per_menu` VALUES (122, 'chat', '聊天', 'chat-line-round', NULL, 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
-INSERT INTO `per_menu` VALUES (123, 'knowledge', '知识库', 'document-copy', 'qa:knowledge:list', 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
-INSERT INTO `per_menu` VALUES (124, 'knowledge_upload', '上传文档', 'upload2', 'qa:knowledge:upload', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
-INSERT INTO `per_menu` VALUES (125, 'knowledge_delete', '删除文档', 'remove-outline', 'qa:knowledge:delete', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (123, 'knowledge', '知识库', 'document-copy', 'kb:knowledge:list', 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (124, 'knowledge_upload', '上传文档', 'upload2', 'kb:knowledge:upload', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (125, 'knowledge_delete', '删除文档', 'remove-outline', 'kb:knowledge:delete', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
 
 -- ----------------------------
 -- Table structure for per_role
@@ -1285,7 +1285,7 @@ CREATE TABLE `chat_session` (
   `staff_id`        int          NOT NULL COMMENT '所属员工ID',
   `title`           varchar(200) NOT NULL DEFAULT '新会话' COMMENT '会话标题',
   `status`          varchar(20)  NOT NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE / ARCHIVED / DELETED',
-  `last_message_at` datetime     DEFAULT NULL COMMENT '最后消息时间',
+  `last_message_time` datetime   DEFAULT NULL COMMENT '最后消息时间',
   `message_count`   int          NOT NULL DEFAULT 0 COMMENT '消息总数',
   `create_time`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time`     datetime     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -1354,10 +1354,10 @@ CREATE TABLE IF NOT EXISTS `file_task_error` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='导入导出错误明细表';
 
 -- ----------------------------
--- Table structure for kb_upload_session
+-- Table structure for file_upload_session
 -- ----------------------------
-DROP TABLE IF EXISTS `kb_upload_session`;
-CREATE TABLE `kb_upload_session` (
+DROP TABLE IF EXISTS `file_upload_session`;
+CREATE TABLE `file_upload_session` (
   `upload_id` varchar(36) NOT NULL COMMENT 'UUID',
   `staff_id` int NOT NULL COMMENT '上传者',
   `file_name` varchar(500) NOT NULL COMMENT '原始文件名',
@@ -1369,19 +1369,19 @@ CREATE TABLE `kb_upload_session` (
   `status` varchar(20) NOT NULL DEFAULT 'INIT' COMMENT 'INIT/UPLOADING/COMPLETING/COMPLETED',
   `bucket` varchar(100) DEFAULT NULL COMMENT '存储桶',
   `merged_object_key` varchar(500) DEFAULT NULL COMMENT '合并后对象路径',
-  `expires_at` datetime NOT NULL COMMENT '会话过期时间',
+  `expire_time` datetime NOT NULL COMMENT '会话过期时间',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`upload_id`),
-  KEY `idx_upload_expires` (`expires_at`),
-  KEY `idx_upload_session_reusable` (`staff_id`, `file_hash`, `status`, `expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='知识库上传会话';
+  KEY `idx_upload_expire_time` (`expire_time`),
+  KEY `idx_upload_session_reusable` (`staff_id`, `file_hash`, `status`, `expire_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='分片上传会话';
 
 -- ----------------------------
--- Table structure for kb_upload_chunk
+-- Table structure for file_upload_chunk
 -- ----------------------------
-DROP TABLE IF EXISTS `kb_upload_chunk`;
-CREATE TABLE `kb_upload_chunk` (
+DROP TABLE IF EXISTS `file_upload_chunk`;
+CREATE TABLE `file_upload_chunk` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
   `upload_id` varchar(36) NOT NULL COMMENT '所属上传会话ID',
   `chunk_index` int NOT NULL COMMENT '分片序号(从0开始)',
@@ -1392,13 +1392,13 @@ CREATE TABLE `kb_upload_chunk` (
   `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '分片上传完成时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_session_chunk` (`upload_id`, `chunk_index`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='知识库上传分片';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='分片上传分片';
 
 -- ----------------------------
--- Table structure for kb_qa_record
+-- Table structure for chat_qa_record
 -- ----------------------------
-DROP TABLE IF EXISTS `kb_qa_record`;
-CREATE TABLE `kb_qa_record` (
+DROP TABLE IF EXISTS `chat_qa_record`;
+CREATE TABLE `chat_qa_record` (
   `id`                bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
   `question`          text            NOT NULL COMMENT '用户原始问题',
   `answer`            text            DEFAULT NULL         COMMENT '模型回答正文（兜底文案也记）',
@@ -1420,17 +1420,17 @@ CREATE TABLE `kb_qa_record` (
   `create_time`       datetime        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_qa_staff` (`staff_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='知识库QA记录';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='问答记录';
 
 -- ----------------------------
--- Table structure for kb_qa_citation
+-- Table structure for chat_qa_citation
 -- ----------------------------
-DROP TABLE IF EXISTS `kb_qa_citation`;
-CREATE TABLE `kb_qa_citation` (
+DROP TABLE IF EXISTS `chat_qa_citation`;
+CREATE TABLE `chat_qa_citation` (
   `id`               bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
   `qa_record_id`     bigint unsigned NOT NULL COMMENT '所属QA问答记录ID',
   `chunk_id`         bigint          NOT NULL COMMENT '来源切片ID',
-  `document_name`    varchar(200)    DEFAULT NULL COMMENT '来源文件名',
+  `docs_name`        varchar(200)    DEFAULT NULL COMMENT '来源文件名',
   `chunk_text`       text            DEFAULT NULL COMMENT '切片文本快照',
   `relevance_score`  double          NOT NULL DEFAULT 0 COMMENT '相关性得分',
   `retrieval_source` varchar(32)     DEFAULT NULL COMMENT 'VECTOR / KEYWORD / BOTH',
@@ -1440,30 +1440,30 @@ CREATE TABLE `kb_qa_citation` (
   `snippet`          text            DEFAULT NULL COMMENT '证据文本快照',
   PRIMARY KEY (`id`),
   KEY `idx_citation_qa` (`qa_record_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='知识库QA引用';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='问答引用明细';
 
 -- ----------------------------
--- Table structure for ingestion_jobs
+-- Table structure for kb_ingestion_task
 -- ----------------------------
-DROP TABLE IF EXISTS `ingestion_jobs`;
-CREATE TABLE `ingestion_jobs` (
+DROP TABLE IF EXISTS `kb_ingestion_task`;
+CREATE TABLE `kb_ingestion_task` (
   `id`             bigint        NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `document_id`    bigint        NOT NULL COMMENT '关联文档ID',
+  `docs_id`        bigint        NOT NULL COMMENT '关联文档ID',
   `staff_id`       int           NOT NULL COMMENT '上传者',
-  `job_type`       varchar(32)   NOT NULL DEFAULT 'INGEST_DOCUMENT' COMMENT '任务类型',
+  `task_type`      varchar(32)   NOT NULL DEFAULT 'INGEST_DOCS' COMMENT '任务类型',
   `status`         varchar(16)   NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/RUNNING/SUCCEEDED/FAILED/CANCELLED',
   `retry_count`    int           NOT NULL DEFAULT 0 COMMENT '当前重试次数',
   `max_retries`    int           NOT NULL DEFAULT 3 COMMENT '最大重试次数',
   `worker_id`      varchar(128)  DEFAULT NULL COMMENT '执行Worker标识',
-  `started_at`     datetime      DEFAULT NULL COMMENT '开始执行时间',
-  `finished_at`    datetime      DEFAULT NULL COMMENT '完成时间',
-  `next_retry_at`  datetime      DEFAULT NULL COMMENT '下次重试时间',
+  `start_time`     datetime      DEFAULT NULL COMMENT '开始执行时间',
+  `finish_time`    datetime      DEFAULT NULL COMMENT '完成时间',
+  `next_retry_time` datetime     DEFAULT NULL COMMENT '下次重试时间',
   `last_error`     text          DEFAULT NULL COMMENT '最近失败错误信息',
   `create_time`    datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time`    datetime      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
-  KEY `idx_job_runnable` (`status`, `next_retry_at`, `create_time`),
-  KEY `idx_job_document` (`document_id`)
+  KEY `idx_ingestion_task_runnable` (`status`, `next_retry_time`, `create_time`),
+  KEY `idx_ingestion_task_docs` (`docs_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文档摄入异步任务表';
 
 

@@ -5,10 +5,10 @@ import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
-import com.qiujie.filetask.entity.KbUploadChunk;
-import com.qiujie.filetask.entity.KbUploadSession;
-import com.qiujie.filetask.mapper.KbUploadChunkMapper;
-import com.qiujie.filetask.mapper.KbUploadSessionMapper;
+import com.qiujie.filetask.entity.FileUploadChunk;
+import com.qiujie.filetask.entity.FileUploadSession;
+import com.qiujie.filetask.mapper.FileUploadChunkMapper;
+import com.qiujie.filetask.mapper.FileUploadSessionMapper;
 import com.qiujie.filetask.spi.UploadCompletionHandler;
 import com.qiujie.filetask.spi.UploadSessionInfo;
 import com.qiujie.common.storage.MinioStorageService;
@@ -48,10 +48,10 @@ public class FileUploadService {
     private static final int SESSION_TTL_HOURS = 24;
 
     @Autowired
-    private KbUploadSessionMapper sessionMapper;
+    private FileUploadSessionMapper sessionMapper;
 
     @Autowired
-    private KbUploadChunkMapper chunkMapper;
+    private FileUploadChunkMapper chunkMapper;
 
     @Autowired
     private MinioStorageService storageService;
@@ -72,7 +72,7 @@ public class FileUploadService {
      * 三级优先级决策：
      *   1. 秒传 — handler.checkDedup(fileHash) 命中 → 直接返回已有文件信息，跳过上传
      *   2. 断点续传 — 同 staffId + fileHash 存在 INIT/UPLOADING 状态会话 → 返回已有 uploadId 和已传分片列表
-     *   3. 新建会话 — 写入 kb_upload_session，返回 uploadId、chunkSize、chunkCount
+     *   3. 新建会话 — 写入 file_upload_session，返回 uploadId、chunkSize、chunkCount
      *
      * @param fileName  原始文件名，如 "员工手册.pdf"
      * @param fileExt   文件扩展名（不含点），如 "pdf"
@@ -109,17 +109,17 @@ public class FileUploadService {
 
         // —— 优先级 2: 断点续传 ——
         // 查找同一用户上传的相同 hash 且未完成/未过期的会话
-        List<KbUploadSession> sessions = sessionMapper.selectList(
-                new QueryWrapper<KbUploadSession>()
+        List<FileUploadSession> sessions = sessionMapper.selectList(
+                new QueryWrapper<FileUploadSession>()
                         .eq("staff_id", staffId)
                         .eq("file_hash", fileHash)
                         .in("status", "INIT", "UPLOADING"));
         if (!sessions.isEmpty()) {
-            KbUploadSession session = sessions.get(0);
+            FileUploadSession session = sessions.get(0);
             // 返回已上传的分片索引列表，前端据此跳过已传分片
             List<Integer> uploadedChunks = chunkMapper.selectList(
-                    new QueryWrapper<KbUploadChunk>().eq("upload_id", session.getUploadId()))
-                    .stream().map(KbUploadChunk::getChunkIndex).collect(Collectors.toList());
+                    new QueryWrapper<FileUploadChunk>().eq("upload_id", session.getUploadId()))
+                    .stream().map(FileUploadChunk::getChunkIndex).collect(Collectors.toList());
             Map<String, Object> result = new HashMap<>();
             result.put("instantUpload", false);
             result.put("resumed", true);
@@ -131,7 +131,7 @@ public class FileUploadService {
         // —— 优先级 3: 新建会话 ——
         int chunkCount = (int) Math.ceil((double) fileSize / chunkSize);
         String uploadId = IdUtil.fastSimpleUUID();
-        KbUploadSession session = new KbUploadSession()
+        FileUploadSession session = new FileUploadSession()
                 .setUploadId(uploadId)
                 .setStaffId(staffId)
                 .setFileName(fileName)
@@ -142,7 +142,7 @@ public class FileUploadService {
                 .setChunkCount(chunkCount)
                 .setStatus("INIT")
                 // 24 小时后过期，定时任务 cleanExpiredSessions() 清理
-                .setExpiresAt(LocalDateTime.now().plusHours(SESSION_TTL_HOURS));
+                .setExpireTime(LocalDateTime.now().plusHours(SESSION_TTL_HOURS));
         sessionMapper.insert(session);
 
         Map<String, Object> result = new HashMap<>();
@@ -160,13 +160,13 @@ public class FileUploadService {
      */
     public ResponseDTO uploadChunk(String uploadId, Integer chunkIndex, String chunkHash, MultipartFile file) {
         return transactionTemplate.execute(ts -> {
-        KbUploadSession session = sessionMapper.selectById(uploadId);
-        if (session == null || session.getExpiresAt().isBefore(LocalDateTime.now())) {
+        FileUploadSession session = sessionMapper.selectById(uploadId);
+        if (session == null || session.getExpireTime().isBefore(LocalDateTime.now())) {
             return Response.error("上传会话不存在或已过期");
         }
 
         // 幂等：不重复上传已有分片
-        if (chunkMapper.selectCount(new QueryWrapper<KbUploadChunk>()
+        if (chunkMapper.selectCount(new QueryWrapper<FileUploadChunk>()
                 .eq("upload_id", uploadId).eq("chunk_index", chunkIndex)) > 0) {
             return Response.success("分片已存在");
         }
@@ -181,7 +181,7 @@ public class FileUploadService {
                 return Response.error("分片校验失败，请重试");
             }
             storageService.put(storagePath, bytes);
-            KbUploadChunk chunk = new KbUploadChunk()
+            FileUploadChunk chunk = new FileUploadChunk()
                     .setUploadId(uploadId)
                     .setChunkIndex(chunkIndex)
                     .setChunkSize((long) bytes.length)
@@ -211,13 +211,13 @@ public class FileUploadService {
      * @return 合并后的文件 key（MinIO 对象路径）
      */
     private String mergeChunks(String uploadId, String keyPrefix) {
-        KbUploadSession session = sessionMapper.selectById(uploadId);
+        FileUploadSession session = sessionMapper.selectById(uploadId);
         if (session == null) {
             throw new RuntimeException("上传会话不存在");
         }
 
-        List<KbUploadChunk> chunks = chunkMapper.selectList(
-                new QueryWrapper<KbUploadChunk>().eq("upload_id", uploadId).orderByAsc("chunk_index"));
+        List<FileUploadChunk> chunks = chunkMapper.selectList(
+                new QueryWrapper<FileUploadChunk>().eq("upload_id", uploadId).orderByAsc("chunk_index"));
         if (chunks.size() != session.getChunkCount()) {
             throw new RuntimeException("分片不完整，已上传 " + chunks.size() + "/" + session.getChunkCount());
         }
@@ -230,7 +230,7 @@ public class FileUploadService {
                 IdUtil.fastSimpleUUID().substring(2, 22),
                 session.getFileExt());
         List<String> sourceKeys = chunks.stream()
-                .map(KbUploadChunk::getStoragePath).collect(Collectors.toList());
+                .map(FileUploadChunk::getStoragePath).collect(Collectors.toList());
         storageService.composeObject(sourceKeys, mergedKey, "application/octet-stream");
 
         session.setMergedObjectKey(mergedKey);
@@ -245,7 +245,7 @@ public class FileUploadService {
      */
     public String completeUpload(String uploadId) {
         return transactionTemplate.execute(status -> {
-            KbUploadSession session = sessionMapper.selectById(uploadId);
+            FileUploadSession session = sessionMapper.selectById(uploadId);
             if (session == null) {
                 throw new RuntimeException("上传会话不存在");
             }
@@ -263,7 +263,7 @@ public class FileUploadService {
     public ResponseDTO completeUpload(String uploadId, UploadCompletionHandler handler, boolean ingest) {
         return transactionTemplate.execute(status -> {
             String mergedKey = mergeChunks(uploadId, handler.getStoragePrefix());
-            KbUploadSession session = sessionMapper.selectById(uploadId);
+            FileUploadSession session = sessionMapper.selectById(uploadId);
             UploadSessionInfo info = new UploadSessionInfo(
                     uploadId, session.getFileName(), session.getFileExt(),
                     session.getFileSize(), session.getFileHash(),
@@ -279,16 +279,16 @@ public class FileUploadService {
      */
     @Scheduled(cron = "0 0 * * * ?")
     public void cleanExpiredSessions() {
-        List<KbUploadSession> expired = sessionMapper.selectList(
-                new QueryWrapper<KbUploadSession>().lt("expires_at", LocalDateTime.now()));
-        for (KbUploadSession session : expired) {
+        List<FileUploadSession> expired = sessionMapper.selectList(
+                new QueryWrapper<FileUploadSession>().lt("expire_time", LocalDateTime.now()));
+        for (FileUploadSession session : expired) {
             // 清理分片文件
-            List<KbUploadChunk> chunks = chunkMapper.selectList(
-                    new QueryWrapper<KbUploadChunk>().eq("upload_id", session.getUploadId()));
-            for (KbUploadChunk chunk : chunks) {
+            List<FileUploadChunk> chunks = chunkMapper.selectList(
+                    new QueryWrapper<FileUploadChunk>().eq("upload_id", session.getUploadId()));
+            for (FileUploadChunk chunk : chunks) {
                 try { storageService.delete(chunk.getStoragePath()); } catch (Exception ignored) {}
             }
-            chunkMapper.delete(new QueryWrapper<KbUploadChunk>().eq("upload_id", session.getUploadId()));
+            chunkMapper.delete(new QueryWrapper<FileUploadChunk>().eq("upload_id", session.getUploadId()));
             sessionMapper.deleteById(session.getUploadId());
         }
         if (!expired.isEmpty()) {

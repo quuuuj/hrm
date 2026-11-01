@@ -58,14 +58,14 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
     private DocsMapper docsMapper;
 
     @Autowired
-    private com.qiujie.knowledge.mapper.DocumentChunkMapper chunkMapper;
+    private com.qiujie.knowledge.mapper.KnowledgeChunkMapper chunkMapper;
 
     /**
      * 列出指定文档的全部切片（文件中心查看分块对话框）。
      */
-    public ResponseDTO chunks(Long documentId) {
-        List<com.qiujie.knowledge.entity.DocumentChunk> chunks =
-                chunkMapper.selectByDocumentIdOrderByChunkIndex(documentId);
+    public ResponseDTO chunks(Long docsId) {
+        List<com.qiujie.knowledge.entity.KnowledgeChunk> chunks =
+                chunkMapper.selectByDocsIdOrderByChunkIndex(docsId);
         return Response.success(chunks);
     }
 
@@ -127,11 +127,11 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
     }
 
     @Autowired(required = false)
-    private com.qiujie.knowledge.lifecycle.DocumentLifecycleService lifecycle;
+    private com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService lifecycle;
 
     /**
      * 逻辑删除：若文档有关联的知识库状态（kb_status is not null），
-     * 委托 DocumentLifecycleService 执行 CAS 逻辑删 + 作废在途作业 + 事务提交后异步清理 PG 切片/向量/镜像与物理文件；
+     * 委托 KnowledgeLifecycleService 执行 CAS 逻辑删 + 作废在途任务 + 事务提交后异步清理 PG 切片/向量/镜像与物理文件；
      * 否则执行普通通用文件的逻辑删除。
      */
     public ResponseDTO delete(Integer id) {
@@ -140,7 +140,7 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
             return Response.error();
         }
         if (doc.getKbStatus() != null && lifecycle != null) {
-            lifecycle.delete(new com.qiujie.knowledge.lifecycle.DocumentLifecycleService.DeleteCommand(id.longValue()));
+            lifecycle.delete(new com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService.DeleteCommand(id.longValue()));
             return Response.success();
         }
         if (removeById(id)) {

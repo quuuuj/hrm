@@ -14,8 +14,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @Accessors(chain = true)
-@TableName("kb_upload_chunk")
-public class KbUploadChunk implements Serializable {
+@TableName("file_upload_chunk")
+public class FileUploadChunk implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

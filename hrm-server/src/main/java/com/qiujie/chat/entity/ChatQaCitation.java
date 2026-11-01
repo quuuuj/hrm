@@ -7,7 +7,7 @@ import lombok.experimental.Accessors;
 import java.io.Serializable;
 
 /**
- * 知识库问答引用明细实体 (MySQL kb_qa_citation)。
+ * 问答引用明细实体 (MySQL chat_qa_citation)。
  * <p>
  * 一条记录对应「这次问答的模型依据里，有哪一段切片」：切片 ID、来源文档名、
  * 文本快照与各检索通道得分，用于事后回溯模型当时看到的证据。
@@ -16,8 +16,8 @@ import java.io.Serializable;
  */
 @Data
 @Accessors(chain = true)
-@TableName("kb_qa_citation")
-public class KbQaCitation implements Serializable {
+@TableName("chat_qa_citation")
+public class ChatQaCitation implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -30,8 +30,8 @@ public class KbQaCitation implements Serializable {
     @TableField("chunk_id")
     private Long chunkId;
 
-    @TableField("document_name")
-    private String documentName;
+    @TableField("docs_name")
+    private String docsName;
 
     /** 切片文本快照；超长按固定字符数截断，全文可凭 chunkId 回查 */
     @TableField("chunk_text")

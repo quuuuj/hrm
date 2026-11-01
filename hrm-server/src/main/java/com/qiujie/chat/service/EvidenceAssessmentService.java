@@ -16,13 +16,13 @@ import java.util.List;
 @Service
 public class EvidenceAssessmentService {
 
-    @Value("${knowledge.qa.evidence-weak-threshold}")
+    @Value("${chat.qa.evidence-weak-threshold}")
     private double weakThreshold;
 
-    @Value("${knowledge.qa.evidence-partial-threshold}")
+    @Value("${chat.qa.evidence-partial-threshold}")
     private double partialThreshold;
 
-    @Value("${knowledge.qa.evidence-sufficient-threshold}")
+    @Value("${chat.qa.evidence-sufficient-threshold}")
     private double sufficientThreshold;
 
     public record Assessment(EvidenceLevel level, String reason) {}
@@ -37,7 +37,7 @@ public class EvidenceAssessmentService {
 
         double maxScore = results.stream().mapToDouble(SearchResult::relevance).max().orElse(0);
         double avgScore = results.stream().mapToDouble(SearchResult::relevance).average().orElse(0);
-        long uniqueDocs = results.stream().map(SearchResult::documentId).distinct().count();
+        long uniqueDocs = results.stream().map(SearchResult::docsId).distinct().count();
         int count = results.size();
 
         // 多因素综合判定

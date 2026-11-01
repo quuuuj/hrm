@@ -31,28 +31,28 @@ public class DeptController {
 
     @Operation(summary = "新增")
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('system:department:add')")
+    @PreAuthorize("hasAnyAuthority('system:dept:add')")
     public ResponseDTO add(@RequestBody Dept dept) {
         return this.deptService.add(dept);
     }
 
     @Operation(summary = "逻辑删除")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('system:department:delete')")
+    @PreAuthorize("hasAnyAuthority('system:dept:delete')")
     public ResponseDTO delete(@PathVariable Integer id) {
         return this.deptService.delete(id);
     }
 
     @Operation(summary = "批量逻辑删除")
     @DeleteMapping("/batch/{ids}")
-    @PreAuthorize("hasAnyAuthority('system:department:delete')")
+    @PreAuthorize("hasAnyAuthority('system:dept:delete')")
     public ResponseDTO deleteBatch(@PathVariable List<Integer> ids) {
         return this.deptService.deleteBatch(ids);
     }
 
     @Operation(summary = "编辑更新")
     @PutMapping
-    @PreAuthorize("hasAnyAuthority('system:department:edit')")
+    @PreAuthorize("hasAnyAuthority('system:dept:edit')")
     public ResponseDTO edit(@RequestBody Dept dept) {
         return this.deptService.edit(dept);
     }
@@ -71,21 +71,21 @@ public class DeptController {
 
     @Operation(summary = "条件查询")
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('system:department:list','system:department:search')")
+    @PreAuthorize("hasAnyAuthority('system:dept:list','system:dept:search')")
     public ResponseDTO list(@RequestParam(defaultValue = "1") Integer current, @RequestParam(defaultValue = "10") Integer size, String name) {
         return this.deptService.list(current, size, name);
     }
 
     @Operation(summary = "数据导出接口")
     @GetMapping("/export/{filename}")
-    @PreAuthorize("hasAnyAuthority('system:department:export')")
+    @PreAuthorize("hasAnyAuthority('system:dept:export')")
     public void export(HttpServletResponse response,@PathVariable String filename) throws Exception {
          this.deptService.export(response,filename);
     }
 
     @Operation(summary = "数据导入接口")
     @PostMapping("/import")
-    @PreAuthorize("hasAnyAuthority('system:department:import')")
+    @PreAuthorize("hasAnyAuthority('system:dept:import')")
     public ResponseDTO imp(MultipartFile file) throws IOException {
         return this.deptService.imp(file);
     }

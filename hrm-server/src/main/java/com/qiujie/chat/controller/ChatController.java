@@ -28,7 +28,7 @@ public class ChatController {
     /**
      * SSE 流式对话接口。
      */
-    @PostMapping("/chat")
+    @PostMapping
     public SseEmitter chat(@RequestBody ChatRequest request) {
         return chatService.chat(request);
     }

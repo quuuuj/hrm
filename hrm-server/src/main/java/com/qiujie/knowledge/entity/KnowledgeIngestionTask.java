@@ -14,22 +14,22 @@ import java.time.LocalDateTime;
  */
 @Data
 @Accessors(chain = true)
-@TableName("ingestion_jobs")
-public class IngestionJob implements Serializable {
+@TableName("kb_ingestion_task")
+public class KnowledgeIngestionTask implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("document_id")
-    private Long documentId;
+    @TableField("docs_id")
+    private Long docsId;
 
     @TableField("staff_id")
     private Integer staffId;
 
-    @TableField("job_type")
-    private String jobType;
+    @TableField("task_type")
+    private String taskType;
 
     /** PENDING / RUNNING / SUCCEEDED / FAILED / CANCELLED */
     @TableField("status")
@@ -44,14 +44,14 @@ public class IngestionJob implements Serializable {
     @TableField("worker_id")
     private String workerId;
 
-    @TableField("started_at")
-    private LocalDateTime startedAt;
+    @TableField("start_time")
+    private LocalDateTime startTime;
 
-    @TableField("finished_at")
-    private LocalDateTime finishedAt;
+    @TableField("finish_time")
+    private LocalDateTime finishTime;
 
-    @TableField("next_retry_at")
-    private LocalDateTime nextRetryAt;
+    @TableField("next_retry_time")
+    private LocalDateTime nextRetryTime;
 
     @TableField("last_error")
     private String lastError;

@@ -45,7 +45,7 @@ public class JdbcChatSessionStore implements ChatSessionStore {
                         : "新会话")
                 .setStatus("ACTIVE")
                 .setMessageCount(0)
-                .setLastMessageAt(LocalDateTime.now())
+                .setLastMessageTime(LocalDateTime.now())
                 .setCreateTime(LocalDateTime.now())
                 .setUpdateTime(LocalDateTime.now());
         sessionMapper.insert(session);

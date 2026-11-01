@@ -1,12 +1,12 @@
 package com.qiujie.chat.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qiujie.chat.entity.KbQaRecord;
+import com.qiujie.chat.entity.ChatQaRecord;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * 知识库问答记录 Mapper
  */
 @Mapper
-public interface KbQaRecordMapper extends BaseMapper<KbQaRecord> {
+public interface ChatQaRecordMapper extends BaseMapper<ChatQaRecord> {
 }

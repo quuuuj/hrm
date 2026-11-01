@@ -3,7 +3,7 @@ package com.qiujie.docs.controller;
 import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
-import com.qiujie.knowledge.lifecycle.DocumentLifecycleService;
+import com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService;
 import com.qiujie.filetask.service.FileUploadService;
 import com.qiujie.docs.service.DocsService;
 import com.qiujie.docs.service.DocsUploadCompletionHandler;
@@ -45,7 +45,7 @@ public class DocsController {
     private SecurityUtil securityUtil;
 
     @Autowired(required = false)
-    private DocumentLifecycleService lifecycle;
+    private KnowledgeLifecycleService lifecycle;
 
     @Operation(summary = "新增")
     @PostMapping
@@ -56,14 +56,14 @@ public class DocsController {
 
     @Operation(summary = "逻辑删除")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('system:docs:delete','qa:knowledge:delete')")
+    @PreAuthorize("hasAnyAuthority('system:docs:delete','kb:knowledge:delete')")
     public ResponseDTO delete(@PathVariable Integer id) {
         return this.docsService.delete(id);
     }
 
     @Operation(summary = "批量逻辑删除")
     @DeleteMapping("/batch/{ids}")
-    @PreAuthorize("hasAnyAuthority('system:docs:delete','qa:knowledge:delete')")
+    @PreAuthorize("hasAnyAuthority('system:docs:delete','kb:knowledge:delete')")
     public ResponseDTO deleteBatch(@PathVariable List<Integer> ids) {
         return this.docsService.deleteBatch(ids);
     }
@@ -83,7 +83,7 @@ public class DocsController {
 
     @Operation(summary = "分页条件查询")
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('system:docs:list','system:docs:search','qa:knowledge:list')")
+    @PreAuthorize("hasAnyAuthority('system:docs:list','system:docs:search','kb:knowledge:list')")
     public ResponseDTO list(@RequestParam(defaultValue = "1") Integer current,
                             @RequestParam(defaultValue = "10") Integer size,
                             String oldName,
@@ -134,7 +134,7 @@ public class DocsController {
 
     @Operation(summary = "分片上传-初始化")
     @PostMapping("/upload/init")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload','qa:knowledge:upload')")
+    @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
     public ResponseDTO initChunkedUpload(@RequestBody Map<String, Object> request) {
         String fileName = (String) request.get("fileName");
         String fileExt = (String) request.get("fileExt");
@@ -150,7 +150,7 @@ public class DocsController {
 
     @Operation(summary = "分片上传-上传分片")
     @PostMapping("/upload/chunks")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload','qa:knowledge:upload')")
+    @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
     public ResponseDTO uploadChunk(
             @RequestParam("uploadId") String uploadId,
             @RequestParam("chunkIndex") Integer chunkIndex,
@@ -161,7 +161,7 @@ public class DocsController {
 
     @Operation(summary = "分片上传-完成")
     @PostMapping("/upload/{uploadId}/complete")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload','qa:knowledge:upload')")
+    @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
     public ResponseDTO completeChunkedUpload(@PathVariable String uploadId,
                                              @RequestParam(value = "ingest", required = false, defaultValue = "false") boolean ingest) {
         return fileUploadService.completeUpload(uploadId, docsHandler, ingest);
@@ -171,17 +171,17 @@ public class DocsController {
 
     @Operation(summary = "查看文档切片")
     @GetMapping("/{id}/chunks")
-    @PreAuthorize("hasAnyAuthority('system:docs:list','qa:knowledge:list')")
+    @PreAuthorize("hasAnyAuthority('system:docs:list','kb:knowledge:list')")
     public ResponseDTO chunks(@PathVariable Long id) {
         return this.docsService.chunks(id);
     }
 
     @Operation(summary = "重试失败的摄入任务")
     @PostMapping("/{id}/retry")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload','qa:knowledge:upload')")
+    @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
     public ResponseDTO retry(@PathVariable Integer id) {
-        DocumentLifecycleService.RetryResult r =
-                lifecycle.retry(new DocumentLifecycleService.RetryCommand(id.longValue()));
+        KnowledgeLifecycleService.RetryResult r =
+                lifecycle.retry(new KnowledgeLifecycleService.RetryCommand(id.longValue()));
         return r.accepted() ? Response.success("已重新提交处理") : Response.error(r.reason());
     }
 }

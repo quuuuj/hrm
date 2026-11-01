@@ -8,10 +8,10 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 知识库问答记录实体 (MySQL kb_qa_record)。
+ * 问答记录实体 (MySQL chat_qa_record)。
  * <p>
  * 每次问答一行，是「谁问了什么、答了什么、证据够不够」的汇总。
- * 引用明细见 {@link KbQaCitation}（1:N）。
+ * 引用明细见 {@link ChatQaCitation}（1:N）。
  * </p>
  * <p>
  * token / 延迟 / 拒答原因等可观测字段已建表但暂未写入，留待后续补齐；
@@ -20,8 +20,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @Accessors(chain = true)
-@TableName("kb_qa_record")
-public class KbQaRecord implements Serializable {
+@TableName("chat_qa_record")
+public class ChatQaRecord implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

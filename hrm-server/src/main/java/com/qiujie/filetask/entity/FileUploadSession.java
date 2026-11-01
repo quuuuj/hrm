@@ -17,8 +17,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @Accessors(chain = true)
-@TableName("kb_upload_session")
-public class KbUploadSession implements Serializable {
+@TableName("file_upload_session")
+public class FileUploadSession implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -56,8 +56,8 @@ public class KbUploadSession implements Serializable {
     @TableField("merged_object_key")
     private String mergedObjectKey;
 
-    @TableField("expires_at")
-    private LocalDateTime expiresAt;
+    @TableField("expire_time")
+    private LocalDateTime expireTime;
 
     @TableField("create_time")
     private LocalDateTime createTime;

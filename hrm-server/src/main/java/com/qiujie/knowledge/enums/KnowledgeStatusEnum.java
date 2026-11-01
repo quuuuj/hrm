@@ -4,7 +4,7 @@ package com.qiujie.knowledge.enums;
  * 知识库文档状态枚举。
  * UPLOADED → PROCESSING → READY / FAILED
  */
-public enum DocumentStatusEnum {
+public enum KnowledgeStatusEnum {
 
     UPLOADED("已上传"),
     PROCESSING("处理中"),
@@ -13,7 +13,7 @@ public enum DocumentStatusEnum {
 
     private final String description;
 
-    DocumentStatusEnum(String description) {
+    KnowledgeStatusEnum(String description) {
         this.description = description;
     }
 

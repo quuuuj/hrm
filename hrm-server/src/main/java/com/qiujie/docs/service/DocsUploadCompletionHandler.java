@@ -2,7 +2,7 @@ package com.qiujie.docs.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qiujie.knowledge.entity.Docs;
-import com.qiujie.knowledge.lifecycle.DocumentLifecycleService;
+import com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService;
 import com.qiujie.filetask.spi.UploadCompletionHandler;
 import com.qiujie.filetask.spi.UploadSessionInfo;
 import com.qiujie.knowledge.mapper.DocsMapper;
@@ -23,7 +23,7 @@ import java.util.Map;
  * 文件中心唯一上传完成处理器：SHA256 秒传 + zstd 压缩 + 写入 sys_docs。
  * <p>
  * 由 {@link UploadSessionInfo#isIngest()} 决定是否加入知识库：
- * ingest=true 时走 {@link DocumentLifecycleService#register} 登记（kb_status=UPLOADED，
+ * ingest=true 时走 {@link KnowledgeLifecycleService#register} 登记（kb_status=UPLOADED，
  * 事务提交后异步 ETL）；ingest=false 时仅做通用文件存储。
  */
 @Component
@@ -38,7 +38,7 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
     private MinioStorageService storageService;
 
     @Autowired
-    private DocumentLifecycleService lifecycle;
+    private KnowledgeLifecycleService lifecycle;
 
     @Override
     public String getStoragePrefix() {
@@ -82,11 +82,11 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
         Map<String, Object> result = new HashMap<>();
         if (session.isIngest()) {
             // 加入知识库：登记 UPLOADED，事务提交后异步 ETL
-            DocumentLifecycleService.RegisterResult r = lifecycle.register(
-                    new DocumentLifecycleService.RegisterCommand(
+            KnowledgeLifecycleService.RegisterResult r = lifecycle.register(
+                    new KnowledgeLifecycleService.RegisterCommand(
                             mergedKey, session.getFileName(), session.getFileExt(),
                             session.getFileHash(), (long) rawBytes.length, session.getStaffId()));
-            result.put("documentId", r.documentId());
+            result.put("docsId", r.docsId());
             result.put("kbStatus", r.status());
             return result;
         }

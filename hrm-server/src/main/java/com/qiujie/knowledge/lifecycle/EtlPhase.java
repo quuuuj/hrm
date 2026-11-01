@@ -1,14 +1,11 @@
 package com.qiujie.knowledge.lifecycle;
 
-import com.qiujie.knowledge.enums.DocumentStatusEnum;
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore;
 import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore.ChunkDraft;
-import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore.ChunkRecord;
-import com.qiujie.knowledge.lifecycle.port.ChunkVectorStore.VectorDraft;
 import com.qiujie.knowledge.lifecycle.port.ObjectStore;
 import com.qiujie.knowledge.service.ChunkService;
 import com.qiujie.knowledge.service.DashScopeEmbeddingClient;
-import com.qiujie.knowledge.service.DocumentParserService;
+import com.qiujie.knowledge.service.KnowledgeParserService;
 import com.qiujie.knowledge.service.TextCleanupService;
 
 import java.io.IOException;
@@ -18,24 +15,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ETL 阶段：取文件 → 解析 → 清洗 → 切片 → 持久化切片 → 向量化 → 写向量 → 同步镜像。
+ * ETL 阶段：取文件 → 解析 → 清洗 → 切片 → 向量化 → 落库。
  * <p>
  * 全部外部依赖经 port 接口（ObjectStore/ChunkVectorStore），嵌入直接使用 DashScopeEmbeddingClient，
- * 业务纯函数件（解析/清洗/切片）直接注入。产物为不可变记录，结算所需字段全部显式携带。
+ * 业务纯函数件（解析/清洗/切片）直接注入。切片原文与向量同表同批写入，产物为不可变记录。
  */
 final class EtlPhase {
 
     private final ChunkVectorStore chunkVectorStore;
     private final ObjectStore objectStore;
     private final DashScopeEmbeddingClient embeddingClient;
-    private final DocumentParserService parserService;
+    private final KnowledgeParserService parserService;
     private final TextCleanupService textCleanupService;
     private final ChunkService chunkService;
 
     EtlPhase(ChunkVectorStore chunkVectorStore,
              ObjectStore objectStore,
              DashScopeEmbeddingClient embeddingClient,
-             DocumentParserService parserService,
+             KnowledgeParserService parserService,
              TextCleanupService textCleanupService,
              ChunkService chunkService) {
         this.chunkVectorStore = chunkVectorStore;
@@ -47,7 +44,7 @@ final class EtlPhase {
     }
 
     /** ETL 产物：结算阶段（SettlePhase）所需的全部字段。 */
-    record Extracted(String fullText, int chunkCount, List<VectorDraft> vectorDrafts) {}
+    record Extracted(String fullText, int chunkCount, int vectorCount) {}
 
     Extracted execute(ClaimPhase.Claimed claimed) {
         var doc = claimed.doc();
@@ -64,31 +61,24 @@ final class EtlPhase {
         }
 
         List<ChunkService.ChunkResult> chunks = chunkService.split(fullText);
+
+        // 向量化先于落库：embedding 随切片行一起写入（失败条目 null 容忍，
+        // 行仍然落库——切片可查、关键词检索可用，只是不参与向量检索）
+        List<float[]> vectors = embeddingClient.embed(
+                chunks.stream().map(ChunkService.ChunkResult::getText).toList());
         List<ChunkDraft> drafts = new ArrayList<>();
+        int vectorCount = 0;
         for (int i = 0; i < chunks.size(); i++) {
             ChunkService.ChunkResult cr = chunks.get(i);
-            drafts.add(new ChunkDraft(i, cr.getText(), cr.getTokenCount(), cr.getCharStart(), cr.getCharEnd()));
-        }
-        List<ChunkRecord> records = chunkVectorStore.storeChunks(doc.getId().longValue(), drafts);
-
-        // 向量化（失败条目 null 容忍），metadata 经 VectorDraft 单点携带
-        List<float[]> vectors = embeddingClient.embed(
-                records.stream().map(r -> r.draft().chunkText()).toList());
-        List<VectorDraft> vectorDrafts = new ArrayList<>();
-        for (int i = 0; i < records.size(); i++) {
             float[] vec = vectors.get(i);
-            if (vec == null) {
-                continue;
+            if (vec != null) {
+                vectorCount++;
             }
-            ChunkRecord record = records.get(i);
-            vectorDrafts.add(new VectorDraft(doc.getId().longValue(), record.id(),
-                    record.draft().chunkText(), doc.getOldName(), vec));
+            drafts.add(new ChunkDraft(i, cr.getText(), cr.getTokenCount(),
+                    cr.getCharStart(), cr.getCharEnd(), vec));
         }
-        chunkVectorStore.storeVectors(vectorDrafts);
+        chunkVectorStore.storeChunks(doc.getId().longValue(), doc.getOldName(), drafts);
 
-        // 同步 PG kb_document 镜像行（关键词检索/邻窗扩展的 JOIN 来源）
-        chunkVectorStore.upsertDocumentMirror(doc.setKbStatus(DocumentStatusEnum.READY.name()));
-
-        return new Extracted(fullText, chunks.size(), List.copyOf(vectorDrafts));
+        return new Extracted(fullText, chunks.size(), vectorCount);
     }
 }

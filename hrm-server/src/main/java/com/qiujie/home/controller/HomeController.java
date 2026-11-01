@@ -42,7 +42,7 @@ public class HomeController {
     public ResponseDTO queryAttendance(@RequestParam Integer id, String month) {
         return this.homeService.queryAttendance(id, month);
     }
-    @GetMapping("/department")
+    @GetMapping("/dept")
     public ResponseDTO queryDepartment() {
         return this.homeService.queryDepartment();
     }

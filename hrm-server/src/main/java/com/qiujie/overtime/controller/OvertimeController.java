@@ -29,28 +29,28 @@ public class OvertimeController {
 
     @Operation(summary = "新增")
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('system:department:setting')")
+    @PreAuthorize("hasAnyAuthority('system:dept:setting')")
     public ResponseDTO add(@RequestBody Overtime overtime) {
         return this.overtimeService.add(overtime);
     }
 
     @Operation(summary = "逻辑删除")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('system:department:setting')")
+    @PreAuthorize("hasAnyAuthority('system:dept:setting')")
     public ResponseDTO delete(@PathVariable Integer id) {
         return this.overtimeService.delete(id);
     }
 
     @Operation(summary = "批量逻辑删除")
     @DeleteMapping("/batch/{ids}")
-    @PreAuthorize("hasAnyAuthority('system:department:setting')")
+    @PreAuthorize("hasAnyAuthority('system:dept:setting')")
     public ResponseDTO deleteBatch(@PathVariable List<Integer> ids) {
         return this.overtimeService.deleteBatch(ids);
     }
 
     @Operation(summary = "编辑更新")
     @PutMapping
-    @PreAuthorize("hasAnyAuthority('system:department:setting')")
+    @PreAuthorize("hasAnyAuthority('system:dept:setting')")
     public ResponseDTO edit(@RequestBody Overtime overtime) {
         return this.overtimeService.edit(overtime);
     }
@@ -69,7 +69,7 @@ public class OvertimeController {
 
     @Operation(summary = "设置加班")
     @PostMapping("/set")
-    @PreAuthorize("hasAnyAuthority('system:department:setting')")
+    @PreAuthorize("hasAnyAuthority('system:dept:setting')")
     public ResponseDTO setOvertime(@RequestBody Overtime overtime) {
         return this.overtimeService.setOvertime(overtime);
     }
