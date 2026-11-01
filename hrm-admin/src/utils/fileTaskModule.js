@@ -2,7 +2,7 @@
 export const FILE_TASK_ROUTES = {
   ATTENDANCE: '/performance/attendance',
   STAFF: '/system/staff',
-  DEPT: '/system/department',
+  DEPT: '/system/dept',
   INSURANCE: '/money/insurance',
   SALARY: '/money/salary',
   STAFF_LEAVE: '/performance/leave',

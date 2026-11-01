@@ -23,9 +23,9 @@ export const queryCity = () => {
 }
 
 // 统计各部门员工人数
-export const queryDepartment = () => {
+export const queryDept = () => {
   return request({
-    url: url + '/department'
+    url: url + '/dept'
   })
 }
 

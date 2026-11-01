@@ -123,7 +123,7 @@ marked.setOptions({
 })
 
 export default {
-  name: 'QaChat',
+  name: 'KbChat',
   data () {
     return {
       loading: false, // 历史消息加载状态
