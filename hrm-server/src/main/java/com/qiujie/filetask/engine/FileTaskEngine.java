@@ -165,6 +165,9 @@ public class FileTaskEngine {
                 taskRepository.increaseProgress(taskId, 0, list.size(), list.size(), 0);
                 current++;
             } while (current <= page.getPages());
+            // EasyExcel 在 finish() 时才把缓冲区落盘，必须先关闭 writer 再上传
+            excelWriter.finish();
+            excelWriter = null;
             taskRepository.setResultFile(taskId, artifactStore.upload(resultFile, "task-result"));
             resultFile = null;
             taskRepository.finish(taskId, TaskStatusEnum.SUCCESS);

@@ -34,9 +34,6 @@ public class FileUploadChunk implements Serializable {
     @TableField("chunk_hash")
     private String chunkHash;
 
-    @TableField("bucket")
-    private String bucket;
-
     @TableField("storage_path")
     private String storagePath;
 

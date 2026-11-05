@@ -138,14 +138,12 @@ public class DocsController {
     public ResponseDTO initChunkedUpload(@RequestBody Map<String, Object> request) {
         String fileName = (String) request.get("fileName");
         String fileExt = (String) request.get("fileExt");
-        Long fileSize = ((Number) request.get("fileSize")).longValue();
+        Long fileSize = toLong(request.get("fileSize"));
         String fileHash = (String) request.get("fileHash");
-        Long chunkSize = request.get("chunkSize") != null
-                ? ((Number) request.get("chunkSize")).longValue() : 5 * 1024 * 1024L;
-        boolean ingest = Boolean.TRUE.equals(request.get("ingest"));
+        Long chunkSize = toLong(request.get("chunkSize"));
 
         return fileUploadService.initUpload(fileName, fileExt, fileSize, fileHash, chunkSize,
-                securityUtil.getCurrentOperatorId(), docsHandler, ingest);
+                securityUtil.getCurrentOperatorId(), docsHandler, Boolean.TRUE.equals(request.get("ingest")));
     }
 
     @Operation(summary = "分片上传-上传分片")
@@ -156,7 +154,8 @@ public class DocsController {
             @RequestParam("chunkIndex") Integer chunkIndex,
             @RequestParam(value = "chunkHash", required = false) String chunkHash,
             @RequestParam("file") MultipartFile file) {
-        return fileUploadService.uploadChunk(uploadId, chunkIndex, chunkHash, file);
+        return fileUploadService.uploadChunk(uploadId, chunkIndex, chunkHash, file,
+                securityUtil.getCurrentOperatorId());
     }
 
     @Operation(summary = "分片上传-完成")
@@ -164,7 +163,8 @@ public class DocsController {
     @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
     public ResponseDTO completeChunkedUpload(@PathVariable String uploadId,
                                              @RequestParam(value = "ingest", required = false, defaultValue = "false") boolean ingest) {
-        return fileUploadService.completeUpload(uploadId, docsHandler, ingest);
+        return fileUploadService.completeUpload(uploadId, docsHandler, ingest,
+                securityUtil.getCurrentOperatorId());
     }
 
     // ========== 文件中心（知识库能力并入） ==========
@@ -183,5 +183,13 @@ public class DocsController {
         KnowledgeLifecycleService.RetryResult r =
                 lifecycle.retry(new KnowledgeLifecycleService.RetryCommand(id.longValue()));
         return r.accepted() ? Response.success("已重新提交处理") : Response.error(r.reason());
+    }
+
+    /** 把请求体里的数值读成 Long，缺参或类型不符时返回 null，交由 service 统一报错 */
+    private static Long toLong(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return null;
     }
 }

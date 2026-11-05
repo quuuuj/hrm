@@ -245,7 +245,7 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
      * 通过三阶段上传完成后创建异步导入任务。
      */
     public ResponseDTO createImportTask(String uploadId) {
-        String mergedKey = fileUploadService.completeUpload(uploadId);
+        String mergedKey = fileUploadService.completeUpload(uploadId, getCurrentOperatorId());
         AsyncFileTasks.ImportRequest<Salary> request = new AsyncFileTasks.ImportRequest<>(
                 TaskModuleEnum.SALARY, "salary_import.xlsx", mergedKey, null,
                 getCurrentOperatorId(), new SalaryImportHandler(this));

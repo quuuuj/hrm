@@ -16,6 +16,7 @@ import com.qiujie.util.HutoolExcelUtil;
 import com.qiujie.util.StorageCompressor;
 import com.qiujie.common.storage.MinioStorageService;
 import com.qiujie.knowledge.vo.StaffDocsVO;
+import com.qiujie.staff.entity.Staff;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +37,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,6 +62,17 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
 
     @Autowired
     private com.qiujie.knowledge.mapper.KnowledgeChunkMapper chunkMapper;
+
+    @Autowired
+    private com.qiujie.staff.mapper.StaffMapper staffMapper;
+
+    /**
+     * 由独立任务按各自保留期清理的对象前缀，孤儿清理不得越界删除。
+     * task-source / task-result / task-error 由 FileTaskCleanupJob 按 file-task.retention-days 处理，
+     * 早于该保留期删除会让用户在任务有效期内无法下载。
+     */
+    private static final List<String> MANAGED_ELSEWHERE_PREFIXES = List.of(
+            "task-source/", "task-result/", "task-error/");
 
     /**
      * 列出指定文档的全部切片（文件中心查看分块对话框）。
@@ -244,19 +258,28 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
 
     /**
      * 每日凌晨 4:00 清理无 DB 引用的孤儿文件。
-     * 排除 task- 子目录（已有独立的 7 天清理逻辑）。
-     * 文件需满足：最后修改时间超过 24 小时 且 文件名不在 sys_docs 表中。
+     *
+     * <p>「有引用」指对象键出现在 sys_docs.name（文件中心与知识库文档）或 sys_staff.avatar
+     * （头像直传只写对象、不建 sys_docs 行）中。分片上传目录与异步任务产物各有独立清理任务
+     * （FileUploadService.cleanExpiredSessions / FileTaskCleanupJob，保留期 file-task.retention-days），
+     * 本任务不越界处理——新增模块的存储前缀需同样登记到 {@code MANAGED_ELSEWHERE_PREFIXES}。</p>
+     *
+     * <p>文件需满足：最后修改时间超过 24 小时且对象键不在上述引用集合中。</p>
      */
     @Scheduled(cron = "0 0 4 * * ?")
     public void cleanOrphanDocsFiles() {
-        Set<String> dbFilenames = list().stream()
+        Set<String> referencedKeys = list().stream()
                 .map(Docs::getName)
-                .collect(Collectors.toSet());
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(HashSet::new));
+        staffMapper.selectList(new QueryWrapper<Staff>().select("avatar")
+                        .isNotNull("avatar").ne("avatar", ""))
+                .stream().map(Staff::getAvatar).forEach(referencedKeys::add);
 
         long cutoff = System.currentTimeMillis() - 24L * 60 * 60 * 1000;
 
         for (String key : storageService.listKeys()) {
-            if (dbFilenames.contains(key)) {
+            if (referencedKeys.contains(key) || isManagedElsewhere(key)) {
                 continue;
             }
             Date lastModified = storageService.getLastModified(key);
@@ -268,5 +291,13 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
         }
     }
 
-
+    /** 该前缀下对象由其它清理任务负责，孤儿清理跳过 */
+    private boolean isManagedElsewhere(String key) {
+        for (String prefix : MANAGED_ELSEWHERE_PREFIXES) {
+            if (key.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

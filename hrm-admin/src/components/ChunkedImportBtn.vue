@@ -60,11 +60,17 @@ export default {
       this.uploading = true
       try {
         // 阶段一：分片上传文件到 MinIO
-        const uploadId = await this.doChunkedUpload(file)
+        const result = await this.doChunkedUpload(file)
+        // 秒传：服务端已有同 hash 文件，没有 uploadId，也没有新任务可创建
+        if (result.instantUpload) {
+          this.$message.success('秒传成功，文件已存在')
+          this.$emit('success', result)
+          return
+        }
         // 阶段二：调用业务接口创建导入任务
         // 文档模块在合并分片时已由后端回调创建任务，无需再调业务接口
-        if (!this.isDocsUpload) await this.createImportTask(uploadId)
-        this.$emit('success', uploadId)
+        if (!this.isDocsUpload) await this.createImportTask(result.uploadId)
+        this.$emit('success', result.uploadId)
       } catch (err) {
         this.$message.error(err.message || '导入失败')
         this.$emit('error', err)
@@ -77,8 +83,6 @@ export default {
 
     /** 分片上传协议：统一走 init→chunks→complete 三阶段 */
     async doChunkedUpload (file) {
-      const chunkSize = DEFAULT_CHUNK_SIZE
-      const chunkCount = Math.ceil(file.size / chunkSize)
       // 文档模块的上传端点位于业务前缀下（/docs/upload/*）；业务数据导入复用 /file-task 的分片上传
       const baseUploadUrl = this.isDocsUpload ? this.importApi.replace(/\/upload$/, '') : '/file-task'
 
@@ -88,11 +92,17 @@ export default {
         fileExt: this.getExt(file.name),
         fileSize: file.size,
         fileHash: await this.sha256(file), // 用于断点续传去重
-        chunkSize,
+        chunkSize: DEFAULT_CHUNK_SIZE,
         ingest: this.ingest
       }, baseUploadUrl)
       if (initRes.code !== 200) throw new Error(initRes.message || '初始化上传失败')
+      // 秒传：命中同 hash 文件，直接返回，不传分片也不合并
+      if (initRes.data.instantUpload) return initRes.data
+
       const uploadId = initRes.data.uploadId
+      // 切片大小与总分片数以服务端为准：断点续传必须沿用首传时的切片大小
+      const chunkSize = initRes.data.chunkSize || DEFAULT_CHUNK_SIZE
+      const chunkCount = initRes.data.chunkCount || Math.ceil(file.size / chunkSize)
 
       // 断点续传：已上传的分片不再重复上传
       const uploadedSet = new Set(initRes.data.uploadedChunks || [])
@@ -117,7 +127,7 @@ export default {
       // 阶段 3: 通知服务端合并分片
       const completeRes = await uploadComplete(uploadId, baseUploadUrl, { ingest: this.ingest })
       if (completeRes.code !== 200) throw new Error(completeRes.message || '合并分片失败')
-      return uploadId
+      return { uploadId }
     },
 
     /** 调用业务方 importApi 创建异步导入任务 */

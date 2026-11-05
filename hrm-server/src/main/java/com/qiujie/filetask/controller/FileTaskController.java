@@ -67,10 +67,9 @@ public class FileTaskController {
     public ResponseDTO initUpload(@RequestBody Map<String, Object> request) {
         String fileName = (String) request.get("fileName");
         String fileExt = (String) request.get("fileExt");
-        Long fileSize = ((Number) request.get("fileSize")).longValue();
+        Long fileSize = toLong(request.get("fileSize"));
         String fileHash = (String) request.get("fileHash");
-        Long chunkSize = request.get("chunkSize") != null
-                ? ((Number) request.get("chunkSize")).longValue() : 5 * 1024 * 1024L;
+        Long chunkSize = toLong(request.get("chunkSize"));
 
         return fileUploadService.initUpload(fileName, fileExt, fileSize, fileHash, chunkSize,
                 securityUtil.getCurrentOperatorId(), null);
@@ -84,16 +83,25 @@ public class FileTaskController {
             @RequestParam("chunkIndex") Integer chunkIndex,
             @RequestParam(value = "chunkHash", required = false) String chunkHash,
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
-        return fileUploadService.uploadChunk(uploadId, chunkIndex, chunkHash, file);
+        return fileUploadService.uploadChunk(uploadId, chunkIndex, chunkHash, file,
+                securityUtil.getCurrentOperatorId());
     }
 
     @PreAuthorize("hasAnyAuthority('system:docs:upload','performance:attendance:import','performance:overtime:import','performance:leave:import','money:salary:import')")
     @Operation(summary = "分片上传-完成（不含业务处理，仅合并返回 key）")
     @PostMapping("/upload/{uploadId}/complete")
     public ResponseDTO completeUpload(@PathVariable String uploadId) {
-        String mergedKey = fileUploadService.completeUpload(uploadId);
+        String mergedKey = fileUploadService.completeUpload(uploadId, securityUtil.getCurrentOperatorId());
         Map<String, Object> result = new HashMap<>();
         result.put("mergedKey", mergedKey);
         return Response.success(result);
+    }
+
+    /** 把请求体里的数值读成 Long，缺参或类型不符时返回 null，交由 service 统一报错 */
+    private static Long toLong(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return null;
     }
 }

@@ -90,7 +90,8 @@ public class AiHeaderMatcherImpl {
             userMsg.put("content", prompt);
             body.put("messages", List.of(userMsg));
 
-            String url = baseUrl.replaceAll("/+$", "") + "/chat/completions";
+            // base-url 是兼容模式根地址（.../compatible-mode），OpenAI 兼容端点还需 /v1 前缀
+            String url = baseUrl.replaceAll("/+$", "") + "/v1/chat/completions";
             @SuppressWarnings("rawtypes")
             Map response = restTemplate.postForObject(url, new HttpEntity<>(body, headers), Map.class);
             if (response == null) return null;
@@ -112,7 +113,7 @@ public class AiHeaderMatcherImpl {
                 }
             }
         } catch (Exception e) {
-            log.warn("AI 列名匹配失败: {}", headerText, e.getMessage());
+            log.warn("AI 列名匹配失败: {} - {}", headerText, e.getMessage());
         }
         return null;
     }

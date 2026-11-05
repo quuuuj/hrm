@@ -239,7 +239,7 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
     // ==================== 异步导入入口 ====================
     // 通过三阶段上传完成后创建异步导入任务
     public ResponseDTO createImportTask(String uploadId) {
-        String mergedKey = fileUploadService.completeUpload(uploadId);
+        String mergedKey = fileUploadService.completeUpload(uploadId, getCurrentOperatorId());
         AsyncFileTasks.ImportRequest<AttendanceImportRow> request = new AsyncFileTasks.ImportRequest<>(
                 TaskModuleEnum.ATTENDANCE, "attendance_import.xlsx", mergedKey, null,
                 getCurrentOperatorId(), new AttendanceImportHandler());

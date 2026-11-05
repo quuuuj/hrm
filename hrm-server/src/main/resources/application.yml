@@ -18,7 +18,7 @@ spring:
       type: com.zaxxer.hikari.HikariDataSource
     kb:
       jdbc-url: jdbc:postgresql://localhost:5432/hrm_kb
-      username: hrm
+      username: root
       password: 123456
       driver-class-name: org.postgresql.Driver
       type: com.zaxxer.hikari.HikariDataSource

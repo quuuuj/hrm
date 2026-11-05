@@ -267,7 +267,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
     // ==================== 异步导入导出 ====================
 
     public ResponseDTO createImportTask(String uploadId) {
-        String mergedKey = fileUploadService.completeUpload(uploadId);
+        String mergedKey = fileUploadService.completeUpload(uploadId, securityUtil.getCurrentOperatorId());
         AsyncFileTasks.ImportRequest<OvertimeImportRow> request = new AsyncFileTasks.ImportRequest<>(
                 TaskModuleEnum.STAFF_OVERTIME, "overtime_import.xlsx", mergedKey, null,
                 securityUtil.getCurrentOperatorId(), new OvertimeImportHandler(),
