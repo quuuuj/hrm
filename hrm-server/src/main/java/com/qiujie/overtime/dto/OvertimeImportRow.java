@@ -5,8 +5,7 @@ import com.alibaba.excel.annotation.ExcelProperty;
 import com.qiujie.filetask.spi.ImportRow;
 import lombok.Data;
 
-import java.sql.Date;
-import java.sql.Timestamp;
+import java.util.Date;
 
 /**
  * 加班导入 Excel 行 DTO。
@@ -24,16 +23,16 @@ public class OvertimeImportRow implements ImportRow {
     private Integer staffId;
 
     @ExcelProperty("上午上班时间")
-    private Timestamp morStartTime;
+    private Date morStartTime;
 
     @ExcelProperty("上午下班时间")
-    private Timestamp morEndTime;
+    private Date morEndTime;
 
     @ExcelProperty("下午上班时间")
-    private Timestamp aftStartTime;
+    private Date aftStartTime;
 
     @ExcelProperty("下午下班时间")
-    private Timestamp aftEndTime;
+    private Date aftEndTime;
 
     @ExcelProperty("加班日期")
     private Date overtimeDate;

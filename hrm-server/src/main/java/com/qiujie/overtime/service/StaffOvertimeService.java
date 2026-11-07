@@ -37,6 +37,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -322,11 +324,11 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
                     }
                     StaffOvertime entity = new StaffOvertime()
                             .setStaffId(row.getStaffId())
-                            .setMorStartTime(row.getMorStartTime())
-                            .setMorEndTime(row.getMorEndTime())
-                            .setAftStartTime(row.getAftStartTime())
-                            .setAftEndTime(row.getAftEndTime())
-                            .setOvertimeDate(row.getOvertimeDate());
+                            .setMorStartTime(toSqlTimestamp(row.getMorStartTime()))
+                            .setMorEndTime(toSqlTimestamp(row.getMorEndTime()))
+                            .setAftStartTime(toSqlTimestamp(row.getAftStartTime()))
+                            .setAftEndTime(toSqlTimestamp(row.getAftEndTime()))
+                            .setOvertimeDate(toSqlDate(row.getOvertimeDate()));
                     // 加班类型由日期分类得出（无人工指定）
                     OvertimeEnum type = OvertimeUtil.resolveType(entity, datetimeUtil::isHoliday);
                     String configKey = staff.getDeptId() + "_" + type.getCode();
@@ -357,6 +359,19 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
             return new FileTaskError()
                     .setTaskId(taskId).setRowNum(rowNum)
                     .setRawData(rawData).setErrorMessage(message);
+        }
+
+        /** 只保留时分秒，日期部分统一压到 1970-01-01，与前端 HH:mm 展示口径一致 */
+        private Timestamp toSqlTimestamp(java.util.Date date) {
+            if (date == null) return null;
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            return Timestamp.valueOf(LocalDateTime.of(1970, 1, 1,
+                    calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), calendar.get(Calendar.SECOND)));
+        }
+
+        private Date toSqlDate(java.util.Date date) {
+            return date == null ? null : new Date(date.getTime());
         }
     }
 

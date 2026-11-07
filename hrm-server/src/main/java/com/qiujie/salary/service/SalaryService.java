@@ -5,19 +5,25 @@ import com.qiujie.filetask.spi.ImportProcessor;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.qiujie.common.enums.BusinessStatusEnum;
+import com.qiujie.salary.dto.SalaryImportRow;
 import com.qiujie.salary.entity.Salary;
 import com.qiujie.salary.entity.SalaryDeduct;
 import com.qiujie.attendance.enums.AttendanceStatusEnum;
 import com.qiujie.salary.enums.DeductEnum;
 import com.qiujie.filetask.enums.TaskModuleEnum;
 import com.qiujie.filetask.entity.FileTask;
+import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.service.FileTaskService;
 import com.qiujie.attendance.mapper.AttendanceMapper;
 import com.qiujie.salary.mapper.SalaryMapper;
+import com.qiujie.staff.entity.Staff;
+import com.qiujie.staff.mapper.StaffMapper;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
 import com.qiujie.salary.util.SalaryUtil;
@@ -35,6 +41,8 @@ import java.sql.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 /**
  * <p>
@@ -47,6 +55,8 @@ import java.util.Map;
 @Service
 public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
 
+    /** 导入月份格式 yyyyMM */
+    private static final Pattern MONTH_PATTERN = Pattern.compile("^\\d{6}$");
 
     @Autowired
     private SalaryMapper salaryMapper;
@@ -57,6 +67,9 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
 
     @Autowired
     private AttendanceMapper attendanceMapper;
+
+    @Autowired
+    private StaffMapper staffMapper;
 
 
     @Autowired
@@ -206,14 +219,18 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
 
     public ResponseDTO setSalary(Salary salary) {
         QueryWrapper<Salary> query = new QueryWrapper<>();
-        // 设置日薪、时薪
-        salary.setDaySalary(salary.getBaseSalary().divide(new BigDecimal("21.75"),3, RoundingMode.HALF_UP));
-        salary.setHourSalary(salary.getBaseSalary().divide(new BigDecimal(174),3, RoundingMode.HALF_UP));
+        applyDerivedSalary(salary);
         query.eq("month", salary.getMonth()).eq("staff_id", salary.getStaffId());
         if (update(salary, query) || save(salary)) {
             return Response.success();
         }
         return Response.error();
+    }
+
+    /** 由基础工资折算日薪（月计薪天数 21.75）与时薪（21.75 × 8 小时） */
+    private void applyDerivedSalary(Salary salary) {
+        salary.setDaySalary(salary.getBaseSalary().divide(new BigDecimal("21.75"), 3, RoundingMode.HALF_UP));
+        salary.setHourSalary(salary.getBaseSalary().divide(new BigDecimal(174), 3, RoundingMode.HALF_UP));
     }
 
 
@@ -240,7 +257,7 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
         return Response.success(result);
     }
 
-    private static final class SalaryImportHandler implements ImportProcessor<Salary> {
+    private static final class SalaryImportHandler implements ImportProcessor<SalaryImportRow> {
 
         private final SalaryService service;
 
@@ -249,30 +266,55 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
         }
 
         @Override
-        public Class<Salary> getRowClass() {
-            return Salary.class;
+        public Class<SalaryImportRow> getRowClass() {
+            return SalaryImportRow.class;
         }
 
         @Override
-        public void processBatch(List<Salary> rows, Long taskId,
-                                 java.util.function.Consumer<com.qiujie.filetask.entity.FileTaskError> errorCollector) {
-            try {
-                if (!rows.isEmpty() && !service.saveBatch(rows)) {
-                    for (Salary row : rows) {
-                        errorCollector.accept(new com.qiujie.filetask.entity.FileTaskError()
-                                .setTaskId(taskId)
-                                .setRawData(com.alibaba.fastjson.JSON.toJSONString(row))
-                                .setErrorMessage("薪资数据保存失败"));
-                    }
+        public void processBatch(List<SalaryImportRow> rows, Long taskId,
+                                 Consumer<FileTaskError> errorCollector) {
+            Map<Integer, Staff> staffMap = new HashMap<>();
+            for (SalaryImportRow row : rows) {
+                String rowData = JSON.toJSONString(row);
+                int rowNum = row.getRowNum() == null ? 0 : row.getRowNum();
+                if (row.getStaffId() == null) {
+                    errorCollector.accept(buildError(taskId, rowNum, rowData, "员工id不能为空"));
+                    continue;
                 }
-            } catch (Exception e) {
-                for (Salary row : rows) {
-                    errorCollector.accept(new com.qiujie.filetask.entity.FileTaskError()
-                            .setTaskId(taskId)
-                            .setRawData(com.alibaba.fastjson.JSON.toJSONString(row))
-                            .setErrorMessage(e.getMessage()));
+                if (row.getMonth() == null || !MONTH_PATTERN.matcher(row.getMonth().trim()).matches()) {
+                    errorCollector.accept(buildError(taskId, rowNum, rowData, "月份格式应为 yyyyMM"));
+                    continue;
+                }
+                if (row.getBaseSalary() == null) {
+                    errorCollector.accept(buildError(taskId, rowNum, rowData, "基础工资不能为空"));
+                    continue;
+                }
+                if (staffMap.computeIfAbsent(row.getStaffId(), id -> service.staffMapper.selectById(id)) == null) {
+                    errorCollector.accept(buildError(taskId, rowNum, rowData, "员工不存在"));
+                    continue;
+                }
+                // 走与手工设置相同的入口：折算日薪/时薪，同员工同月按更新处理
+                if (service.setSalary(toSalary(row)).getCode() != BusinessStatusEnum.SUCCESS.getCode()) {
+                    errorCollector.accept(buildError(taskId, rowNum, rowData, "薪资数据保存失败"));
                 }
             }
+        }
+
+        private Salary toSalary(SalaryImportRow row) {
+            Salary salary = new Salary();
+            salary.setStaffId(row.getStaffId());
+            salary.setMonth(row.getMonth().trim());
+            salary.setBaseSalary(row.getBaseSalary());
+            salary.setSubsidy(row.getSubsidy() == null ? BigDecimal.ZERO : row.getSubsidy());
+            salary.setBonus(row.getBonus() == null ? BigDecimal.ZERO : row.getBonus());
+            salary.setRemark(row.getRemark());
+            return salary;
+        }
+
+        private FileTaskError buildError(Long taskId, int rowNum, String rawData, String message) {
+            return new FileTaskError()
+                    .setTaskId(taskId).setRowNum(rowNum)
+                    .setRawData(rawData).setErrorMessage(message);
         }
     }
 

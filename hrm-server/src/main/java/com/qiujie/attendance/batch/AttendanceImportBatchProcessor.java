@@ -9,7 +9,6 @@ import com.qiujie.attendance.enums.AttendanceStatusEnum;
 import com.qiujie.attendance.mapper.AttendanceMapper;
 import com.qiujie.dept.mapper.DeptMapper;
 import com.qiujie.staff.mapper.StaffMapper;
-import com.qiujie.util.DatetimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -50,11 +49,10 @@ public class AttendanceImportBatchProcessor {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
-    public Result process(List<AttendanceImportRow> rows, Long taskId,
-                          Consumer<FileTaskError> errorCollector) {
-        Result result = new Result();
+    public void process(List<AttendanceImportRow> rows, Long taskId,
+                        Consumer<FileTaskError> errorCollector) {
         if (rows == null || rows.isEmpty()) {
-            return result;
+            return;
         }
 
         Set<Integer> staffIds = rows.stream()
@@ -109,13 +107,11 @@ public class AttendanceImportBatchProcessor {
 
             Attendance attendance = convertAttendance(row);
             if (DateUtil.isWeekend(attendance.getAttendanceDate())) {
-                result.successCount++;
                 continue;
             }
             Attendance existing = existingMap.get(buildAttendanceKey(attendance));
             if (existing != null && (existing.getStatus() == AttendanceStatusEnum.LEAVE
                     || existing.getStatus() == AttendanceStatusEnum.TIME_OFF)) {
-                result.successCount++;
                 continue;
             }
             if (existing != null) {
@@ -135,12 +131,7 @@ public class AttendanceImportBatchProcessor {
 
         if (!saveList.isEmpty()) {
             transactionTemplate.executeWithoutResult(status -> saveOrUpdate(saveList));
-            result.successCount += saveList.size();
         }
-        result.totalCount = rows.size();
-        result.processedCount = rows.size();
-        result.failCount = result.totalCount - result.successCount;
-        return result;
     }
 
     private void saveOrUpdate(List<Attendance> attendances) {
@@ -220,13 +211,5 @@ public class AttendanceImportBatchProcessor {
 
     private Date toSqlDate(java.util.Date date) {
         return date == null ? null : new Date(date.getTime());
-    }
-
-    /** 处理结果统计。 */
-    public static final class Result {
-        public int totalCount;
-        public int processedCount;
-        public int successCount;
-        public int failCount;
     }
 }
