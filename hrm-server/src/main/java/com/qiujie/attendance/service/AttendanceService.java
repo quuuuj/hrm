@@ -1,5 +1,4 @@
 package com.qiujie.attendance.service;
-import com.qiujie.filetask.service.FileTaskErrorService;
 import com.qiujie.filetask.service.FileUploadService;
 import com.qiujie.filetask.spi.ExportProcessor;
 import com.qiujie.filetask.spi.ImportProcessor;
@@ -20,13 +19,10 @@ import com.qiujie.attendance.dto.AttendanceImportRow;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
 import com.qiujie.attendance.entity.Attendance;
-import com.qiujie.dept.entity.Dept;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.attendance.enums.AttendanceStatusEnum;
-import com.qiujie.common.enums.BusinessStatusEnum;
 import com.qiujie.attendance.mapper.AttendanceMapper;
 import com.qiujie.util.DatetimeUtil;
-import com.qiujie.util.EasyExcelUtil;
 import com.qiujie.util.EnumUtil;
 import com.qiujie.staff.service.SecurityUtil;
 import com.qiujie.attendance.vo.AttendanceMonthSummaryVO;
@@ -35,7 +31,6 @@ import com.qiujie.attendance.vo.StaffAttendanceVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -54,16 +49,11 @@ import cn.hutool.core.date.DateUtil;
 @Service
 public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance> {
 
-    private static final int DB_BATCH_SIZE = 200;
-
     @Autowired
     private AttendanceMapper attendanceMapper;
 
     @Autowired
     private DatetimeUtil datetimeUtil;
-
-    @Autowired
-    private FileTaskErrorService fileTaskErrorService;
 
     @Autowired
     private AsyncFileTasks asyncFileTasks;
@@ -222,20 +212,6 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         }
     }
 
-    @Transactional(rollbackFor = Exception.class)
-    public ResponseDTO imp(MultipartFile file) throws IOException {
-        List<AttendanceImportRow> rows = EasyExcelUtil.read(file.getInputStream(), 2, AttendanceImportRow.class);
-        int rowNum = 3;
-        for (AttendanceImportRow row : rows) {
-            row.setRowNum(rowNum++);
-        }
-        ImportBatchResult result = processImportRows(rows, 0L, false);
-        if (result.failCount > 0) {
-            return Response.error(BusinessStatusEnum.DATA_IMPORT_ERROR);
-        }
-        return Response.success();
-    }
-
     // ==================== 异步导入入口 ====================
     // 通过三阶段上传完成后创建异步导入任务
     public ResponseDTO createImportTask(String uploadId) {
@@ -295,60 +271,12 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         return Response.error();
     }
 
-    // 三步走：① 批量查询本批次涉及的员工/部门/已有考勤
-    //        ② 逐行校验 + 计算考勤状态（迟到/早退/旷工/正常）
-    //        ③ 批量 saveOrUpdate + 批量记录错误
-    // 关键：先批量查再逐行判，避免每行一次 DB 查询
-    // 规则实现收敛在 AttendanceImportBatchProcessor（同一规则供同步/异步导入复用）
-    ImportBatchResult processImportRows(List<AttendanceImportRow> rows, Long taskId, boolean persistTaskError) {
-        List<FileTaskError> errors = new ArrayList<>();
-        AttendanceImportBatchProcessor.Result processed = importBatchProcessor.process(
-                rows, taskId, errors::add);
-        if (persistTaskError && !errors.isEmpty()) {
-            fileTaskErrorService.saveBatch(errors, DB_BATCH_SIZE);
-        }
-        ImportBatchResult result = new ImportBatchResult();
-        result.totalCount = processed.totalCount;
-        result.processedCount = processed.processedCount;
-        result.successCount = processed.successCount;
-        result.failCount = processed.failCount;
-        return result;
-    }
-
-    /**
-     * 迟到判定——委托批处理规则（唯一实现）。
-     */
-    public boolean isLate(Attendance attendance, Dept dept) {
-        return importBatchProcessor.isLate(attendance, dept);
-    }
-
-    /**
-     * 早退判定——委托批处理规则（唯一实现）。
-     */
-    public boolean isLeaveEarly(Attendance attendance, Dept dept) {
-        return importBatchProcessor.isLeaveEarly(attendance, dept);
-    }
-
-    /**
-     * 旷工判定——委托批处理规则（唯一实现）。
-     */
-    public boolean isAbsenteeism(Attendance attendance, Dept dept) {
-        return importBatchProcessor.isAbsenteeism(attendance, dept);
-    }
-
     private int valueOrZero(Integer value) {
         return value == null ? 0 : value;
     }
 
     private Integer getCurrentOperatorId() {
         return securityUtil.getCurrentOperatorId();
-    }
-
-    static class ImportBatchResult {
-        int totalCount;
-        int processedCount;
-        int successCount;
-        int failCount;
     }
 
     // ==================== 异步导入处理器（供 FileTaskEngine 回调） ====================

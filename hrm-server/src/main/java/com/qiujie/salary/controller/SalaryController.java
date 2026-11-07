@@ -7,13 +7,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -78,13 +75,6 @@ public class SalaryController {
     @PreAuthorize("hasAnyAuthority('money:salary:export')")
     public void export(HttpServletResponse response, @PathVariable String month,@PathVariable  String filename) throws IOException {
          this.salaryService.export(response, month,filename);
-    }
-
-    @Operation(summary = "数据导入接口")
-    @PostMapping("/import")
-    @PreAuthorize("hasAnyAuthority('money:salary:import')")
-    public ResponseDTO imp(MultipartFile file) throws IOException {
-        return this.salaryService.imp(file);
     }
 
     @Operation(summary = "通过上传会话创建异步导入任务")

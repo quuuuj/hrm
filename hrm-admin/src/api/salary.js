@@ -1,4 +1,4 @@
-import request, { BASE_API } from '../utils/request'
+import request from '../utils/request'
 
 const url = '/salary'
 
@@ -48,22 +48,9 @@ export const setSalary = (data) => {
   })
 }
 
-export const exp = (month, filename) => {
-  return request({
-    url: url + '/export/' + month + '/' + filename,
-    method: 'get',
-    responseType: 'blob'
-  })
-}
-
 // 数据导入（异步任务）
 export const getImportTaskApi = () => {
   return url + '/import/task'
-}
-
-// 数据导入（同步，保留兼容）
-export const getImportApi = () => {
-  return BASE_API + url + '/import'
 }
 
 // 异步导出任务

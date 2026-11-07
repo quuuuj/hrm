@@ -25,12 +25,9 @@ import com.qiujie.staff.service.SecurityUtil;
 import com.qiujie.salary.vo.StaffSalaryVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
@@ -205,24 +202,6 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
                 .eq("dept_id", deptId).eq("type_num", type));
         return salaryDeduct != null ? salaryDeduct.getDeduct() : type.getDefaultValue();
     }
-
-    /**
-     * 数据导入
-     *
-     * @param file
-     * @return
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public ResponseDTO imp(MultipartFile file) throws IOException {
-        InputStream inputStream = file.getInputStream();
-        List<Salary> list = EasyExcelUtil.read(inputStream, 1, Salary.class);
-        // IService接口中的方法.批量插入数据
-        if (saveBatch(list)) {
-            return Response.success();
-        }
-        return Response.error();
-    }
-
 
     public ResponseDTO setSalary(Salary salary) {
         QueryWrapper<Salary> query = new QueryWrapper<>();

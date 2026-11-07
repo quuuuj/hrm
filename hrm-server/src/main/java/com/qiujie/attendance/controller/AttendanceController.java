@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -71,13 +70,6 @@ public class AttendanceController {
     @PreAuthorize("hasAnyAuthority('performance:attendance:export')")
     public void export(HttpServletResponse response, @PathVariable String month, @PathVariable String filename) throws IOException {
         this.attendanceService.export(response, month, filename);
-    }
-
-    @Operation(summary = "同步导入")
-    @PostMapping("/import")
-    @PreAuthorize("hasAnyAuthority('performance:attendance:import')")
-    public ResponseDTO imp(MultipartFile file) throws IOException {
-        return this.attendanceService.imp(file);
     }
 
     @Operation(summary = "创建导入任务")
