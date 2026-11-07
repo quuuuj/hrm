@@ -1,5 +1,5 @@
 /**
- * 文件任务混入——提供异步导入导出的任务列表、SSE 进度更新与完成通知。
+ * 文件任务混入——提供异步导入导出的任务列表与 SSE 进度更新。
  * 使用页面通过 data 覆盖 fileTaskModule（如 'ATTENDANCE'），并实现 onTaskCompleted(task) 刷新表格。
  *
  * @mixin fileTaskMixin
@@ -77,56 +77,12 @@ export default {
 
       const previous = this.taskStatusSnapshot[task.id]
       if (previous !== task.status && TERMINAL_STATUSES.includes(task.status)) {
-        this.notifyTaskComplete(task)
         this.loadTasks(this.fileTaskModule)
         if (typeof this.onTaskCompleted === 'function') {
           this.onTaskCompleted(task)
         }
       }
       this.taskStatusSnapshot[task.id] = task.status
-    },
-
-    /** 任务完成时的页面通知，子组件可覆写 */
-    notifyTaskComplete (task) {
-      const typeLabel = task.taskType === 'IMPORT' ? '导入' : '导出'
-      const statusLabel = {
-        SUCCESS: '成功',
-        PARTIAL_SUCCESS: '部分成功',
-        FAILED: '失败'
-      }[task.status] || task.status
-      const title = `${typeLabel}任务${statusLabel}`
-      const body = task.status === 'SUCCESS'
-        ? `${task.fileName} 共 ${task.totalCount || 0} 条全部处理成功`
-        : task.status === 'PARTIAL_SUCCESS'
-          ? `${task.fileName} 成功 ${task.successCount || 0} 条，失败 ${task.failCount || 0} 条`
-          : `${task.fileName} 处理失败：${task.failReason || '未知原因'}`
-      this.showInAppNotification(task, title, body)
-    },
-
-    showInAppNotification (task, title, body) {
-      const h = this.$createElement
-      const actions = []
-      if (task.status === 'PARTIAL_SUCCESS' && task.errorFilePath) {
-        actions.push(h('el-button', {
-          props: { type: 'text', size: 'mini' },
-          on: { click: () => this.downloadTask(task, 'ERROR') }
-        }, '下载错误文件'))
-      }
-      if (task.taskType === 'EXPORT' && task.resultFilePath) {
-        actions.push(h('el-button', {
-          props: { type: 'text', size: 'mini' },
-          on: { click: () => this.downloadTask(task, 'RESULT') }
-        }, '下载结果'))
-      }
-      this.$notify({
-        title,
-        message: h('div', null, [
-          h('p', { style: { marginBottom: '8px' } }, body),
-          ...actions
-        ]),
-        type: task.status === 'SUCCESS' ? 'success' : task.status === 'FAILED' ? 'error' : 'warning',
-        duration: task.status === 'FAILED' ? 0 : 10000
-      })
     },
 
     /** 下载任务文件 */

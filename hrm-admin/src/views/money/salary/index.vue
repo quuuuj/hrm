@@ -84,7 +84,7 @@
     <div style="margin-bottom: 10px">
       <ChunkedImportBtn
         v-permission="['money:salary:import']"
-        :import-api="importApi"
+        :complete-api="importApi"
         label="导入"
         accept=".xlsx"
         @success="handleAsyncImportSuccess"

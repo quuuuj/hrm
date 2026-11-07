@@ -36,7 +36,8 @@
       <!-- 大文件/普通文件分片上传 -->
       <ChunkedImportBtn
         v-permission="['system:docs:upload']"
-        :import-api="chunkedUploadApi"
+        scope="DOCS"
+        :complete-api="docsUploadApi"
         label="上传文件"
         accept="*/*"
         :ingest="false"
@@ -146,7 +147,7 @@ import {
   edit, exp,
   getImportApi,
   list,
-  getImportTaskApi
+  getCompleteApi
 } from '@/api/docs'
 import ChunkedImportBtn from '@/components/ChunkedImportBtn'
 import { mapGetters } from 'vuex'
@@ -183,8 +184,8 @@ export default {
     importApi () {
       return getImportApi()
     },
-    chunkedUploadApi () {
-      return getImportTaskApi()
+    docsUploadApi () {
+      return getCompleteApi()
     }
   },
   watch: {

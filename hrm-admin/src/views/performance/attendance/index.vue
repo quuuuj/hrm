@@ -13,7 +13,7 @@
     <div class="toolbar">
       <ChunkedImportBtn
         v-permission="['performance:attendance:import']"
-        :import-api="importApi"
+        :complete-api="importApi"
         @success="handleImportSuccess"
         @error="handleImportError"
       />

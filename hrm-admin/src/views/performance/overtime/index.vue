@@ -57,7 +57,7 @@
     <div style="margin-bottom: 10px">
       <ChunkedImportBtn
         v-permission="['performance:overtime:import']"
-        :import-api="asyncImportApi"
+        :complete-api="asyncImportApi"
         label="导入"
         accept=".xlsx"
         @success="handleAsyncImportSuccess"

@@ -34,27 +34,19 @@ export const download = (id, fileType) => {
   })
 }
 
-// ========== 分片上传 ==========
+// ========== 分片上传（合并完成走各自的业务入口，不在此处） ==========
 
-/** 初始化上传会话 */
-export const uploadInit = (data, customUrl) => {
-  const base = customUrl || url
-  return request({ url: base + '/upload/init', method: 'post', data })
+/** 初始化上传会话，data.scope 区分 DOCS（秒传）与 IMPORT（不秒传） */
+export const uploadInit = (data) => {
+  return request({ url: '/file-upload/init', method: 'post', data })
 }
 
 /** 上传单个分片 */
-export const uploadChunk = (formData, customUrl) => {
-  const base = customUrl || url
+export const uploadChunk = (formData) => {
   return request({
-    url: base + '/upload/chunks',
+    url: '/file-upload/chunks',
     method: 'post',
     data: formData,
     headers: { 'Content-Type': 'multipart/form-data' }
   })
-}
-
-/** 合并分片，完成上传 */
-export const uploadComplete = (uploadId, customUrl, params) => {
-  const base = customUrl || url
-  return request({ url: base + '/upload/' + uploadId + '/complete', method: 'post', params })
 }

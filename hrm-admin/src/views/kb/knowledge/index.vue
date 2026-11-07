@@ -4,7 +4,8 @@
       <!-- 知识库摄入文档上传（自动触发分块与向量化） -->
       <ChunkedImportBtn
         v-permission="['kb:knowledge:upload']"
-        :import-api="chunkedUploadApi"
+        scope="DOCS"
+        :complete-api="docsUploadApi"
         label="上传知识文档"
         accept=".pdf,.docx,.md,.txt"
         :ingest="true"
@@ -154,7 +155,7 @@ import {
   list,
   retry,
   chunks,
-  getImportTaskApi
+  getCompleteApi
 } from '@/api/docs'
 import ChunkedImportBtn from '@/components/ChunkedImportBtn'
 import { write } from '@/utils/docs'
@@ -184,8 +185,8 @@ export default {
     }
   },
   computed: {
-    chunkedUploadApi () {
-      return getImportTaskApi()
+    docsUploadApi () {
+      return getCompleteApi()
     }
   },
   watch: {

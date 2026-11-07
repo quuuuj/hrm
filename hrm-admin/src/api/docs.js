@@ -91,9 +91,9 @@ export const chunks = (id) => {
   })
 }
 
-// 分片上传接口前缀
-export const getImportTaskApi = () => {
-  return url + '/upload'
+// 分片上传合并接口（分片协议统一走 /file-upload）
+export const getCompleteApi = () => {
+  return url + '/upload-task'
 }
 
 // 数据导入

@@ -1,11 +1,7 @@
 /** 文件任务模块 → 前端路由映射（路由由后端动态菜单生成） */
 export const FILE_TASK_ROUTES = {
   ATTENDANCE: '/performance/attendance',
-  STAFF: '/system/staff',
-  DEPT: '/system/dept',
-  INSURANCE: '/money/insurance',
   SALARY: '/money/salary',
-  STAFF_LEAVE: '/performance/leave',
   STAFF_OVERTIME: '/performance/overtime'
 }
 

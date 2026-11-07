@@ -22,21 +22,23 @@
 
 <script>
 import request from '@/utils/request'
-import { uploadInit, uploadChunk, uploadComplete } from '@/api/fileTask'
+import { uploadInit, uploadChunk } from '@/api/fileTask'
 
-/** 分片上传单块大小 5MB */
-const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024 // 5MB
+/** 分片上传单块大小 5MB，与后端 MIN_CHUNK_SIZE 一致 */
+const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024
 
 export default {
   name: 'ChunkedImportBtn',
   props: {
-    /** 上传完成后调用的业务接口，如 /knowledge/upload 或 /docs/upload */
-    importApi: { type: String, required: true },
+    /** 分片上传范围：DOCS 走秒传，IMPORT 不秒传 */
+    scope: { type: String, default: 'IMPORT' },
+    /** 合并分片并落库的业务接口，如 /docs/upload-task 或 /attendance/import/task */
+    completeApi: { type: String, required: true },
     /** 接受的文件类型，如 .xlsx,.pdf */
     accept: { type: String, default: '.xlsx' },
     /** 按钮文案 */
     label: { type: String, default: '导入' },
-    /** 是否加入知识库进行分块与向量化（默认 false） */
+    /** DOCS 范围下是否加入知识库进行分块与向量化（默认 false） */
     ingest: { type: Boolean, default: false }
   },
   emits: ['success', 'error'],
@@ -46,31 +48,23 @@ export default {
       progressText: '导入中...'
     }
   },
-  computed: {
-    /** 文档/知识库上传：importApi 以 /upload 结尾，合并分片时后端直接创建任务 */
-    isDocsUpload () {
-      return /\/upload$/.test(this.importApi)
-    }
-  },
   methods: {
-    /** 文件选择后的主流程：上传 → 创建业务任务 */
+    /** 文件选择后的主流程：分片上传 → 调用业务接口合并落库 */
     async handleFileChange (e) {
       const file = e.target.files[0]
       if (!file) return
       this.uploading = true
       try {
-        // 阶段一：分片上传文件到 MinIO
-        const result = await this.doChunkedUpload(file)
-        // 秒传：服务端已有同 hash 文件，没有 uploadId，也没有新任务可创建
-        if (result.instantUpload) {
+        const uploadId = await this.doChunkedUpload(file)
+        // 秒传命中：服务端已有同 hash 文件并完成登记，没有 uploadId 也没有新任务
+        if (!uploadId) {
           this.$message.success('秒传成功，文件已存在')
-          this.$emit('success', result)
+          this.$emit('success')
           return
         }
-        // 阶段二：调用业务接口创建导入任务
-        // 文档模块在合并分片时已由后端回调创建任务，无需再调业务接口
-        if (!this.isDocsUpload) await this.createImportTask(result.uploadId)
-        this.$emit('success', result.uploadId)
+        const res = await this.complete(uploadId)
+        this.$message.success(res.message || '上传成功')
+        this.$emit('success')
       } catch (err) {
         this.$message.error(err.message || '导入失败')
         this.$emit('error', err)
@@ -81,36 +75,34 @@ export default {
       }
     },
 
-    /** 分片上传协议：统一走 init→chunks→complete 三阶段 */
+    /** 分片上传协议：init → chunks，返回 uploadId；秒传命中返回 null */
     async doChunkedUpload (file) {
-      // 文档模块的上传端点位于业务前缀下（/docs/upload/*）；业务数据导入复用 /file-task 的分片上传
-      const baseUploadUrl = this.isDocsUpload ? this.importApi.replace(/\/upload$/, '') : '/file-task'
-
-      // 阶段 1: 初始化上传会话，获取 uploadId
+      // 阶段 1: 初始化上传会话
       const initRes = await uploadInit({
+        scope: this.scope,
         fileName: file.name,
         fileExt: this.getExt(file.name),
         fileSize: file.size,
-        fileHash: await this.sha256(file), // 用于断点续传去重
-        chunkSize: DEFAULT_CHUNK_SIZE,
-        ingest: this.ingest
-      }, baseUploadUrl)
+        fileHash: await this.sha256(file),
+        chunkSize: DEFAULT_CHUNK_SIZE
+      })
       if (initRes.code !== 200) throw new Error(initRes.message || '初始化上传失败')
-      // 秒传：命中同 hash 文件，直接返回，不传分片也不合并
-      if (initRes.data.instantUpload) return initRes.data
+      const initData = initRes.data || {}
+      // 秒传：命中同 hash 文件，服务端已登记，不传分片也不合并
+      if (initData.instantUpload) return null
 
-      const uploadId = initRes.data.uploadId
+      const uploadId = initData.uploadId
       // 切片大小与总分片数以服务端为准：断点续传必须沿用首传时的切片大小
-      const chunkSize = initRes.data.chunkSize || DEFAULT_CHUNK_SIZE
-      const chunkCount = initRes.data.chunkCount || Math.ceil(file.size / chunkSize)
+      const chunkSize = initData.chunkSize || DEFAULT_CHUNK_SIZE
+      const chunkCount = initData.chunkCount || Math.ceil(file.size / chunkSize)
 
       // 断点续传：已上传的分片不再重复上传
-      const uploadedSet = new Set(initRes.data.uploadedChunks || [])
+      const uploadedSet = new Set(initData.uploadedChunks || [])
       let uploadedCount = uploadedSet.size
 
       // 阶段 2: 逐片上传，跳过已完成的分片，实时更新进度文案
       for (let i = 0; i < chunkCount; i++) {
-        if (uploadedSet.has(i)) continue // 断点续传：跳过已上传分片
+        if (uploadedSet.has(i)) continue
         const start = i * chunkSize
         const end = Math.min(start + chunkSize, file.size)
         const blob = file.slice(start, end) // 浏览器端切分，不占内存
@@ -118,27 +110,26 @@ export default {
         form.append('uploadId', uploadId)
         form.append('chunkIndex', i)
         form.append('chunkHash', await this.sha256Blob(blob))
-        form.append('file', blob, `chunk-${i}`)
-        await uploadChunk(form, baseUploadUrl)
+        form.append('chunk', blob, `chunk-${i}`)
+        const res = await uploadChunk(form)
+        if (res.code !== 200) throw new Error(res.message || `分片 ${i} 上传失败`)
         uploadedCount++
         this.progressText = `上传 ${uploadedCount}/${chunkCount}`
       }
-
-      // 阶段 3: 通知服务端合并分片
-      const completeRes = await uploadComplete(uploadId, baseUploadUrl, { ingest: this.ingest })
-      if (completeRes.code !== 200) throw new Error(completeRes.message || '合并分片失败')
-      return { uploadId }
+      return uploadId
     },
 
-    /** 调用业务方 importApi 创建异步导入任务 */
-    async createImportTask (uploadId) {
+    /** 阶段 3: 合并分片并由业务接口落库、建任务 */
+    async complete (uploadId) {
+      const params = { uploadId }
+      if (this.scope === 'DOCS') params.ingest = this.ingest
       const res = await request({
-        url: this.importApi,
+        url: this.completeApi,
         method: 'post',
-        params: { uploadId }
+        params
       })
-      if (res.code !== 200) throw new Error(res.message || '创建导入任务失败')
-      this.$message.success(res.message || '导入任务已创建')
+      if (res.code !== 200) throw new Error(res.message || '合并分片失败')
+      return res
     },
 
     /** 提取文件扩展名，不含点 */
