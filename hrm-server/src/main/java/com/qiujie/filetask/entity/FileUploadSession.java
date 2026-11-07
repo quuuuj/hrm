@@ -23,8 +23,8 @@ public class FileUploadSession implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "upload_id", type = IdType.ASSIGN_UUID)
-    private String uploadId;
+    @TableId(value = "id", type = IdType.ASSIGN_UUID)
+    private String id;
 
     @TableField("staff_id")
     private Integer staffId;

@@ -14,7 +14,8 @@ import com.qiujie.salary.entity.SalaryDeduct;
 import com.qiujie.attendance.enums.AttendanceStatusEnum;
 import com.qiujie.salary.enums.DeductEnum;
 import com.qiujie.filetask.enums.TaskModuleEnum;
-import com.qiujie.filetask.spi.AsyncFileTasks;
+import com.qiujie.filetask.entity.FileTask;
+import com.qiujie.filetask.service.FileTaskService;
 import com.qiujie.attendance.mapper.AttendanceMapper;
 import com.qiujie.salary.mapper.SalaryMapper;
 import com.qiujie.common.dto.Response;
@@ -59,7 +60,7 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
 
 
     @Autowired
-    private AsyncFileTasks asyncFileTasks;
+    private FileTaskService fileTaskService;
 
     @Autowired
     private FileUploadService fileUploadService;
@@ -221,12 +222,10 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
      */
     public ResponseDTO createImportTask(String uploadId) {
         String mergedKey = fileUploadService.completeUpload(uploadId, getCurrentOperatorId());
-        AsyncFileTasks.ImportRequest<Salary> request = new AsyncFileTasks.ImportRequest<>(
-                TaskModuleEnum.SALARY, "salary_import.xlsx", mergedKey, null,
-                getCurrentOperatorId(), new SalaryImportHandler(this));
-        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitImport(request);
+        FileTask task = fileTaskService.submitImport(TaskModuleEnum.SALARY, "salary_import.xlsx",
+                mergedKey, null, getCurrentOperatorId(), new SalaryImportHandler(this));
         Map<String, Object> result = new HashMap<>();
-        result.put("taskId", submission.taskId());
+        result.put("taskId", task.getId());
         return Response.success(result);
     }
 
@@ -234,12 +233,10 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
      * 创建异步导出任务（支持大文件）
      */
     public ResponseDTO createExportTask(String month, String filename) {
-        AsyncFileTasks.ExportRequest<StaffSalaryVO> request = new AsyncFileTasks.ExportRequest<>(
-                TaskModuleEnum.SALARY, filename, month, getCurrentOperatorId(),
-                new SalaryExportHandler(this));
-        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitExport(request);
+        FileTask task = fileTaskService.submitExport(TaskModuleEnum.SALARY, filename, month,
+                getCurrentOperatorId(), new SalaryExportHandler(this));
         Map<String, Object> result = new HashMap<>();
-        result.put("taskId", submission.taskId());
+        result.put("taskId", task.getId());
         return Response.success(result);
     }
 

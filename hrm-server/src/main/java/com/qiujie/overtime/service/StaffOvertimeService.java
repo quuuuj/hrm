@@ -8,10 +8,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
+import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.enums.TaskModuleEnum;
+import com.qiujie.filetask.service.FileTaskService;
 import com.qiujie.filetask.service.FileUploadService;
-import com.qiujie.filetask.spi.AsyncFileTasks;
 import com.qiujie.filetask.spi.ExportProcessor;
 import com.qiujie.filetask.spi.ImportProcessor;
 import com.qiujie.overtime.dto.OvertimeImportRow;
@@ -60,7 +61,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
     private DatetimeUtil datetimeUtil;
 
     @Autowired
-    private AsyncFileTasks asyncFileTasks;
+    private FileTaskService fileTaskService;
 
     @Autowired
     private SecurityUtil securityUtil;
@@ -263,24 +264,20 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
 
     public ResponseDTO createImportTask(String uploadId) {
         String mergedKey = fileUploadService.completeUpload(uploadId, securityUtil.getCurrentOperatorId());
-        AsyncFileTasks.ImportRequest<OvertimeImportRow> request = new AsyncFileTasks.ImportRequest<>(
-                TaskModuleEnum.STAFF_OVERTIME, "overtime_import.xlsx", mergedKey, null,
-                securityUtil.getCurrentOperatorId(), new OvertimeImportHandler());
-        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitImport(request);
+        FileTask task = fileTaskService.submitImport(TaskModuleEnum.STAFF_OVERTIME, "overtime_import.xlsx",
+                mergedKey, null, securityUtil.getCurrentOperatorId(), new OvertimeImportHandler());
         Map<String, Object> data = new HashMap<>();
-        data.put("taskId", submission.taskId());
+        data.put("taskId", task.getId());
         return Response.success("已提交", data);
     }
 
     public ResponseDTO createExportTask(String month, String filename) {
         Map<String, String> params = new HashMap<>();
         params.put("month", month);
-        AsyncFileTasks.ExportRequest<OvertimeMonthVO> request = new AsyncFileTasks.ExportRequest<>(
-                TaskModuleEnum.STAFF_OVERTIME, filename, JSON.toJSONString(params),
-                securityUtil.getCurrentOperatorId(), new OvertimeExportHandler());
-        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitExport(request);
+        FileTask task = fileTaskService.submitExport(TaskModuleEnum.STAFF_OVERTIME, filename,
+                JSON.toJSONString(params), securityUtil.getCurrentOperatorId(), new OvertimeExportHandler());
         Map<String, Object> data = new HashMap<>();
-        data.put("taskId", submission.taskId());
+        data.put("taskId", task.getId());
         return Response.success("已提交", data);
     }
 

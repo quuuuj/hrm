@@ -14,7 +14,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qiujie.filetask.enums.TaskModuleEnum;
 import com.qiujie.attendance.batch.AttendanceImportBatchProcessor;
-import com.qiujie.filetask.spi.AsyncFileTasks;
+import com.qiujie.filetask.entity.FileTask;
+import com.qiujie.filetask.service.FileTaskService;
 import com.qiujie.attendance.dto.AttendanceImportRow;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
@@ -56,7 +57,7 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
     private DatetimeUtil datetimeUtil;
 
     @Autowired
-    private AsyncFileTasks asyncFileTasks;
+    private FileTaskService fileTaskService;
 
     @Autowired
     private FileUploadService fileUploadService;
@@ -216,11 +217,9 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
     // 通过三阶段上传完成后创建异步导入任务
     public ResponseDTO createImportTask(String uploadId) {
         String mergedKey = fileUploadService.completeUpload(uploadId, getCurrentOperatorId());
-        AsyncFileTasks.ImportRequest<AttendanceImportRow> request = new AsyncFileTasks.ImportRequest<>(
-                TaskModuleEnum.ATTENDANCE, "attendance_import.xlsx", mergedKey, null,
-                getCurrentOperatorId(), new AttendanceImportHandler());
-        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitImport(request);
-        return Response.success("导入任务已创建", submission.snapshot());
+        FileTask task = fileTaskService.submitImport(TaskModuleEnum.ATTENDANCE, "attendance_import.xlsx",
+                mergedKey, null, getCurrentOperatorId(), new AttendanceImportHandler());
+        return Response.success("导入任务已创建", task);
     }
 
     // ==================== 异步导出入口 ====================
@@ -234,11 +233,9 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         }
         Map<String, Object> queryParams = new HashMap<>();
         queryParams.put("month", month);
-        AsyncFileTasks.ExportRequest<AttendanceMonthVO> request = new AsyncFileTasks.ExportRequest<>(
-                TaskModuleEnum.ATTENDANCE, exportName, JSON.toJSONString(queryParams),
-                getCurrentOperatorId(), new AttendanceExportHandler());
-        com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitExport(request);
-        return Response.success("导出任务已创建", submission.snapshot());
+        FileTask task = fileTaskService.submitExport(TaskModuleEnum.ATTENDANCE, exportName,
+                JSON.toJSONString(queryParams), getCurrentOperatorId(), new AttendanceExportHandler());
+        return Response.success("导出任务已创建", task);
     }
 
     public ResponseDTO setAttendance(Attendance attendance) {

@@ -3,6 +3,7 @@ package com.qiujie.docs.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService;
+import com.qiujie.filetask.enums.UploadScopeEnum;
 import com.qiujie.filetask.spi.UploadCompletionHandler;
 import com.qiujie.filetask.spi.UploadSessionInfo;
 import com.qiujie.knowledge.mapper.DocsMapper;
@@ -41,15 +42,28 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
     private KnowledgeLifecycleService lifecycle;
 
     @Override
+    public UploadScopeEnum getScope() {
+        return UploadScopeEnum.DOCS;
+    }
+
+    @Override
     public String getStoragePrefix() {
         return "docs";
     }
 
     @Override
-    public Map<String, Object> checkDedup(String fileHash) {
+    public Map<String, Object> checkDedup(String fileHash, Integer staffId) {
+        // 去重只查本人名下文档：秒传不新建 sys_docs 行、不新建对象，跨员工命中会让
+        // 秒传方拿到他人文档的 id 与对象键，对方一旦删除，对象即被引用计数判空删除
+        if (staffId == null) return null;
         // @TableLogic 自动过滤 is_deleted=1：秒传只命中存活文档（软删除文件不秒传）
         List<Docs> existing = docsMapper.selectList(
-                new QueryWrapper<Docs>().eq("file_hash", fileHash));
+                new QueryWrapper<Docs>()
+                        .eq("file_hash", fileHash)
+                        .eq("staff_id", staffId)
+                        // file_hash 非唯一索引，同一人多行时取最早的一条，行为可预期
+                        .orderByAsc("id")
+                        .last("LIMIT 1"));
         if (existing.isEmpty()) return null;
         Docs doc = existing.get(0);
         Map<String, Object> result = new HashMap<>();

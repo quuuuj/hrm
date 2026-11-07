@@ -18,7 +18,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 文件上传接口
@@ -123,7 +122,7 @@ public class DocsController {
         this.docsService.download(filename, response);
     }
 
-    // ========== 分片上传（三阶段协议）==========
+    // ========== 分片上传（合并 + 登记，分片协议在 /file-upload）==========
 
     @Operation(summary = "头像上传（小文件直传）")
     @PostMapping("/upload/{id}")
@@ -132,37 +131,11 @@ public class DocsController {
         return this.docsService.upload(file, id);
     }
 
-    @Operation(summary = "分片上传-初始化")
-    @PostMapping("/upload/init")
+    @Operation(summary = "分片上传-合并分片并登记文件（ingest=true 同时加入知识库）")
+    @PostMapping("/upload-task")
     @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
-    public ResponseDTO initChunkedUpload(@RequestBody Map<String, Object> request) {
-        String fileName = (String) request.get("fileName");
-        String fileExt = (String) request.get("fileExt");
-        Long fileSize = toLong(request.get("fileSize"));
-        String fileHash = (String) request.get("fileHash");
-        Long chunkSize = toLong(request.get("chunkSize"));
-
-        return fileUploadService.initUpload(fileName, fileExt, fileSize, fileHash, chunkSize,
-                securityUtil.getCurrentOperatorId(), docsHandler, Boolean.TRUE.equals(request.get("ingest")));
-    }
-
-    @Operation(summary = "分片上传-上传分片")
-    @PostMapping("/upload/chunks")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
-    public ResponseDTO uploadChunk(
-            @RequestParam("uploadId") String uploadId,
-            @RequestParam("chunkIndex") Integer chunkIndex,
-            @RequestParam(value = "chunkHash", required = false) String chunkHash,
-            @RequestParam("file") MultipartFile file) {
-        return fileUploadService.uploadChunk(uploadId, chunkIndex, chunkHash, file,
-                securityUtil.getCurrentOperatorId());
-    }
-
-    @Operation(summary = "分片上传-完成")
-    @PostMapping("/upload/{uploadId}/complete")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
-    public ResponseDTO completeChunkedUpload(@PathVariable String uploadId,
-                                             @RequestParam(value = "ingest", required = false, defaultValue = "false") boolean ingest) {
+    public ResponseDTO completeUpload(@RequestParam String uploadId,
+                                      @RequestParam(defaultValue = "false") boolean ingest) {
         return fileUploadService.completeUpload(uploadId, docsHandler, ingest,
                 securityUtil.getCurrentOperatorId());
     }
@@ -185,11 +158,4 @@ public class DocsController {
         return r.accepted() ? Response.success("已重新提交处理") : Response.error(r.reason());
     }
 
-    /** 把请求体里的数值读成 Long，缺参或类型不符时返回 null，交由 service 统一报错 */
-    private static Long toLong(Object value) {
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
-        }
-        return null;
-    }
 }

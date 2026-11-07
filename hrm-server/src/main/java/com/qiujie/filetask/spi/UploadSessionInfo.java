@@ -28,12 +28,6 @@ public class UploadSessionInfo {
         this.ingest = ingest;
     }
 
-    /** 兼容旧调用点：默认不摄入（通用文件）。 */
-    public UploadSessionInfo(String uploadId, String fileName, String fileExt,
-                              Long fileSize, String fileHash, Integer staffId, int chunkCount) {
-        this(uploadId, fileName, fileExt, fileSize, fileHash, staffId, chunkCount, false);
-    }
-
     public String getUploadId() { return uploadId; }
     public String getFileName() { return fileName; }
     public String getFileExt() { return fileExt; }
