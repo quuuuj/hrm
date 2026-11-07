@@ -2,10 +2,12 @@ package com.qiujie.filetask.engine;
 import com.qiujie.filetask.service.FileTaskErrorService;
 import com.qiujie.filetask.spi.ExportProcessor;
 import com.qiujie.filetask.spi.ImportProcessor;
-import com.qiujie.filetask.spi.ImportReader;
+import com.qiujie.filetask.spi.ImportRow;
 
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.qiujie.filetask.entity.FileTask;
@@ -36,6 +38,8 @@ public class FileTaskEngine {
     private static final Logger log = LoggerFactory.getLogger(FileTaskEngine.class);
 
     private static final int DB_BATCH_SIZE = 200;
+    private static final int IMPORT_BATCH_SIZE = 500;
+    private static final int HEAD_ROW_NUMBER = 2;
     private static final int EXPORT_PAGE_SIZE = 500;
 
     @Autowired
@@ -52,22 +56,12 @@ public class FileTaskEngine {
 
     /**
      * 执行异步导入。
-     * 使用默认读取器流式读取，每攒够一批行交给 processor 批量处理。
+     * 流式读取源文件，每攒够一批行交给 processor 批量处理，任务结算统一在此完成。
      *
      * @param taskId    文件任务ID
      * @param processor 模块导入处理器
      */
     public <T> void runImport(Long taskId, ImportProcessor<T> processor) {
-        runImport(taskId, processor,
-                new EasyExcelImportReader<>(processor.getRowClass(), processor.headRowNumber()));
-    }
-
-    /**
-     * 使用指定读取器执行异步导入。
-     * 读取器负责文件格式适配，处理器只负责业务校验和入库，任务结算统一在此完成。
-     */
-    public <T> void runImport(Long taskId, ImportProcessor<T> processor,
-                              ImportReader<T> reader) {
         if (!taskRepository.claimRunning(taskId)) {
             return;
         }
@@ -80,8 +74,29 @@ public class FileTaskEngine {
         try {
             sourceFile = artifactStore.resolveSource(task.getSourceFilePath());
             temporarySource = artifactStore.isRemote(task.getSourceFilePath());
-            reader.read(sourceFile, taskId,
-                    batch -> processBatch(batch, taskId, processor));
+            List<T> rows = new ArrayList<>(IMPORT_BATCH_SIZE);
+            EasyExcel.read(sourceFile, processor.getRowClass(), new AnalysisEventListener<T>() {
+                @Override
+                public void invoke(T data, AnalysisContext context) {
+                    if (data instanceof ImportRow row) {
+                        // EasyExcel 行下标从 0 开始，Excel 行号从 1 开始
+                        row.setRowNum(context.readRowHolder().getRowIndex() + 1);
+                    }
+                    rows.add(data);
+                    if (rows.size() >= IMPORT_BATCH_SIZE) {
+                        processBatch(new ArrayList<>(rows), taskId, processor);
+                        rows.clear();
+                    }
+                }
+
+                @Override
+                public void doAfterAllAnalysed(AnalysisContext context) {
+                    if (!rows.isEmpty()) {
+                        processBatch(new ArrayList<>(rows), taskId, processor);
+                        rows.clear();
+                    }
+                }
+            }).headRowNumber(HEAD_ROW_NUMBER).sheet().doRead();
 
             FileTask finishedTask = taskRepository.getById(taskId);
             if (finishedTask != null && finishedTask.getProcessedCount() != null) {
@@ -108,27 +123,14 @@ public class FileTaskEngine {
         }
     }
 
-    private <T> void processBatch(ImportReader.ImportBatch<T> batch,
-                                  Long taskId, ImportProcessor<T> processor) {
-        List<FileTaskError> allErrors = new ArrayList<>(batch.errors());
-        List<FileTaskError> businessErrors = new ArrayList<>();
-        int parsedRows = batch.rows().size();
-        int parseErrors = batch.errors().size();
-
-        if (!batch.rows().isEmpty()) {
-            processor.processBatch(batch.rows(), taskId, err -> {
-                businessErrors.add(err);
-                allErrors.add(err);
-            });
+    private <T> void processBatch(List<T> rows, Long taskId, ImportProcessor<T> processor) {
+        List<FileTaskError> errors = new ArrayList<>();
+        processor.processBatch(rows, taskId, errors::add);
+        if (!errors.isEmpty()) {
+            fileTaskErrorService.saveBatch(errors, DB_BATCH_SIZE);
         }
-        if (!allErrors.isEmpty()) {
-            fileTaskErrorService.saveBatch(allErrors, DB_BATCH_SIZE);
-        }
-
-        int processedCount = parsedRows + parseErrors;
-        int successCount = parsedRows - businessErrors.size();
-        int failCount = allErrors.size();
-        taskRepository.increaseProgress(taskId, 0, processedCount, successCount, failCount);
+        taskRepository.increaseProgress(taskId, 0, rows.size(),
+                rows.size() - errors.size(), errors.size());
     }
 
     /**

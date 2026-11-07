@@ -9,7 +9,6 @@ import lombok.Getter;
 public enum TaskModuleEnum {
 
     ATTENDANCE("ATTENDANCE"),
-    STAFF("STAFF"),
     SALARY("SALARY"),
     STAFF_OVERTIME("STAFF_OVERTIME");
 

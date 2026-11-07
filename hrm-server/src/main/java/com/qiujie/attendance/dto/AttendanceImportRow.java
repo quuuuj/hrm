@@ -1,13 +1,17 @@
 package com.qiujie.attendance.dto;
 
+import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.qiujie.filetask.spi.ImportRow;
 import lombok.Data;
 
 import java.util.Date;
 
 @Data
-public class AttendanceImportRow {
+public class AttendanceImportRow implements ImportRow {
 
+    /** Excel 行号，由引擎回填，仅用于错误定位 */
+    @ExcelIgnore
     private Integer rowNum;
 
     @ExcelProperty("员工id")

@@ -7,7 +7,6 @@ import com.qiujie.filetask.enums.TaskTypeEnum;
 import com.qiujie.filetask.spi.AsyncFileTasks;
 import com.qiujie.filetask.spi.ExportProcessor;
 import com.qiujie.filetask.spi.ImportProcessor;
-import com.qiujie.filetask.spi.ImportReader;
 import com.qiujie.filetask.spi.TaskSnapshot;
 import com.qiujie.filetask.store.TaskRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -40,11 +39,8 @@ public class FileTaskCoordinator implements AsyncFileTasks {
 
     @Override
     public <T> TaskSnapshot submitImport(AsyncFileTasks.ImportRequest<T> request) {
-        TaskSubmission result = request.reader() == null
-                ? submitImport(new ImportCommand(request.module(), request.fileName(), request.sourceFilePath(),
-                        request.queryParams(), request.operatorId()), request.processor())
-                : submitImport(new ImportCommand(request.module(), request.fileName(), request.sourceFilePath(),
-                        request.queryParams(), request.operatorId()), request.processor(), request.reader());
+        TaskSubmission result = submitImport(new ImportCommand(request.module(), request.fileName(),
+                request.sourceFilePath(), request.queryParams(), request.operatorId()), request.processor());
         return new TaskSnapshot(result.taskId(), result.snapshot());
     }
 
@@ -74,15 +70,8 @@ public class FileTaskCoordinator implements AsyncFileTasks {
     public record TaskSubmission(Long taskId, FileTask snapshot) {
     }
 
-    /** 使用默认 Excel reader 提交导入任务。 */
+    /** 提交导入任务。 */
     public <T> TaskSubmission submitImport(ImportCommand command, ImportProcessor<T> processor) {
-        return submitImport(command, processor, null);
-    }
-
-    /** 使用业务指定 reader 提交导入任务。 */
-    public <T> TaskSubmission submitImport(ImportCommand command,
-                                           ImportProcessor<T> processor,
-                                           ImportReader<T> reader) {
         FileTask task = taskRepository.create(
                 TaskTypeEnum.IMPORT,
                 command.module(),
@@ -90,13 +79,7 @@ public class FileTaskCoordinator implements AsyncFileTasks {
                 command.sourceFilePath(),
                 command.queryParams(),
                 command.operatorId());
-        fileTaskExecutor.execute(() -> {
-            if (reader == null) {
-                fileTaskEngine.runImport(task.getId(), processor);
-            } else {
-                fileTaskEngine.runImport(task.getId(), processor, reader);
-            }
-        });
+        fileTaskExecutor.execute(() -> fileTaskEngine.runImport(task.getId(), processor));
         return new TaskSubmission(task.getId(), task);
     }
 

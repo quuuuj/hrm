@@ -13,7 +13,6 @@ import com.qiujie.filetask.enums.TaskModuleEnum;
 import com.qiujie.filetask.service.FileUploadService;
 import com.qiujie.filetask.spi.AsyncFileTasks;
 import com.qiujie.filetask.spi.ExportProcessor;
-import com.qiujie.filetask.spi.FlexibleExcelImportReader;
 import com.qiujie.filetask.spi.ImportProcessor;
 import com.qiujie.overtime.dto.OvertimeImportRow;
 import com.qiujie.overtime.entity.Overtime;
@@ -28,7 +27,6 @@ import com.qiujie.salary.entity.Salary;
 import com.qiujie.salary.mapper.SalaryMapper;
 import com.qiujie.staff.entity.Staff;
 import com.qiujie.staff.mapper.StaffMapper;
-import com.qiujie.filetask.excel.AiHeaderMatcherImpl;
 import com.qiujie.util.DatetimeUtil;
 import com.qiujie.overtime.util.OvertimeUtil;
 import com.qiujie.staff.service.SecurityUtil;
@@ -69,9 +67,6 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
 
     @Autowired
     private FileUploadService fileUploadService;
-
-    @Autowired(required = false)
-    private AiHeaderMatcherImpl aiHeaderMatcher;
 
     @Autowired
     private OvertimeMapper overtimeMapper;
@@ -270,9 +265,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
         String mergedKey = fileUploadService.completeUpload(uploadId, securityUtil.getCurrentOperatorId());
         AsyncFileTasks.ImportRequest<OvertimeImportRow> request = new AsyncFileTasks.ImportRequest<>(
                 TaskModuleEnum.STAFF_OVERTIME, "overtime_import.xlsx", mergedKey, null,
-                securityUtil.getCurrentOperatorId(), new OvertimeImportHandler(),
-                new FlexibleExcelImportReader<>(2, TaskModuleEnum.STAFF_OVERTIME,
-                        OvertimeImportRow.class, aiHeaderMatcher));
+                securityUtil.getCurrentOperatorId(), new OvertimeImportHandler());
         com.qiujie.filetask.spi.TaskSnapshot submission = asyncFileTasks.submitImport(request);
         Map<String, Object> data = new HashMap<>();
         data.put("taskId", submission.taskId());
@@ -308,18 +301,26 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
 
             List<StaffOvertime> validList = new ArrayList<>();
             for (OvertimeImportRow row : rows) {
-                if (row.getStaffId() == null || row.getOvertimeDate() == null
-                        || row.getMorStartTime() == null || row.getMorEndTime() == null
+                String rowData = JSON.toJSONString(row);
+                int rowNum = row.getRowNum() == null ? 0 : row.getRowNum();
+                if (row.getStaffId() == null) {
+                    errorCollector.accept(buildError(taskId, rowNum, rowData, "员工id不能为空"));
+                    continue;
+                }
+                if (row.getOvertimeDate() == null) {
+                    errorCollector.accept(buildError(taskId, rowNum, rowData, "加班日期不能为空"));
+                    continue;
+                }
+                if (row.getMorStartTime() == null || row.getMorEndTime() == null
                         || row.getAftStartTime() == null || row.getAftEndTime() == null) {
+                    errorCollector.accept(buildError(taskId, rowNum, rowData, "上下班时间不能为空"));
                     continue;
                 }
                 try {
                     Staff staff = staffMap.computeIfAbsent(row.getStaffId(),
                             id -> staffMapper.selectById(id));
                     if (staff == null) {
-                        errorCollector.accept(new FileTaskError()
-                                .setTaskId(taskId).setRowNum(row.getRowNum())
-                                .setRawData(JSON.toJSONString(row)).setErrorMessage("员工不存在"));
+                        errorCollector.accept(buildError(taskId, rowNum, rowData, "员工不存在"));
                         continue;
                     }
                     StaffOvertime entity = new StaffOvertime()
@@ -347,14 +348,18 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
                             .setOvertimeSalary((BigDecimal) result.get("overtimeSalary"));
                     validList.add(entity);
                 } catch (Exception e) {
-                    errorCollector.accept(new FileTaskError()
-                            .setTaskId(taskId).setRowNum(row.getRowNum())
-                            .setRawData(JSON.toJSONString(row)).setErrorMessage(e.getMessage()));
+                    errorCollector.accept(buildError(taskId, rowNum, rowData, e.getMessage()));
                 }
             }
             for (StaffOvertime entity : validList) {
                 saveOrUpdateByStaffAndDate(entity);
             }
+        }
+
+        private FileTaskError buildError(Long taskId, int rowNum, String rawData, String message) {
+            return new FileTaskError()
+                    .setTaskId(taskId).setRowNum(rowNum)
+                    .setRawData(rawData).setErrorMessage(message);
         }
     }
 

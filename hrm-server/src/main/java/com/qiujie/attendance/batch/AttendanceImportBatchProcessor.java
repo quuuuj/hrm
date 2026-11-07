@@ -32,13 +32,8 @@ import cn.hutool.core.date.DateUtil;
 /**
  * 考勤导入批处理领域服务。
  * <p>
- * 统一同步导入和异步文件任务使用的预加载、校验、状态判定与批量写入规则。
+ * 负责导入行的预加载、校验、状态判定与批量写入。
  * 不负责文件读取、任务状态或错误记录持久化。
- * </p>
- * <p>
- * 迟到/早退/旷工判定规则同时供 {@code AttendanceService} 使用（见
- * {@link #isLate} / {@link #isLeaveEarly} / {@link #isAbsenteeism}），
- * 避免两处逻辑漂移。
  * </p>
  */
 @Component
