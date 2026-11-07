@@ -10,7 +10,7 @@ import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.enums.TaskFileTypeEnum;
 import com.qiujie.filetask.mapper.FileTaskMapper;
-import com.qiujie.filetask.store.ArtifactStore;
+import com.qiujie.filetask.store.MinioArtifactStore;
 import com.qiujie.staff.service.SecurityUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ public class FileTaskQueryService {
     @Autowired
     private FileTaskErrorService fileTaskErrorService;
     @Autowired
-    private ArtifactStore artifactStore;
+    private MinioArtifactStore artifactStore;
     @Autowired
     private SecurityUtil securityUtil;
 

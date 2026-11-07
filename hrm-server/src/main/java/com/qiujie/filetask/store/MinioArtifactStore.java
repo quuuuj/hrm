@@ -11,26 +11,24 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * 基于 MinIO + 本地临时目录的任务文件介质适配器。
+ * 任务文件介质：MinIO + 本地临时目录。
  * <p>
  * 兼容旧数据：历史任务记录使用本地绝对路径，新任务统一使用对象存储 key。
  * 路径格式判定规则：包含路径分隔符或以 / 开头 → 本地路径；否则 → MinIO key。
  * </p>
  */
 @Component
-public class MinioArtifactStore implements ArtifactStore {
+public class MinioArtifactStore {
 
     private static final String TEMP_DIR = System.getProperty("java.io.tmpdir") + File.separator + "hrm";
 
     @Autowired
     private MinioStorageService storageService;
 
-    @Override
     public boolean isRemote(String path) {
         return path != null && !path.contains(File.separator) && !path.startsWith("/");
     }
 
-    @Override
     public File resolveSource(String source) {
         if (source == null || !isRemote(source)) {
             return new File(source);
@@ -45,7 +43,6 @@ public class MinioArtifactStore implements ArtifactStore {
         return tempFile;
     }
 
-    @Override
     public File createTaskFile(String subDir, String originalFilename) {
         String extName = FileUtil.extName(originalFilename);
         String filename = IdUtil.fastSimpleUUID();
@@ -59,7 +56,6 @@ public class MinioArtifactStore implements ArtifactStore {
         return new File(dir, filename);
     }
 
-    @Override
     public String upload(File file, String subDir) {
         String key = subDir + "/" + file.getName();
         storageService.put(key, FileUtil.readBytes(file));
@@ -67,7 +63,6 @@ public class MinioArtifactStore implements ArtifactStore {
         return key;
     }
 
-    @Override
     public void delete(String path) {
         if (path == null || "".equals(path)) {
             return;
@@ -84,7 +79,6 @@ public class MinioArtifactStore implements ArtifactStore {
         }
     }
 
-    @Override
     public boolean exists(String path) {
         if (path == null || "".equals(path)) {
             return false;
@@ -96,7 +90,6 @@ public class MinioArtifactStore implements ArtifactStore {
         return storageService.exists(path);
     }
 
-    @Override
     public InputStream open(String path) throws IOException {
         if (!isRemote(path)) {
             return java.nio.file.Files.newInputStream(new File(path).toPath());

@@ -1,4 +1,5 @@
 package com.qiujie.filetask.engine;
+
 import com.qiujie.filetask.service.FileTaskErrorService;
 import com.qiujie.filetask.spi.ExportProcessor;
 import com.qiujie.filetask.spi.ImportProcessor;
@@ -9,13 +10,15 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.excel.write.metadata.WriteSheet;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.qiujie.filetask.dto.FileTaskErrorExportRow;
 import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.enums.TaskStatusEnum;
 import com.qiujie.filetask.notify.FileTaskNotifier;
-import com.qiujie.filetask.store.ArtifactStore;
-import com.qiujie.filetask.store.TaskRepository;
+import com.qiujie.filetask.store.FileTaskStore;
+import com.qiujie.filetask.store.MinioArtifactStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 通用异步导入导出引擎。
@@ -41,15 +45,16 @@ public class FileTaskEngine {
     private static final int IMPORT_BATCH_SIZE = 500;
     private static final int HEAD_ROW_NUMBER = 2;
     private static final int EXPORT_PAGE_SIZE = 500;
+    private static final int ERROR_EXPORT_PAGE_SIZE = 1000;
 
     @Autowired
-    private TaskRepository taskRepository;
+    private FileTaskStore taskStore;
 
     @Autowired
     private FileTaskErrorService fileTaskErrorService;
 
     @Autowired
-    private ArtifactStore artifactStore;
+    private MinioArtifactStore artifactStore;
 
     @Autowired
     private FileTaskNotifier fileTaskNotifier;
@@ -62,10 +67,10 @@ public class FileTaskEngine {
      * @param processor 模块导入处理器
      */
     public <T> void runImport(Long taskId, ImportProcessor<T> processor) {
-        if (!taskRepository.claimRunning(taskId)) {
+        if (!taskStore.claimRunning(taskId)) {
             return;
         }
-        FileTask task = taskRepository.getById(taskId);
+        FileTask task = taskStore.getById(taskId);
         if (task == null) {
             return;
         }
@@ -98,24 +103,24 @@ public class FileTaskEngine {
                 }
             }).headRowNumber(HEAD_ROW_NUMBER).sheet().doRead();
 
-            FileTask finishedTask = taskRepository.getById(taskId);
+            FileTask finishedTask = taskStore.getById(taskId);
             if (finishedTask != null && finishedTask.getProcessedCount() != null) {
                 // 流式读取完成后回填真实总量，前端进度显示准确
-                taskRepository.setTotalCount(taskId, finishedTask.getProcessedCount());
+                taskStore.setTotalCount(taskId, finishedTask.getProcessedCount());
             }
             if (finishedTask != null && finishedTask.getFailCount() != null && finishedTask.getFailCount() > 0) {
-                taskRepository.generateErrorFile(taskId);
-                taskRepository.finish(taskId, TaskStatusEnum.PARTIAL_SUCCESS);
+                generateErrorFile(taskId);
+                taskStore.finish(taskId, TaskStatusEnum.PARTIAL_SUCCESS);
             } else {
-                taskRepository.finish(taskId, TaskStatusEnum.SUCCESS);
+                taskStore.finish(taskId, TaskStatusEnum.SUCCESS);
             }
         } catch (Exception e) {
-            taskRepository.fail(taskId, e);
+            taskStore.fail(taskId, e);
         } finally {
             deleteTemporaryFile(sourceFile, temporarySource);
             // 所有终态都清理源文件，避免敏感数据长期驻留
             try {
-                taskRepository.deleteSourceFile(taskId);
+                taskStore.deleteSourceFile(taskId);
             } catch (Exception e) {
                 log.warn("Failed to delete source file: taskId={}", taskId, e);
             }
@@ -129,7 +134,7 @@ public class FileTaskEngine {
         if (!errors.isEmpty()) {
             fileTaskErrorService.saveBatch(errors, DB_BATCH_SIZE);
         }
-        taskRepository.increaseProgress(taskId, 0, rows.size(),
+        taskStore.increaseProgress(taskId, 0, rows.size(),
                 rows.size() - errors.size(), errors.size());
     }
 
@@ -143,7 +148,7 @@ public class FileTaskEngine {
      * @param exportName       导出文件名
      */
     public <T> void runExport(Long taskId, ExportProcessor<T> processor, String queryParamsJson, String exportName) {
-        if (!taskRepository.claimRunning(taskId)) {
+        if (!taskStore.claimRunning(taskId)) {
             return;
         }
         File resultFile = null;
@@ -162,19 +167,19 @@ public class FileTaskEngine {
                 }
                 excelWriter.write(list, writeSheet);
                 if (current == 1) {
-                    taskRepository.setTotalCount(taskId, (int) page.getTotal());
+                    taskStore.setTotalCount(taskId, (int) page.getTotal());
                 }
-                taskRepository.increaseProgress(taskId, 0, list.size(), list.size(), 0);
+                taskStore.increaseProgress(taskId, 0, list.size(), list.size(), 0);
                 current++;
             } while (current <= page.getPages());
             // EasyExcel 在 finish() 时才把缓冲区落盘，必须先关闭 writer 再上传
             excelWriter.finish();
             excelWriter = null;
-            taskRepository.setResultFile(taskId, artifactStore.upload(resultFile, "task-result"));
+            taskStore.setResultFile(taskId, artifactStore.upload(resultFile, "task-result"));
             resultFile = null;
-            taskRepository.finish(taskId, TaskStatusEnum.SUCCESS);
+            taskStore.finish(taskId, TaskStatusEnum.SUCCESS);
         } catch (Exception e) {
-            taskRepository.fail(taskId, e);
+            taskStore.fail(taskId, e);
         } finally {
             try {
                 if (excelWriter != null) {
@@ -194,6 +199,36 @@ public class FileTaskEngine {
     }
 
     /**
-     * 解析源文件已委托给 ArtifactStore。
+     * 汇总任务错误行导出为 Excel，上传后回写错误文件 key。
+     * 分批按 id 游标读取，避免一次性把全部错误行载入内存。
      */
+    private void generateErrorFile(Long taskId) {
+        File errorFile = artifactStore.createTaskFile("task-error", "import-errors.xlsx");
+        ExcelWriter excelWriter = EasyExcel.write(errorFile, FileTaskErrorExportRow.class).build();
+        try {
+            WriteSheet writeSheet = EasyExcel.writerSheet("errors").build();
+            long lastId = 0;
+            while (true) {
+                QueryWrapper<FileTaskError> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("task_id", taskId).gt("id", lastId)
+                        .orderByAsc("id").last("limit " + ERROR_EXPORT_PAGE_SIZE);
+                List<FileTaskError> errors = fileTaskErrorService.list(queryWrapper);
+                if (errors.isEmpty()) {
+                    break;
+                }
+                List<FileTaskErrorExportRow> rows = errors.stream()
+                        .map(error -> new FileTaskErrorExportRow()
+                                .setRowNum(error.getRowNum())
+                                .setRawData(error.getRawData())
+                                .setErrorMessage(error.getErrorMessage()))
+                        .collect(Collectors.toList());
+                excelWriter.write(rows, writeSheet);
+                lastId = errors.get(errors.size() - 1).getId();
+            }
+        } finally {
+            excelWriter.finish();
+        }
+        String key = artifactStore.upload(errorFile, "task-error");
+        taskStore.setErrorFile(taskId, key);
+    }
 }

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.mapper.FileTaskMapper;
-import com.qiujie.filetask.store.ArtifactStore;
+import com.qiujie.filetask.store.MinioArtifactStore;
 import com.qiujie.notification.constant.NotificationBizType;
 import com.qiujie.notification.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +30,7 @@ public class FileTaskCleanupJob {
     @Autowired
     private FileTaskErrorService fileTaskErrorService;
     @Autowired
-    private ArtifactStore artifactStore;
+    private MinioArtifactStore artifactStore;
     @Autowired
     private NotificationService notificationService;
 

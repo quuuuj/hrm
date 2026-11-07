@@ -4,11 +4,11 @@ import com.qiujie.filetask.engine.FileTaskEngine;
 import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.enums.TaskModuleEnum;
 import com.qiujie.filetask.enums.TaskTypeEnum;
+import com.qiujie.filetask.store.FileTaskStore;
 import com.qiujie.filetask.spi.AsyncFileTasks;
 import com.qiujie.filetask.spi.ExportProcessor;
 import com.qiujie.filetask.spi.ImportProcessor;
 import com.qiujie.filetask.spi.TaskSnapshot;
-import com.qiujie.filetask.store.TaskRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,14 +21,14 @@ import java.io.IOException;
  * 文件任务生命周期门面。
  * <p>
  * 业务模块只描述导入/导出的业务处理器，任务创建、异步提交和执行入口由本类统一拥有。
- * 查询、鉴权与下载委托给 {@link FileTaskQueryService}，生命周期持久化委托给 {@link TaskRepository}。
+ * 查询、鉴权与下载委托给 {@link FileTaskQueryService}，生命周期持久化委托给 {@link FileTaskStore}。
  * </p>
  */
 @Service
 public class FileTaskCoordinator implements AsyncFileTasks {
 
     @Autowired
-    private TaskRepository taskRepository;
+    private FileTaskStore taskStore;
     @Autowired
     private FileTaskQueryService queryService;
     @Autowired
@@ -72,7 +72,7 @@ public class FileTaskCoordinator implements AsyncFileTasks {
 
     /** 提交导入任务。 */
     public <T> TaskSubmission submitImport(ImportCommand command, ImportProcessor<T> processor) {
-        FileTask task = taskRepository.create(
+        FileTask task = taskStore.create(
                 TaskTypeEnum.IMPORT,
                 command.module(),
                 command.fileName(),
@@ -85,7 +85,7 @@ public class FileTaskCoordinator implements AsyncFileTasks {
 
     /** 提交导出任务。 */
     public <T> TaskSubmission submitExport(ExportCommand command, ExportProcessor<T> processor) {
-        FileTask task = taskRepository.create(
+        FileTask task = taskStore.create(
                 TaskTypeEnum.EXPORT,
                 command.module(),
                 command.fileName(),

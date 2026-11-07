@@ -1,48 +1,35 @@
 package com.qiujie.filetask.store;
 
-import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.ExcelWriter;
-import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qiujie.common.sse.SseService;
-import com.qiujie.filetask.dto.FileTaskErrorExportRow;
 import com.qiujie.filetask.entity.FileTask;
-import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.filetask.enums.TaskModuleEnum;
 import com.qiujie.filetask.enums.TaskStatusEnum;
 import com.qiujie.filetask.enums.TaskTypeEnum;
 import com.qiujie.filetask.mapper.FileTaskMapper;
-import com.qiujie.filetask.service.FileTaskErrorService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
- * 基于 MyBatis-Plus 的 TaskRepository 生产实现。
- * 负责任务持久化、CAS 状态认领、进度流转、错误文件导出及结果结算。
+ * 文件任务的持久化与状态流转。
+ * <p>
+ * 负责任务创建、CAS 状态认领、进度累加、终态结算与状态变更后的 SSE 推送。
+ * 错误文件的生成归引擎，源文件清理归调用方。
+ * </p>
  */
-@Repository
-@Primary
-public class MyBatisTaskRepository implements TaskRepository {
-
-    private static final int ERROR_EXPORT_PAGE_SIZE = 1000;
+@Component
+public class FileTaskStore {
 
     @Autowired
     private FileTaskMapper fileTaskMapper;
     @Autowired
-    private FileTaskErrorService fileTaskErrorService;
-    @Autowired
-    private ArtifactStore artifactStore;
+    private MinioArtifactStore artifactStore;
     @Autowired
     private SseService sseService;
 
-    @Override
     public FileTask create(TaskTypeEnum taskType, TaskModuleEnum module, String fileName,
                            String sourceFilePath, String queryParams, Integer operatorId) {
         FileTask fileTask = new FileTask()
@@ -62,12 +49,10 @@ public class MyBatisTaskRepository implements TaskRepository {
         return fileTask;
     }
 
-    @Override
     public FileTask getById(Long id) {
         return fileTaskMapper.selectById(id);
     }
 
-    @Override
     public boolean claimRunning(Long id) {
         boolean claimed = fileTaskMapper.claimRunning(id) == 1;
         if (claimed) {
@@ -76,18 +61,15 @@ public class MyBatisTaskRepository implements TaskRepository {
         return claimed;
     }
 
-    @Override
     public void setTotalCount(Long id, int total) {
         fileTaskMapper.updateById(new FileTask().setId(id).setTotalCount(total));
     }
 
-    @Override
     public void increaseProgress(Long id, int total, int processed, int success, int fail) {
         fileTaskMapper.increaseProgress(id, total, processed, success, fail);
         pushTaskEvent(id);
     }
 
-    @Override
     public void finish(Long id, TaskStatusEnum status) {
         fileTaskMapper.updateById(new FileTask()
                 .setId(id)
@@ -96,12 +78,10 @@ public class MyBatisTaskRepository implements TaskRepository {
         pushTaskEvent(id);
     }
 
-    @Override
     public void fail(Long id, Exception e) {
         fail(id, e == null ? null : e.getMessage());
     }
 
-    @Override
     public void fail(Long id, String message) {
         if (message != null && message.length() > 1000) {
             message = message.substring(0, 1000);
@@ -114,7 +94,6 @@ public class MyBatisTaskRepository implements TaskRepository {
         pushTaskEvent(id);
     }
 
-    @Override
     public void setResultFile(Long id, String resultFilePath) {
         fileTaskMapper.updateById(new FileTask().setId(id).setResultFilePath(resultFilePath));
     }
@@ -123,43 +102,12 @@ public class MyBatisTaskRepository implements TaskRepository {
         fileTaskMapper.updateById(new FileTask().setId(id).setErrorFilePath(errorFilePath));
     }
 
-    @Override
+    /** 删除任务源文件；源文件 key 为空时忽略。 */
     public void deleteSourceFile(Long taskId) {
         FileTask task = getById(taskId);
         if (task != null && task.getSourceFilePath() != null) {
             artifactStore.delete(task.getSourceFilePath());
         }
-    }
-
-    @Override
-    public void generateErrorFile(Long taskId) {
-        File errorFile = artifactStore.createTaskFile("task-error", "import-errors.xlsx");
-        ExcelWriter excelWriter = EasyExcel.write(errorFile, FileTaskErrorExportRow.class).build();
-        try {
-            WriteSheet writeSheet = EasyExcel.writerSheet("errors").build();
-            long lastId = 0;
-            while (true) {
-                QueryWrapper<FileTaskError> queryWrapper = new QueryWrapper<>();
-                queryWrapper.eq("task_id", taskId).gt("id", lastId)
-                        .orderByAsc("id").last("limit " + ERROR_EXPORT_PAGE_SIZE);
-                List<FileTaskError> errors = fileTaskErrorService.list(queryWrapper);
-                if (errors.isEmpty()) {
-                    break;
-                }
-                List<FileTaskErrorExportRow> rows = errors.stream()
-                        .map(error -> new FileTaskErrorExportRow()
-                                .setRowNum(error.getRowNum())
-                                .setRawData(error.getRawData())
-                                .setErrorMessage(error.getErrorMessage()))
-                        .collect(Collectors.toList());
-                excelWriter.write(rows, writeSheet);
-                lastId = errors.get(errors.size() - 1).getId();
-            }
-        } finally {
-            excelWriter.finish();
-        }
-        String key = artifactStore.upload(errorFile, "task-error");
-        setErrorFile(taskId, key);
     }
 
     private void pushTaskEvent(Long id) {
