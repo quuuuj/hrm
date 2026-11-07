@@ -1,8 +1,6 @@
 package com.qiujie.filetask.spi;
-import com.qiujie.filetask.engine.FileTaskEngine;
 
 import com.qiujie.filetask.entity.FileTaskError;
-import com.qiujie.filetask.enums.TaskModuleEnum;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -28,11 +26,6 @@ public interface ImportProcessor<T> {
     default int headRowNumber() {
         return 2;
     }
-
-    /**
-     * 所属业务模块
-     */
-    TaskModuleEnum getModule();
 
     /**
      * 批量处理导入行：校验 + 转换 + 入库。

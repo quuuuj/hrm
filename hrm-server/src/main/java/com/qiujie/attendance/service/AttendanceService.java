@@ -360,11 +360,6 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         }
 
         @Override
-        public TaskModuleEnum getModule() {
-            return TaskModuleEnum.ATTENDANCE;
-        }
-
-        @Override
         public void processBatch(List<AttendanceImportRow> rows, Long taskId, Consumer<FileTaskError> errorCollector) {
             importBatchProcessor.process(rows, taskId, errorCollector);
         }
@@ -376,11 +371,6 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         @Override
         public Class<AttendanceMonthVO> getRowClass() {
             return AttendanceMonthVO.class;
-        }
-
-        @Override
-        public TaskModuleEnum getModule() {
-            return TaskModuleEnum.ATTENDANCE;
         }
 
         @Override

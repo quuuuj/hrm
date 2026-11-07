@@ -80,15 +80,4 @@ public final class ColumnMappingRegistry {
         }
         return mapping;
     }
-
-    /**
-     * 已知表头文字，查询对应的字段名。
-     *
-     * @return 字段名，未命中返回 null
-     */
-    public static String resolve(TaskModuleEnum module, String excelHeader) {
-        Map<String, String> mapping = REGISTRY.get(module);
-        if (mapping == null) return null;
-        return mapping.get(excelHeader.trim());
-    }
 }

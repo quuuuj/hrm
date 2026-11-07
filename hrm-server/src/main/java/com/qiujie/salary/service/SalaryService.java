@@ -1,5 +1,4 @@
 package com.qiujie.salary.service;
-import com.qiujie.filetask.service.FileTaskCoordinator;
 import com.qiujie.filetask.service.FileUploadService;
 import com.qiujie.filetask.spi.ExportProcessor;
 import com.qiujie.filetask.spi.ImportProcessor;
@@ -61,9 +60,6 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
     @Autowired
     private AttendanceMapper attendanceMapper;
 
-
-    @Autowired
-    private FileTaskCoordinator fileTaskCoordinator;
 
     @Autowired
     private AsyncFileTasks asyncFileTasks;
@@ -282,11 +278,6 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
         }
 
         @Override
-        public com.qiujie.filetask.enums.TaskModuleEnum getModule() {
-            return com.qiujie.filetask.enums.TaskModuleEnum.SALARY;
-        }
-
-        @Override
         public void processBatch(List<Salary> rows, Long taskId,
                                  java.util.function.Consumer<com.qiujie.filetask.entity.FileTaskError> errorCollector) {
             try {
@@ -320,11 +311,6 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
         @Override
         public Class<StaffSalaryVO> getRowClass() {
             return StaffSalaryVO.class;
-        }
-
-        @Override
-        public com.qiujie.filetask.enums.TaskModuleEnum getModule() {
-            return com.qiujie.filetask.enums.TaskModuleEnum.SALARY;
         }
 
         @Override

@@ -26,41 +26,8 @@ import java.util.*;
 public final class FlexibleExcelImporter {
 
     private static final Logger log = LoggerFactory.getLogger(FlexibleExcelImporter.class);
-    private static final int DEFAULT_HEAD_ROW = 1;
 
     private FlexibleExcelImporter() {}
-
-    /**
-     * 解析 Excel 为实体列表。
-     *
-     * @param inputStream  Excel 文件流
-     * @param module       导入模块（用于查映射表）
-     * @param entityClass  目标实体类
-     * @param <T>          实体类型
-     * @return 实体列表（解析失败的会包含在错误信息中）
-     */
-    public static <T> List<ImportResult<T>> parse(InputStream inputStream, TaskModuleEnum module,
-                                                    Class<T> entityClass) {
-        return parse(inputStream, DEFAULT_HEAD_ROW, module, entityClass, null);
-    }
-
-    /**
-     * 解析 Excel。
-     *
-     * @param inputStream  Excel 文件流
-     * @param headRow      表头行号（从 1 开始）
-     * @param module       导入模块
-     * @param entityClass  目标实体类
-     * @param fallback     AI 兜底匹配器，可为 null（跳过来知列）
-     * @param <T>          实体类型
-     */
-    public static <T> List<ImportResult<T>> parse(InputStream inputStream, int headRow,
-                                                    TaskModuleEnum module, Class<T> entityClass,
-                                                    AiHeaderMatcherImpl fallback) {
-        List<ImportResult<T>> results = new ArrayList<>();
-        read(inputStream, headRow, module, entityClass, fallback, results::add);
-        return results;
-    }
 
     /**
      * 流式解析 Excel，每解析一行立即回调，不保留完整结果列表。
@@ -176,10 +143,6 @@ public final class FlexibleExcelImporter {
         @Override
         public void doAfterAllAnalysed(AnalysisContext ctx) {
             log.info("导入完成: {} 行", rowCount);
-        }
-
-        public List<ImportResult<T>> getResults() {
-            throw new UnsupportedOperationException("Streaming listener does not retain results");
         }
     }
 

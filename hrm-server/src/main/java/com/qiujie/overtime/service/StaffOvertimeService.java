@@ -299,11 +299,6 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
         }
 
         @Override
-        public TaskModuleEnum getModule() {
-            return TaskModuleEnum.STAFF_OVERTIME;
-        }
-
-        @Override
         public void processBatch(List<OvertimeImportRow> rows, Long taskId,
                                   Consumer<FileTaskError> errorCollector) {
             // 预加载参照数据
@@ -368,11 +363,6 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
         @Override
         public Class<OvertimeMonthVO> getRowClass() {
             return OvertimeMonthVO.class;
-        }
-
-        @Override
-        public TaskModuleEnum getModule() {
-            return TaskModuleEnum.STAFF_OVERTIME;
         }
 
         @Override

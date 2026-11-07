@@ -76,14 +76,6 @@ public class MyBatisTaskRepository implements TaskRepository {
         return claimed;
     }
 
-    public void markRunning(Long id) {
-        fileTaskMapper.updateById(new FileTask()
-                .setId(id)
-                .setStatus(TaskStatusEnum.RUNNING)
-                .setStartTime(Timestamp.valueOf(LocalDateTime.now())));
-        pushTaskEvent(id);
-    }
-
     @Override
     public void setTotalCount(Long id, int total) {
         fileTaskMapper.updateById(new FileTask().setId(id).setTotalCount(total));

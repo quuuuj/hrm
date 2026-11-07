@@ -1,8 +1,6 @@
 package com.qiujie.filetask.spi;
-import com.qiujie.filetask.engine.FileTaskEngine;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.qiujie.filetask.enums.TaskModuleEnum;
 
 /**
  * 异步导出处理器接口。
@@ -18,11 +16,6 @@ public interface ExportProcessor<T> {
      * Excel 行映射的 DTO/VO 类型
      */
     Class<T> getRowClass();
-
-    /**
-     * 所属业务模块
-     */
-    TaskModuleEnum getModule();
 
     /**
      * 分页查询导出数据
