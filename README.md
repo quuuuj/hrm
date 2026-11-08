@@ -212,7 +212,7 @@ hrm/
 │   │   ├── hrm.sql                 # 业务主库表结构与系统种子数据
 │   │   └── hrm_flowable.sql        # Flowable 流程引擎专库表结构
 │   └── postgresql/
-│       └── knowledge_base.sql      # PostgreSQL + pgvector 知识库模式
+│       └── hrm_kb.sql              # PostgreSQL + pgvector 知识库模式
 ├── img/
 │   └── readme/                     # README 引用之核心页面截图
 ├── docker/                         # Docker 编排
@@ -284,7 +284,7 @@ docker compose -f docker/local/docker-compose.yml up -d
 容器就绪后，本地默认连接信息：
 - **MySQL**：`localhost:3306`，`root/123456`
 - **Redis**：`localhost:6379`（无密码）
-- **PostgreSQL (pgvector)**：`localhost:5432`，`hrm/123456`，数据库 `hrm_kb`
+- **PostgreSQL (pgvector)**：`localhost:5432`，`root/123456`，数据库 `hrm_kb`
 - **MinIO**：API `9000`，控制台 `9001`，`minioadmin/minioadmin`
 
 ---
@@ -298,7 +298,7 @@ mysql -h 127.0.0.1 -P 3306 -uroot -p123456 hrm < db/mysql/hrm.sql
 mysql -h 127.0.0.1 -P 3306 -uroot -p123456 hrm_flowable < db/mysql/hrm_flowable.sql
 
 # PostgreSQL：导入知识库模式
-psql -h 127.0.0.1 -p 5432 -U hrm -d hrm_kb -f db/postgresql/knowledge_base.sql
+psql -h 127.0.0.1 -p 5432 -U root -d hrm_kb -f db/postgresql/hrm_kb.sql
 
 # 初始化脚本已包含全部表的最终结构（智能问答与知识库合并后的状态），无需额外执行增量迁移
 ```

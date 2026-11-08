@@ -1177,6 +1177,7 @@ CREATE TABLE `sys_docs`  (
   `process_time` datetime NULL DEFAULT NULL COMMENT '处理完成时间',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_docs_file_hash` (`file_hash`),
+  KEY `idx_docs_staff_hash` (`staff_id`, `file_hash`),
   KEY `idx_docs_kb_status` (`kb_status`)
 ) ENGINE = InnoDB AUTO_INCREMENT = 93 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '文件中心' ROW_FORMAT = DYNAMIC;
 
@@ -1358,7 +1359,7 @@ CREATE TABLE IF NOT EXISTS `file_task_error` (
 -- ----------------------------
 DROP TABLE IF EXISTS `file_upload_session`;
 CREATE TABLE `file_upload_session` (
-  `upload_id` varchar(36) NOT NULL COMMENT 'UUID',
+  `id` varchar(36) NOT NULL COMMENT '主键UUID',
   `staff_id` int NOT NULL COMMENT '上传者',
   `file_name` varchar(500) NOT NULL COMMENT '原始文件名',
   `file_ext` varchar(10) NOT NULL COMMENT '文件扩展名',
@@ -1372,7 +1373,7 @@ CREATE TABLE `file_upload_session` (
   `expire_time` datetime NOT NULL COMMENT '会话过期时间',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`upload_id`),
+  PRIMARY KEY (`id`),
   KEY `idx_upload_expire_time` (`expire_time`),
   KEY `idx_upload_session_reusable` (`staff_id`, `file_hash`, `status`, `expire_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='分片上传会话';

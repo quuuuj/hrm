@@ -41,7 +41,7 @@ services:
     image: pgvector/pgvector:pg16
     container_name: hrm-postgres
     environment:
-      POSTGRES_USER: hrm
+      POSTGRES_USER: root
       POSTGRES_PASSWORD: 123456
       POSTGRES_DB: hrm_kb
     ports:
@@ -51,7 +51,7 @@ services:
     networks:
       - hrm-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hrm -d hrm_kb"]
+      test: ["CMD-SHELL", "pg_isready -U root -d hrm_kb"]
       interval: 10s
       timeout: 5s
       retries: 5

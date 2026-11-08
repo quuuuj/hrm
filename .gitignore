@@ -61,6 +61,8 @@ docs/note/CLAUDE.md
 # Uploaded/runtime files
 file/
 *.xlsx
+# 导入样例模板随代码入库，覆盖上面的 *.xlsx 忽略规则
+!docs/import/*.xlsx
 
 # IDE and agent files
 .idea/
