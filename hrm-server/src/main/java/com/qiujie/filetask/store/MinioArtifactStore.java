@@ -7,14 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * 任务文件介质：MinIO + 本地临时目录。
+ * 任务文件介质：MinIO 对象存储 + 本地临时目录。
  * <p>
- * 兼容旧数据：历史任务记录使用本地绝对路径，新任务统一使用对象存储 key。
- * 路径格式判定规则：包含路径分隔符或以 / 开头 → 本地路径；否则 → MinIO key。
+ * 任务记录中的文件路径一律是对象存储 key；本地目录只存放流式处理期间的临时文件。
  * </p>
  */
 @Component
@@ -25,20 +23,13 @@ public class MinioArtifactStore {
     @Autowired
     private MinioStorageService storageService;
 
-    public boolean isRemote(String path) {
-        return path != null && !path.contains(File.separator) && !path.startsWith("/");
-    }
-
-    public File resolveSource(String source) {
-        if (source == null || !isRemote(source)) {
-            return new File(source);
-        }
-        File tempFile = new File(TEMP_DIR, source);
+    public File resolveSource(String key) {
+        File tempFile = new File(TEMP_DIR, key);
         tempFile.getParentFile().mkdirs();
-        try (InputStream in = storageService.get(source)) {
+        try (InputStream in = storageService.get(key)) {
             FileUtil.writeFromStream(in, tempFile);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to download source file from MinIO: " + source, e);
+            throw new RuntimeException("Failed to download source file from MinIO: " + key, e);
         }
         return tempFile;
     }
@@ -63,37 +54,20 @@ public class MinioArtifactStore {
         return key;
     }
 
-    public void delete(String path) {
-        if (path == null || "".equals(path)) {
+    public void delete(String key) {
+        if (key == null || "".equals(key)) {
             return;
         }
-        if (!isRemote(path)) {
-            File file = new File(path);
-            if (file.exists() && file.isFile()) {
-                file.delete();
-            }
-            return;
-        }
-        if (storageService.exists(path)) {
-            storageService.delete(path);
+        if (storageService.exists(key)) {
+            storageService.delete(key);
         }
     }
 
-    public boolean exists(String path) {
-        if (path == null || "".equals(path)) {
-            return false;
-        }
-        if (!isRemote(path)) {
-            File file = new File(path);
-            return file.exists() && file.isFile();
-        }
-        return storageService.exists(path);
+    public boolean exists(String key) {
+        return key != null && !"".equals(key) && storageService.exists(key);
     }
 
-    public InputStream open(String path) throws IOException {
-        if (!isRemote(path)) {
-            return java.nio.file.Files.newInputStream(new File(path).toPath());
-        }
-        return storageService.get(path);
+    public InputStream open(String key) {
+        return storageService.get(key);
     }
 }

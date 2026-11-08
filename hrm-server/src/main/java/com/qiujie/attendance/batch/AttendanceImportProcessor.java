@@ -4,6 +4,7 @@ import com.qiujie.attendance.dto.AttendanceImportRow;
 import com.qiujie.attendance.entity.Attendance;
 import com.qiujie.dept.entity.Dept;
 import com.qiujie.filetask.entity.FileTaskError;
+import com.qiujie.filetask.spi.ImportProcessor;
 import com.qiujie.staff.entity.Staff;
 import com.qiujie.attendance.enums.AttendanceStatusEnum;
 import com.qiujie.attendance.mapper.AttendanceMapper;
@@ -29,16 +30,21 @@ import java.util.stream.Collectors;
 import cn.hutool.core.date.DateUtil;
 
 /**
- * 考勤导入批处理领域服务。
+ * 考勤导入处理器（ImportProcessor 实现）。
  * <p>
- * 负责导入行的预加载、校验、状态判定与批量写入。
+ * 负责导入行的预加载、校验、状态判定与幂等批量写入。
  * 不负责文件读取、任务状态或错误记录持久化。
  * </p>
  */
 @Component
-public class AttendanceImportBatchProcessor {
+public class AttendanceImportProcessor implements ImportProcessor<AttendanceImportRow> {
 
-    private static final int DB_BATCH_SIZE = 200;
+    /**
+     * 单条批量 upsert SQL 的最大行数。
+     * 与引擎的读取/事务批次（FileTaskEngine.IMPORT_BATCH_SIZE = 500）是两回事：
+     * processBatch 是 SPI，不能假设调用方永远传 500 行。
+     */
+    private static final int UPSERT_BATCH_SIZE = 500;
 
     @Autowired
     private AttendanceMapper attendanceMapper;
@@ -49,8 +55,14 @@ public class AttendanceImportBatchProcessor {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
-    public void process(List<AttendanceImportRow> rows, Long taskId,
-                        Consumer<FileTaskError> errorCollector) {
+    @Override
+    public Class<AttendanceImportRow> getRowClass() {
+        return AttendanceImportRow.class;
+    }
+
+    @Override
+    public void processBatch(List<AttendanceImportRow> rows, Long taskId,
+                             Consumer<FileTaskError> errorCollector) {
         if (rows == null || rows.isEmpty()) {
             return;
         }
@@ -114,9 +126,6 @@ public class AttendanceImportBatchProcessor {
                     || existing.getStatus() == AttendanceStatusEnum.TIME_OFF)) {
                 continue;
             }
-            if (existing != null) {
-                attendance.setId(existing.getId());
-            }
             if (isAbsenteeism(attendance, dept)) {
                 attendance.setStatus(AttendanceStatusEnum.ABSENTEEISM);
             } else if (isLate(attendance, dept)) {
@@ -134,17 +143,13 @@ public class AttendanceImportBatchProcessor {
         }
     }
 
+    /**
+     * 依赖 uk_attendance_staff_date 幂等写入：同键行后写覆盖先写，逻辑删除的行恢复为未删除。
+     */
     private void saveOrUpdate(List<Attendance> attendances) {
-        for (int from = 0; from < attendances.size(); from += DB_BATCH_SIZE) {
-            int to = Math.min(from + DB_BATCH_SIZE, attendances.size());
-            // 使用实体 id 区分更新和新增，避免重复导入产生重复记录。
-            for (Attendance attendance : attendances.subList(from, to)) {
-                if (attendance.getId() == null) {
-                    attendanceMapper.insert(attendance);
-                } else {
-                    attendanceMapper.updateById(attendance);
-                }
-            }
+        for (int from = 0; from < attendances.size(); from += UPSERT_BATCH_SIZE) {
+            int to = Math.min(from + UPSERT_BATCH_SIZE, attendances.size());
+            attendanceMapper.upsertBatch(attendances.subList(from, to));
         }
     }
 

@@ -1,7 +1,6 @@
 package com.qiujie.attendance.service;
 import com.qiujie.filetask.service.FileUploadService;
 import com.qiujie.filetask.spi.ExportProcessor;
-import com.qiujie.filetask.spi.ImportProcessor;
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.excel.EasyExcel;
@@ -13,14 +12,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qiujie.filetask.enums.TaskModuleEnum;
-import com.qiujie.attendance.batch.AttendanceImportBatchProcessor;
+import com.qiujie.attendance.batch.AttendanceImportProcessor;
 import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.service.FileTaskService;
-import com.qiujie.attendance.dto.AttendanceImportRow;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
 import com.qiujie.attendance.entity.Attendance;
-import com.qiujie.filetask.entity.FileTaskError;
 import com.qiujie.attendance.enums.AttendanceStatusEnum;
 import com.qiujie.attendance.mapper.AttendanceMapper;
 import com.qiujie.util.DatetimeUtil;
@@ -41,7 +38,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.date.DateTime;
@@ -66,7 +62,7 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
     private SecurityUtil securityUtil;
 
     @Autowired
-    private AttendanceImportBatchProcessor importBatchProcessor;
+    private AttendanceImportProcessor importProcessor;
 
     public ResponseDTO add(Attendance attendance) {
         if (save(attendance)) {
@@ -218,7 +214,7 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
     public ResponseDTO createImportTask(String uploadId) {
         String mergedKey = fileUploadService.completeUpload(uploadId, getCurrentOperatorId());
         FileTask task = fileTaskService.submitImport(TaskModuleEnum.ATTENDANCE, "attendance_import.xlsx",
-                mergedKey, null, getCurrentOperatorId(), new AttendanceImportHandler());
+                mergedKey, null, getCurrentOperatorId(), importProcessor);
         return Response.success("导入任务已创建", task);
     }
 
@@ -234,7 +230,7 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         Map<String, Object> queryParams = new HashMap<>();
         queryParams.put("month", month);
         FileTask task = fileTaskService.submitExport(TaskModuleEnum.ATTENDANCE, exportName,
-                JSON.toJSONString(queryParams), getCurrentOperatorId(), new AttendanceExportHandler());
+                JSON.toJSONString(queryParams), getCurrentOperatorId(), new AttendanceExportProcessor());
         return Response.success("导出任务已创建", task);
     }
 
@@ -276,22 +272,8 @@ public class AttendanceService extends ServiceImpl<AttendanceMapper, Attendance>
         return securityUtil.getCurrentOperatorId();
     }
 
-    // ==================== 异步导入处理器（供 FileTaskEngine 回调） ====================
-    private class AttendanceImportHandler implements ImportProcessor<AttendanceImportRow> {
-
-        @Override
-        public Class<AttendanceImportRow> getRowClass() {
-            return AttendanceImportRow.class;
-        }
-
-        @Override
-        public void processBatch(List<AttendanceImportRow> rows, Long taskId, Consumer<FileTaskError> errorCollector) {
-            importBatchProcessor.process(rows, taskId, errorCollector);
-        }
-    }
-
     // ==================== 异步导出处理器（供 FileTaskEngine 回调） ====================
-    private class AttendanceExportHandler implements ExportProcessor<AttendanceMonthVO> {
+    private class AttendanceExportProcessor implements ExportProcessor<AttendanceMonthVO> {
 
         @Override
         public Class<AttendanceMonthVO> getRowClass() {

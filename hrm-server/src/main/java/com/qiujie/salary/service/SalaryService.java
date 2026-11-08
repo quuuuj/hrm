@@ -240,7 +240,7 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
     public ResponseDTO createImportTask(String uploadId) {
         String mergedKey = fileUploadService.completeUpload(uploadId, getCurrentOperatorId());
         FileTask task = fileTaskService.submitImport(TaskModuleEnum.SALARY, "salary_import.xlsx",
-                mergedKey, null, getCurrentOperatorId(), new SalaryImportHandler(this));
+                mergedKey, null, getCurrentOperatorId(), new SalaryImportProcessor(this));
         Map<String, Object> result = new HashMap<>();
         result.put("taskId", task.getId());
         return Response.success(result);
@@ -251,17 +251,17 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
      */
     public ResponseDTO createExportTask(String month, String filename) {
         FileTask task = fileTaskService.submitExport(TaskModuleEnum.SALARY, filename, month,
-                getCurrentOperatorId(), new SalaryExportHandler(this));
+                getCurrentOperatorId(), new SalaryExportProcessor(this));
         Map<String, Object> result = new HashMap<>();
         result.put("taskId", task.getId());
         return Response.success(result);
     }
 
-    private static final class SalaryImportHandler implements ImportProcessor<SalaryImportRow> {
+    private static final class SalaryImportProcessor implements ImportProcessor<SalaryImportRow> {
 
         private final SalaryService service;
 
-        private SalaryImportHandler(SalaryService service) {
+        private SalaryImportProcessor(SalaryService service) {
             this.service = service;
         }
 
@@ -318,11 +318,11 @@ public class SalaryService extends ServiceImpl<SalaryMapper, Salary> {
         }
     }
 
-    private static final class SalaryExportHandler implements ExportProcessor<StaffSalaryVO> {
+    private static final class SalaryExportProcessor implements ExportProcessor<StaffSalaryVO> {
 
         private final SalaryService service;
 
-        private SalaryExportHandler(SalaryService service) {
+        private SalaryExportProcessor(SalaryService service) {
             this.service = service;
         }
 

@@ -75,10 +75,8 @@ public class FileTaskEngine {
             return;
         }
         File sourceFile = null;
-        boolean temporarySource = false;
         try {
             sourceFile = artifactStore.resolveSource(task.getSourceFilePath());
-            temporarySource = artifactStore.isRemote(task.getSourceFilePath());
             List<T> rows = new ArrayList<>(IMPORT_BATCH_SIZE);
             EasyExcel.read(sourceFile, processor.getRowClass(), new AnalysisEventListener<T>() {
                 @Override
@@ -117,7 +115,7 @@ public class FileTaskEngine {
         } catch (Exception e) {
             taskStore.fail(taskId, e);
         } finally {
-            deleteTemporaryFile(sourceFile, temporarySource);
+            deleteTemporaryFile(sourceFile);
             // 所有终态都清理源文件，避免敏感数据长期驻留
             try {
                 taskStore.deleteSourceFile(taskId);
@@ -186,14 +184,14 @@ public class FileTaskEngine {
                     excelWriter.finish();
                 }
             } finally {
-                deleteTemporaryFile(resultFile, true);
+                deleteTemporaryFile(resultFile);
                 fileTaskNotifier.onTaskTerminal(taskId);
             }
         }
     }
 
-    private void deleteTemporaryFile(File file, boolean temporary) {
-        if (temporary && file != null && file.isFile() && !file.delete()) {
+    private void deleteTemporaryFile(File file) {
+        if (file != null && file.isFile() && !file.delete()) {
             file.deleteOnExit();
         }
     }

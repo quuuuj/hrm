@@ -6,6 +6,7 @@ import com.qiujie.attendance.entity.Attendance;
 import com.qiujie.attendance.vo.AttendanceMonthSummaryVO;
 import com.qiujie.attendance.vo.AttendanceMonthVO;
 import com.qiujie.attendance.vo.StaffAttendanceVO;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -53,6 +54,27 @@ public interface AttendanceMapper extends BaseMapper<Attendance> {
     })
     List<Attendance> queryByStaffIdsAndDates(@Param("staffIds") Collection<Integer> staffIds,
                                              @Param("dates") Collection<Date> dates);
+
+    /**
+     * 按 (staff_id, attendance_date) 唯一键幂等批量写入。
+     * 冲突时覆盖打卡时间与状态，并把逻辑删除的行恢复为未删除。
+     */
+    @Insert("<script>" +
+            "INSERT INTO att_attendance " +
+            "(staff_id, mor_start_time, mor_end_time, aft_start_time, aft_end_time, attendance_date, status, is_deleted) VALUES " +
+            "<foreach collection='list' item='item' separator=','>" +
+            "(#{item.staffId}, #{item.morStartTime}, #{item.morEndTime}, #{item.aftStartTime}, " +
+            "#{item.aftEndTime}, #{item.attendanceDate}, #{item.status.code}, 0)" +
+            "</foreach> " +
+            "ON DUPLICATE KEY UPDATE " +
+            "mor_start_time = VALUES(mor_start_time), " +
+            "mor_end_time = VALUES(mor_end_time), " +
+            "aft_start_time = VALUES(aft_start_time), " +
+            "aft_end_time = VALUES(aft_end_time), " +
+            "status = VALUES(status), " +
+            "is_deleted = 0" +
+            "</script>")
+    int upsertBatch(@Param("list") List<Attendance> list);
 
     @Select("<script><![CDATA[select staff_id as staffId, " +
             "sum(case when status = 1 then 1 else 0 end) as lateTimes, " +

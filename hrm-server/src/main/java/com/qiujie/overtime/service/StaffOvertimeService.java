@@ -267,7 +267,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
     public ResponseDTO createImportTask(String uploadId) {
         String mergedKey = fileUploadService.completeUpload(uploadId, securityUtil.getCurrentOperatorId());
         FileTask task = fileTaskService.submitImport(TaskModuleEnum.STAFF_OVERTIME, "overtime_import.xlsx",
-                mergedKey, null, securityUtil.getCurrentOperatorId(), new OvertimeImportHandler());
+                mergedKey, null, securityUtil.getCurrentOperatorId(), new OvertimeImportProcessor());
         Map<String, Object> data = new HashMap<>();
         data.put("taskId", task.getId());
         return Response.success("已提交", data);
@@ -277,13 +277,13 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
         Map<String, String> params = new HashMap<>();
         params.put("month", month);
         FileTask task = fileTaskService.submitExport(TaskModuleEnum.STAFF_OVERTIME, filename,
-                JSON.toJSONString(params), securityUtil.getCurrentOperatorId(), new OvertimeExportHandler());
+                JSON.toJSONString(params), securityUtil.getCurrentOperatorId(), new OvertimeExportProcessor());
         Map<String, Object> data = new HashMap<>();
         data.put("taskId", task.getId());
         return Response.success("已提交", data);
     }
 
-    class OvertimeImportHandler implements ImportProcessor<OvertimeImportRow> {
+    class OvertimeImportProcessor implements ImportProcessor<OvertimeImportRow> {
 
         @Override
         public Class<OvertimeImportRow> getRowClass() {
@@ -375,7 +375,7 @@ public class StaffOvertimeService extends ServiceImpl<StaffOvertimeMapper, Staff
         }
     }
 
-    class OvertimeExportHandler implements ExportProcessor<OvertimeMonthVO> {
+    class OvertimeExportProcessor implements ExportProcessor<OvertimeMonthVO> {
 
         @Override
         public Class<OvertimeMonthVO> getRowClass() {
