@@ -2,6 +2,20 @@
 
 > 基于 Spring Boot 3.4 与 Vue 2.6 构建的现代化全栈人力资源管理系统，深度集成 Flowable 工作流引擎、企业知识库（RAG）与智能问答。
 
+## 🌐 在线体验
+
+| 项目 | 地址 |
+| :--- | :--- |
+| 系统入口 | <https://hrm.qiujie.net.cn> |
+| 接口文档（Swagger UI） | <https://hrm.qiujie.net.cn/api/swagger-ui.html> |
+| 健康检查 | <https://hrm.qiujie.net.cn/api/actuator/health> |
+
+**演示账号**：`admin` / `123456`
+
+> 线上环境用于功能演示与验收，请勿录入真实员工信息与薪酬数据。
+
+---
+
 ## 📖 项目介绍
 
 **数智人事** 是一套面向现代企业的高效人力资源全流程管理系统，旨在提升组织人效与员工自主服务体验。系统采用前后端分离架构，融合企业业务管理规范与先进的生成式 AI 技术：
@@ -419,20 +433,6 @@ npm run serve
 | `flowable.table-prefix` | 固定为 `hrm_flowable.`，复用主数据源且关闭引擎建表 |
 
 > 检索重排（`chat.retrieval.rerank.enabled`）关闭或重排接口异常时，检索结果会静默回退到 RRF 顺序，问答链路不中断。
-
----
-
-## 🌐 在线体验
-
-| 项目 | 地址 |
-| :--- | :--- |
-| 系统入口 | <https://hrm.qiujie.net.cn> |
-| 接口文档（Swagger UI） | <https://hrm.qiujie.net.cn/api/swagger-ui.html> |
-| 健康检查 | <https://hrm.qiujie.net.cn/api/actuator/health> |
-
-**演示账号**：`admin` / `123456`
-
-> 线上环境用于功能演示与验收，请勿录入真实员工信息与薪酬数据。
 
 ---
 
