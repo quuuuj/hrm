@@ -110,6 +110,7 @@ public class ChatQaService {
      * 问答管线主体（包内可见以便单测直接驱动，不经线程池与 SSE 生命周期）。
      */
     void answer(Long sessionId, String userQuestion, Integer staffId, SseEmitter emitter) throws Exception {
+        long startedAt = System.currentTimeMillis();
         // 1. 员工档案（用于注入系统提示词）
         StaffDeptVO staffInfo = currentStaff(userQuestion, staffId);
 
@@ -121,7 +122,8 @@ public class ChatQaService {
 
         // 分支 A: 无关/恶意输入，固定文案，零大模型调用
         if (gateResult.intent() == IntentGate.Intent.IRRELEVANT) {
-            finish(emitter, sessionId, userQuestion, IRRELEVANT_REPLY, staffId, null, List.of(), false);
+            finish(emitter, sessionId, userQuestion, IRRELEVANT_REPLY, staffId, null, List.of(), false,
+                    System.currentTimeMillis() - startedAt);
             return;
         }
 
@@ -137,7 +139,8 @@ public class ChatQaService {
                 answer = CHATTING_FALLBACK;
                 push(emitter, answer);
             }
-            finish(emitter, sessionId, userQuestion, answer, staffId, null, List.of(), llmAnswered);
+            finish(emitter, sessionId, userQuestion, answer, staffId, null, List.of(), llmAnswered,
+                    System.currentTimeMillis() - startedAt);
             return;
         }
 
@@ -158,7 +161,7 @@ public class ChatQaService {
             push(emitter, answer);
         }
         finish(emitter, sessionId, userQuestion, answer, staffId, assessment,
-                context.usedResults(), llmAnswered);
+                context.usedResults(), llmAnswered, System.currentTimeMillis() - startedAt);
     }
 
     /** 拉取当前员工档案；取不到时返回 null，系统提示词跳过档案段落。 */
@@ -231,16 +234,17 @@ public class ChatQaService {
      *
      * @param llmAnswered 模型是否真的产出了回答（兜底文案为 false）
      * @param usedResults 实际进入提示词的检索结果
+     * @param latencyMs   本次问答耗时（毫秒），写入审计行
      */
     private void finish(SseEmitter emitter, Long sessionId, String userQuestion, String answer,
                         Integer staffId, EvidenceAssessmentService.Assessment assessment,
-                        List<SearchResult> usedResults, boolean llmAnswered) throws Exception {
+                        List<SearchResult> usedResults, boolean llmAnswered, long latencyMs) throws Exception {
         saveAssistantMessage(sessionId, answer);
         String evidenceLevel = assessment == null ? null : assessment.level().name();
         // 「作答」= 模型确实产出了回答且证据不是 NONE；兜底文案与无证据都不算
         boolean answered = llmAnswered && assessment != null
                 && assessment.level() != EvidenceLevel.NONE;
-        qaRecordWriter.save(userQuestion, answer, staffId, evidenceLevel, answered, usedResults);
+        qaRecordWriter.save(userQuestion, answer, staffId, evidenceLevel, answered, usedResults, latencyMs);
         emitter.send(SseEmitter.event().name("meta")
                 .data(MAPPER.writeValueAsString(Map.of("conversationId", sessionId))));
         emitter.complete();

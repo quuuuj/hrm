@@ -44,8 +44,7 @@ public class KnowledgeReindexRunner implements CommandLineRunner {
         log.info("KnowledgeReindexRunner: starting knowledge base reindexing...");
         List<Docs> docsList = docsMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Docs>()
-                        .isNotNull("kb_status")
-                        .eq("is_deleted", 0));
+                        .isNotNull("kb_status"));
         int triggered = 0;
         for (Docs doc : docsList) {
             // 重置为 UPLOADED 允许重试

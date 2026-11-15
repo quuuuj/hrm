@@ -1168,7 +1168,6 @@ CREATE TABLE `sys_docs`  (
   `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件备注',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
-  `is_deleted` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '0未删除，1已删除，默认为0',
   `kb_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库状态：UPLOADED/PROCESSING/READY/FAILED',
   `failure_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '处理失败原因',
   `preview_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文档预览文本',
@@ -1176,6 +1175,7 @@ CREATE TABLE `sys_docs`  (
   `upload_time` datetime NULL DEFAULT NULL COMMENT '上传完成时间',
   `process_time` datetime NULL DEFAULT NULL COMMENT '处理完成时间',
   PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_docs_name` (`name`),
   KEY `idx_docs_file_hash` (`file_hash`),
   KEY `idx_docs_staff_hash` (`staff_id`, `file_hash`),
   KEY `idx_docs_kb_status` (`kb_status`)
@@ -1184,8 +1184,8 @@ CREATE TABLE `sys_docs`  (
 -- ----------------------------
 -- Records of sys_docs
 -- ----------------------------
-INSERT INTO `sys_docs` VALUES (95, '2a6c9844eb4d109ee3f3.jpg', 'jpg', '桥.jpg', 'e88d330cf616e869867d4764eb7f3717', 800, NULL, 0, 1, NULL, '2026-04-25 20:09:25', '2026-04-25 20:09:25', 0, NULL, NULL, NULL, 0, NULL, NULL);
-INSERT INTO `sys_docs` VALUES (96, '1e5d5a99c64ebb883dc8.jpg', 'jpg', '5c23d52f880511ebb6edd017c2d2eca2.jpg', 'd2d652f55cd647c3993cbf19ab45f831', 269, NULL, 0, 1, NULL, '2026-04-25 20:09:56', '2026-04-25 20:09:56', 0, NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `sys_docs` VALUES (95, '2a6c9844eb4d109ee3f3.jpg', 'jpg', '桥.jpg', 'e88d330cf616e869867d4764eb7f3717', 800, NULL, 0, 1, NULL, '2026-04-25 20:09:25', '2026-04-25 20:09:25', NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `sys_docs` VALUES (96, '1e5d5a99c64ebb883dc8.jpg', 'jpg', '5c23d52f880511ebb6edd017c2d2eca2.jpg', 'd2d652f55cd647c3993cbf19ab45f831', 269, NULL, 0, 1, NULL, '2026-04-25 20:09:56', '2026-04-25 20:09:56', NULL, NULL, NULL, 0, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_staff
@@ -1437,7 +1437,6 @@ CREATE TABLE `chat_qa_citation` (
   `vector_score`     double          DEFAULT NULL COMMENT '向量检索得分',
   `keyword_score`    double          DEFAULT NULL COMMENT '关键词检索得分',
   `hybrid_score`     double          DEFAULT NULL COMMENT '混合检索融合得分',
-  `snippet`          text            DEFAULT NULL COMMENT '证据文本快照',
   PRIMARY KEY (`id`),
   KEY `idx_citation_qa` (`qa_record_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='问答引用明细';

@@ -53,14 +53,14 @@ public class DocsController {
         return this.docsService.add(docs);
     }
 
-    @Operation(summary = "逻辑删除")
+    @Operation(summary = "删除")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('system:docs:delete','kb:knowledge:delete')")
     public ResponseDTO delete(@PathVariable Integer id) {
         return this.docsService.delete(id);
     }
 
-    @Operation(summary = "批量逻辑删除")
+    @Operation(summary = "批量删除")
     @DeleteMapping("/batch/{ids}")
     @PreAuthorize("hasAnyAuthority('system:docs:delete','kb:knowledge:delete')")
     public ResponseDTO deleteBatch(@PathVariable List<Integer> ids) {

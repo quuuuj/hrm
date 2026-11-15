@@ -24,6 +24,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -144,23 +146,56 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
     private com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService lifecycle;
 
     /**
-     * 逻辑删除：若文档有关联的知识库状态（kb_status is not null），
-     * 委托 KnowledgeLifecycleService 执行 CAS 逻辑删 + 作废在途任务 + 事务提交后异步清理 PG 切片/向量/镜像与物理文件；
-     * 否则执行普通通用文件的逻辑删除。
+     * 物理删除：行与物理文件一起消失。
+     * <p>
+     * 携带知识库状态的文档委托 {@link KnowledgeLifecycleService} 执行物理删行 + 作废在途任务 +
+     * 事务提交后异步清理 PG 切片/向量与物理文件；通用文件直接删行，物理文件在事务提交后删除
+     * （{@code name} 有唯一约束，不存在被其他行共享的可能）。
+     * </p>
+     * <p>
+     * 删除幂等：行已不存在（重复删除、并发删除）一律返回成功；不存在的 id 与已删 id
+     * 在物理删除后无法区分，按调用方参数错误处理没有价值。
+     * </p>
      */
     public ResponseDTO delete(Integer id) {
         Docs doc = docsMapper.selectById(id);
         if (doc == null) {
-            return Response.error();
+            return Response.success();
         }
         if (doc.getKbStatus() != null && lifecycle != null) {
             lifecycle.delete(new com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService.DeleteCommand(id.longValue()));
             return Response.success();
         }
-        if (removeById(id)) {
-            return Response.success();
+        // 并发删除：行已被别的请求删掉，removeById 影响行数为 0，此时对对象再删一次是幂等的
+        removeById(id);
+        deleteObjectAfterCommit(doc.getName());
+        return Response.success();
+    }
+
+    /**
+     * 物理文件删除保持在事务提交后执行：提交前删对象，一旦回滚就留下「行在、文件没了」的坏行。
+     */
+    private void deleteObjectAfterCommit(String storageKey) {
+        if (storageKey == null) {
+            return;
         }
-        return Response.error();
+        Runnable task = () -> {
+            try {
+                storageService.delete(storageKey);
+            } catch (Exception e) {
+                log.warn("删除物理文件失败（对象将由孤儿清理兜底）: {}", storageKey, e);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)

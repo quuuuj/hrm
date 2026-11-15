@@ -75,11 +75,6 @@ public class Docs implements Serializable {
     @TableField("update_time")
     private Timestamp updateTime;
 
-    @Schema(description = "0未删除，1已删除，默认为0")
-    @TableField("is_deleted")
-    @TableLogic
-    private Integer deleteFlag;
-
     // ===== 知识库字段（sys_docs 吸收 kb_document）=====
 
     /** 知识库状态：UPLOADED/PROCESSING/READY/FAILED；NULL=未入库（通用文件）。 */

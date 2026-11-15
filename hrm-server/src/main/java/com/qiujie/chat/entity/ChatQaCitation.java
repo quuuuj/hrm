@@ -52,8 +52,4 @@ public class ChatQaCitation implements Serializable {
 
     @TableField("hybrid_score")
     private Double hybridScore;
-
-    /** 证据文本快照；与 chunk_text 语义重叠，暂不使用 */
-    @TableField("snippet")
-    private String snippet;
 }

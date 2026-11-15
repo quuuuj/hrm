@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -54,9 +53,9 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
     @Override
     public Map<String, Object> checkDedup(String fileHash, Integer staffId) {
         // 去重只查本人名下文档：秒传不新建 sys_docs 行、不新建对象，跨员工命中会让
-        // 秒传方拿到他人文档的 id 与对象键，对方一旦删除，对象即被引用计数判空删除
+        // 秒传方拿到他人文档的 id 与对象键，对方一旦删除，对象随之被物理清理
         if (staffId == null) return null;
-        // @TableLogic 自动过滤 is_deleted=1：秒传只命中存活文档（软删除文件不秒传）
+        // 行物理删除，库里只剩存活文档：命中即代表该对象仍被本人引用
         List<Docs> existing = docsMapper.selectList(
                 new QueryWrapper<Docs>()
                         .eq("file_hash", fileHash)
@@ -75,7 +74,6 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
     }
 
     @Override
-    @Transactional
     public Map<String, Object> onComplete(String mergedKey, UploadSessionInfo session) {
         // 读取合并后的文件内容用于压缩
         byte[] rawBytes;

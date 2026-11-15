@@ -7,8 +7,7 @@
 | 项目 | 地址 |
 | :--- | :--- |
 | 系统入口 | <https://hrm.qiujie.net.cn> |
-| 接口文档（Swagger UI） | <https://hrm.qiujie.net.cn/api/swagger-ui.html> |
-| 健康检查 | <https://hrm.qiujie.net.cn/api/actuator/health> |
+
 
 **演示账号**：`admin` / `123456`
 

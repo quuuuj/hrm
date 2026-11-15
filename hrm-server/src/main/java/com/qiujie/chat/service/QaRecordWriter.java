@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -44,6 +45,10 @@ public class QaRecordWriter {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    /** 回答所用模型名：与问答主链路共用 llm.chat-model，写进审计行便于按版本回溯 */
+    @Value("${llm.chat-model}")
+    private String chatModel;
+
     private TransactionTemplate transactionTemplate;
 
     @PostConstruct
@@ -60,9 +65,10 @@ public class QaRecordWriter {
      * @param evidenceLevel 证据等级；非知识分支传 null
      * @param answered    是否真正作答（知识分支且证据非 NONE）
      * @param usedResults 实际进入提示词的检索结果；非知识分支传空列表
+     * @param latencyMs   本次问答耗时（毫秒，从收到问题到回答收尾）
      */
     public void save(String question, String answer, Integer staffId, String evidenceLevel,
-                     boolean answered, List<SearchResult> usedResults) {
+                     boolean answered, List<SearchResult> usedResults, long latencyMs) {
         if (staffId == null) {
             log.debug("Skip QA record: unknown operator");
             return;
@@ -79,6 +85,8 @@ public class QaRecordWriter {
                         .setCitationCount(cited.size())
                         .setEndpoint("chat")
                         .setSuccess(true)
+                        .setLatencyMs(latencyMs)
+                        .setModelName(chatModel)
                         .setCreateTime(LocalDateTime.now());
                 recordMapper.insert(record);
 

@@ -15,16 +15,15 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 
 /**
- * 启动恢复（模块内部组件）：覆盖四个崩溃窗口。
+ * 启动恢复（模块内部组件）：覆盖三个崩溃窗口。
  * <ol>
  *   <li>遗留 RUNNING 任务 → FAILED（收尾）</li>
  *   <li>执行中崩溃：PROCESSING → FAILED + 原因</li>
  *   <li>未启动崩溃：UPLOADED 续跑（CAS 认领兜底并发，语义优于置失败）</li>
- *   <li>已删孤儿重 purge（覆盖"逻辑删提交后、清理执行前"崩溃窗口，幂等）</li>
  * </ol>
  * 另有一步索引一致性核对（{@link #purgeOrphanIndexes}）：PG 里有切片/向量、但
- * {@code sys_docs} 已无对应行的文档，其索引永远不会被检索命中，也永远不会被
- * delete 流程清理——不做这一步，孤儿数据会一直堆积并挤占检索候选。
+ * {@code sys_docs} 已无对应行的文档，其索引永远不会被检索命中——不做这一步，孤儿数据
+ * 会一直堆积并挤占检索候选。删除流程崩溃留下的残留也由这一步统一收口。
  */
 final class StartupRecovery implements ApplicationRunner {
 
@@ -35,20 +34,17 @@ final class StartupRecovery implements ApplicationRunner {
     private final DocsMapper docsMapper;
     private final KnowledgeIngestionTaskMapper taskMapper;
     private final IngestionPipeline pipeline;
-    private final KnowledgePurgeHandler purgeHandler;
     private final ChunkVectorStore chunkVectorStore;
     private final Executor executor;
 
     StartupRecovery(DocsMapper docsMapper,
                     KnowledgeIngestionTaskMapper taskMapper,
                     IngestionPipeline pipeline,
-                    KnowledgePurgeHandler purgeHandler,
                     ChunkVectorStore chunkVectorStore,
                     Executor executor) {
         this.docsMapper = docsMapper;
         this.taskMapper = taskMapper;
         this.pipeline = pipeline;
-        this.purgeHandler = purgeHandler;
         this.chunkVectorStore = chunkVectorStore;
         this.executor = executor;
     }
@@ -59,7 +55,7 @@ final class StartupRecovery implements ApplicationRunner {
         taskMapper.markStaleRunningAsFailed(INTERRUPT_REASON);
         int markedFailed = docsMapper.markStaleProcessingAsFailed(INTERRUPT_REASON);
 
-        // 步骤 3-5：涉及远程调用（MinIO/PG/HTTP），异步执行，不阻塞启动
+        // 步骤 3-4：涉及远程调用（MinIO/PG/HTTP），异步执行，不阻塞启动
         executor.execute(() -> {
             int recovered = 0;
             List<Docs> uploaded = docsMapper.selectLiveUploaded();
@@ -67,14 +63,9 @@ final class StartupRecovery implements ApplicationRunner {
                 pipeline.run(doc.getId().longValue());
                 recovered++;
             }
-            List<Docs> deleted = docsMapper.selectDeleted();
-            for (Docs doc : deleted) {
-                purgeHandler.purge(doc.getId().longValue(), doc.getName());
-                recovered++;
-            }
             int orphaned = purgeOrphanIndexes();
             if (markedFailed + recovered + orphaned > 0) {
-                log.info("Recovered {} documents on startup (failed={}, rerun/purged={}, orphan-indexes={})",
+                log.info("Recovered {} documents on startup (failed={}, rerun={}, orphan-indexes={})",
                         markedFailed + recovered + orphaned, markedFailed, recovered, orphaned);
             }
         });
@@ -83,8 +74,8 @@ final class StartupRecovery implements ApplicationRunner {
     /**
      * 清理失去主表引用的 PG 索引（切片 + 向量同表）。
      * <p>
-     * 只删「MySQL 里完全没有该 id 行」的文档：逻辑删除的行仍在表里，由上面的
-     * purge 步骤负责，不能在这里重复处理，更不能据此判断为孤儿。
+     * 文档行已物理删除，{@code sys_docs} 里查不到的 docsId 即孤儿：既不会被检索命中，
+     * 也没有 delete 流程会再清理它。删除流程崩溃留下的残留在这一步统一收口。
      * </p>
      *
      * @return 清理掉的孤儿文档数

@@ -15,7 +15,7 @@ export const add = (data) => {
 }
 
 /**
- * 逻辑删除
+ * 删除
  * @param id
  * @returns {AxiosPromise}
  */
