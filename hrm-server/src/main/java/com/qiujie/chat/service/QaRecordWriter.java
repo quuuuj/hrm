@@ -119,7 +119,7 @@ public class QaRecordWriter {
         return new ChatQaCitation()
                 .setQaRecordId(recordId)
                 .setChunkId(sr.chunkId())
-                .setDocsName(sr.docsName())
+                .setDocumentName(sr.documentName())
                 .setChunkText(truncate(sr.chunkText()))
                 .setRelevanceScore(sr.relevance())
                 .setRetrievalSource(channels == null ? null : channels.retrievalSource())

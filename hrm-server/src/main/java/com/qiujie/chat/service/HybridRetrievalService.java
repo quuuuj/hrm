@@ -1,6 +1,6 @@
 package com.qiujie.chat.service;
 
-import com.qiujie.knowledge.service.DashScopeEmbeddingClient;
+import com.qiujie.document.service.DashScopeEmbeddingClient;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +89,7 @@ public class HybridRetrievalService {
             com.pgvector.PGvector pgVec = new com.pgvector.PGvector(vec);
             // 切片与向量同表：一次查询直接拿到文本与展示名，无需回表或解析 JSON
             String sql = """
-                    SELECT chunk_text, docs_name, docs_id, id,
+                    SELECT chunk_text, document_name, document_id, id,
                            1 - (embedding <=> ?) AS similarity
                     FROM kb_chunk
                     WHERE embedding IS NOT NULL
@@ -101,7 +101,7 @@ public class HybridRetrievalService {
                 while (rs.next()) {
                     double sim = rs.getDouble("similarity");
                     list.add(new SearchResult(rs.getString("chunk_text"),
-                            rs.getString("docs_name"), rs.getLong("docs_id"),
+                            rs.getString("document_name"), rs.getLong("document_id"),
                             rs.getLong("id"), sim, "vector", sim,
                             SearchResult.ChannelScores.vector(sim)));
                 }
@@ -117,7 +117,7 @@ public class HybridRetrievalService {
         if (kbJdbc == null) return List.of();
         try {
             String sql = """
-                    SELECT c.chunk_text, c.docs_name, c.docs_id, c.id
+                    SELECT c.chunk_text, c.document_name, c.document_id, c.id
                     FROM kb_chunk c
                     WHERE c.chunk_text ILIKE ? ESCAPE '\\'
                     ORDER BY length(c.chunk_text) ASC
@@ -150,7 +150,7 @@ public class HybridRetrievalService {
         for (int i = 0; i < vectorRanked.size(); i++) {
             SearchResult r = vectorRanked.get(i);
             String key = String.valueOf(r.chunkId());
-            fused.put(key, new SearchResult(r.chunkText(), r.docsName(), r.docsId(), r.chunkId(),
+            fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
                     1.0 / (k + i + 1), "rrf", r.relevance(), r.channels()));
         }
         for (int i = 0; i < keywordRanked.size(); i++) {
@@ -160,12 +160,12 @@ public class HybridRetrievalService {
             if (fused.containsKey(key)) {
                 SearchResult existing = fused.get(key);
                 // 两路都命中的切片：保留两边原始分，供引用快照标注 BOTH
-                fused.put(key, new SearchResult(existing.chunkText(), existing.docsName(),
-                        existing.docsId(), existing.chunkId(), existing.score() + rrf, "rrf",
+                fused.put(key, new SearchResult(existing.chunkText(), existing.documentName(),
+                        existing.documentId(), existing.chunkId(), existing.score() + rrf, "rrf",
                         Math.max(existing.relevance(), r.relevance()),
                         existing.channels() == null ? r.channels() : existing.channels().merge(r.channels())));
             } else {
-                fused.put(key, new SearchResult(r.chunkText(), r.docsName(), r.docsId(), r.chunkId(),
+                fused.put(key, new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
                         rrf, "rrf", r.relevance(), r.channels()));
             }
         }
@@ -173,9 +173,9 @@ public class HybridRetrievalService {
         double maxScore = fused.values().stream().mapToDouble(SearchResult::score).max().orElse(1.0);
         return fused.values().stream()
                 .map(r -> r.channels() == null
-                        ? new SearchResult(r.chunkText(), r.docsName(), r.docsId(), r.chunkId(),
+                        ? new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
                                 r.score() / maxScore, "rrf", r.relevance())
-                        : new SearchResult(r.chunkText(), r.docsName(), r.docsId(), r.chunkId(),
+                        : new SearchResult(r.chunkText(), r.documentName(), r.documentId(), r.chunkId(),
                                 r.score() / maxScore, "rrf", r.relevance(),
                                 r.channels().withHybrid(r.score() / maxScore)))
                 .sorted((a, b) -> Double.compare(b.score(), a.score())).collect(Collectors.toList());
@@ -183,15 +183,15 @@ public class HybridRetrievalService {
 
     private List<SearchResult> expandNeighborWindows(List<SearchResult> top) {
         if (kbJdbc == null || windowSize <= 0) return top;
-        Set<String> existingKeys = top.stream().map(r -> r.docsId() + ":" + r.chunkId()).collect(Collectors.toSet());
+        Set<String> existingKeys = top.stream().map(r -> r.documentId() + ":" + r.chunkId()).collect(Collectors.toSet());
         List<SearchResult> expanded = new ArrayList<>(top);
         for (SearchResult r : top) {
-            if (r.chunkId() == null || r.docsId() == null) continue;
+            if (r.chunkId() == null || r.documentId() == null) continue;
             try {
                 String sql = """
-                        SELECT c.chunk_text, c.docs_name, c.docs_id, c.id, c.chunk_index
+                        SELECT c.chunk_text, c.document_name, c.document_id, c.id, c.chunk_index
                         FROM kb_chunk c
-                        WHERE c.docs_id = ? AND c.chunk_index BETWEEN (SELECT chunk_index - ? FROM kb_chunk WHERE id = ?)
+                        WHERE c.document_id = ? AND c.chunk_index BETWEEN (SELECT chunk_index - ? FROM kb_chunk WHERE id = ?)
                             AND (SELECT chunk_index + ? FROM kb_chunk WHERE id = ?)
                         """;
                 kbJdbc.query(sql, (rs, rowNum) -> {
@@ -202,7 +202,7 @@ public class HybridRetrievalService {
                                 r.score() * 0.8, "neighbor", r.relevance(), r.channels()));
                     }
                     return null;
-                }, r.docsId(), windowSize, r.chunkId(), windowSize, r.chunkId());
+                }, r.documentId(), windowSize, r.chunkId(), windowSize, r.chunkId());
             } catch (Exception ignored) {}
         }
         return expanded;

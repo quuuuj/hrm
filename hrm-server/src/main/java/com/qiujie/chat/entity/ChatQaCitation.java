@@ -30,8 +30,8 @@ public class ChatQaCitation implements Serializable {
     @TableField("chunk_id")
     private Long chunkId;
 
-    @TableField("docs_name")
-    private String docsName;
+    @TableField("document_name")
+    private String documentName;
 
     /** 切片文本快照；超长按固定字符数截断，全文可凭 chunkId 回查 */
     @TableField("chunk_text")

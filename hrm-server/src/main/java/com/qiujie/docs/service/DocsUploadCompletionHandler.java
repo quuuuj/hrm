@@ -1,12 +1,11 @@
 package com.qiujie.docs.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.qiujie.knowledge.entity.Docs;
-import com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService;
+import com.qiujie.docs.entity.Docs;
+import com.qiujie.docs.mapper.DocsMapper;
 import com.qiujie.filetask.enums.UploadScopeEnum;
 import com.qiujie.filetask.spi.UploadCompletionHandler;
 import com.qiujie.filetask.spi.UploadSessionInfo;
-import com.qiujie.knowledge.mapper.DocsMapper;
 import com.qiujie.common.storage.MinioStorageService;
 import com.qiujie.util.StorageCompressor;
 import org.slf4j.Logger;
@@ -14,17 +13,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 文件中心唯一上传完成处理器：SHA256 秒传 + zstd 压缩 + 写入 sys_docs。
+ * 文件中心上传完成处理器：SHA256 秒传 + zstd 压缩 + 写入 sys_docs。
  * <p>
- * 由 {@link UploadSessionInfo#isIngest()} 决定是否加入知识库：
- * ingest=true 时走 {@link KnowledgeLifecycleService#register} 登记（kb_status=UPLOADED，
- * 事务提交后异步 ETL）；ingest=false 时仅做通用文件存储。
+ * 只处理普通附件。知识库文档走 {@code DocumentUploadCompletionHandler}
+ * （scope=DOCUMENT，对象前缀 kb/）。
  */
 @Component
 public class DocsUploadCompletionHandler implements UploadCompletionHandler {
@@ -36,9 +33,6 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
 
     @Autowired
     private MinioStorageService storageService;
-
-    @Autowired
-    private KnowledgeLifecycleService lifecycle;
 
     @Override
     public UploadScopeEnum getScope() {
@@ -69,7 +63,6 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
         result.put("id", doc.getId());
         result.put("name", doc.getName());
         result.put("oldName", doc.getOldName());
-        result.put("kbStatus", doc.getKbStatus());
         return result;
     }
 
@@ -83,7 +76,7 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
             throw new RuntimeException("读取合并文件失败: " + mergedKey, e);
         }
 
-        // zstd 压缩（ETL 读取时有 magic-byte 解压通道，统一压缩不影响摄入）
+        // zstd 压缩（文本类小文件统一压缩存储，下载时按 magic-byte 解压）
         StorageCompressor.CompressionResult compressed =
                 StorageCompressor.tryCompress(rawBytes, session.getFileExt().toLowerCase());
         if (compressed.compressed) {
@@ -91,19 +84,6 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
             storageService.put(mergedKey, compressed.bytes);
         }
 
-        Map<String, Object> result = new HashMap<>();
-        if (session.isIngest()) {
-            // 加入知识库：登记 UPLOADED，事务提交后异步 ETL
-            KnowledgeLifecycleService.RegisterResult r = lifecycle.register(
-                    new KnowledgeLifecycleService.RegisterCommand(
-                            mergedKey, session.getFileName(), session.getFileExt(),
-                            session.getFileHash(), (long) rawBytes.length, session.getStaffId()));
-            result.put("docsId", r.docsId());
-            result.put("kbStatus", r.status());
-            return result;
-        }
-
-        // 通用文件存储
         Docs docs = new Docs()
                 .setName(mergedKey)
                 .setOldName(session.getFileName())
@@ -115,6 +95,7 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
                 .setStaffId(session.getStaffId());
         docsMapper.insert(docs);
 
+        Map<String, Object> result = new HashMap<>();
         result.put("id", docs.getId());
         result.put("name", docs.getName());
         result.put("compressed", compressed.compressed);

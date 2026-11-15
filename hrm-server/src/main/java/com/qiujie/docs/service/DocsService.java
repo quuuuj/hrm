@@ -1,26 +1,24 @@
 package com.qiujie.docs.service;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IoUtil;
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
-import com.qiujie.knowledge.entity.Docs;
 import com.qiujie.common.enums.BusinessStatusEnum;
-import com.qiujie.knowledge.mapper.DocsMapper;
-import com.qiujie.util.HutoolExcelUtil;
-import com.qiujie.util.StorageCompressor;
 import com.qiujie.common.storage.MinioStorageService;
-import com.qiujie.knowledge.vo.StaffDocsVO;
+import com.qiujie.util.ObjectDownloadWriter;
+import com.qiujie.docs.entity.Docs;
+import com.qiujie.docs.mapper.DocsMapper;
+import com.qiujie.docs.vo.StaffDocsVO;
 import com.qiujie.staff.entity.Staff;
+import com.qiujie.staff.mapper.StaffMapper;
+import com.qiujie.util.HutoolExcelUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,14 +27,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.ByteArrayInputStream;
-
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +39,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
+ * 文件中心服务（普通附件）。
+ *
  * @Author qiujie
  * @Date 2022/2/24
  * @Version 1.0
@@ -63,77 +57,23 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
     private DocsMapper docsMapper;
 
     @Autowired
-    private com.qiujie.knowledge.mapper.KnowledgeChunkMapper chunkMapper;
-
-    @Autowired
-    private com.qiujie.staff.mapper.StaffMapper staffMapper;
+    private StaffMapper staffMapper;
 
     /**
      * 由独立任务按各自保留期清理的对象前缀，孤儿清理不得越界删除。
      * task-source / task-result / task-error 由 FileTaskCleanupJob 按 file-task.retention-days 处理，
-     * 早于该保留期删除会让用户在任务有效期内无法下载。
+     * 早于该保留期删除会让用户在任务有效期内无法下载；kb/ 由文档模块自行清理。
      */
     private static final List<String> MANAGED_ELSEWHERE_PREFIXES = List.of(
-            "task-source/", "task-result/", "task-error/");
-
-    /**
-     * 列出指定文档的全部切片（文件中心查看分块对话框）。
-     */
-    public ResponseDTO chunks(Long docsId) {
-        List<com.qiujie.knowledge.entity.KnowledgeChunk> chunks =
-                chunkMapper.selectByDocsIdOrderByChunkIndex(docsId);
-        return Response.success(chunks);
-    }
+            "task-source/", "task-result/", "task-error/", "kb/");
 
     /**
      * 在文件下载以及数据导出时，响应对象是可以不用作为方法返回值返回的，其在方法执行时已经开始输出，
      * 且其无法与@RestController配合，以JSON格式返回给前端；如果返回响应对象，后端会抛出异常
-     *
-     * @param filename
-     * @param response
-     * @return
-     * @throws IOException
      */
     public void download(String filename, HttpServletResponse response) throws IOException {
-        if (!storageService.exists(filename)) {
-            // 不能用 sendError：容器 ERROR dispatch 会重入安全过滤器链，而 OncePerRequestFilter
-            // 默认跳过 ERROR dispatch，JwtAuthenticationFilter 不参与 → SecurityContext 为空
-            // → 未认证处理器把响应改写成 200 + 1200「认证失败」，真实 404 语义被吃掉
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            response.setContentType("application/json;charset=utf-8");
-            response.getWriter().write(JSON.toJSONString(Response.error(BusinessStatusEnum.FILE_NOT_EXIST)));
-            return;
-        }
-
-        response.addHeader("Content-Type", "application/octet-stream;charset=utf-8");
-        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8));
-
-        InputStream rawStream = storageService.get(filename);
-
-        try (InputStream in = rawStream) {
-            // 探测是否压缩数据
-            byte[] header = StorageCompressor.peekMagicBytes(in);
-            OutputStream out = response.getOutputStream();
-
-            if (header.length == 4
-                    && header[0] == (byte) 0x28 && header[1] == (byte) 0xB5
-                    && header[2] == 0x2F && header[3] == (byte) 0xFD) {
-                // 压缩数据：流式解压输出；原始字节数未落库，不设 Content-Length，交给分块传输
-                // 拼接回 magic bytes + 剩余流，再解压
-                try (ByteArrayInputStream headerStream = new ByteArrayInputStream(header);
-                     InputStream fullStream = new java.io.SequenceInputStream(headerStream, in);
-                     InputStream decompressed = StorageCompressor.decompressStream(fullStream)) {
-                    IoUtil.copy(decompressed, out, 8192);
-                }
-            } else {
-                // 未压缩数据：拼接 header + 剩余流直接输出
-                out.write(header);
-                IoUtil.copy(in, out, 8192);
-            }
-            out.flush();
-        }
+        ObjectDownloadWriter.write(storageService, filename, response);
     }
-
 
     public ResponseDTO add(Docs docs) {
         if (save(docs)) {
@@ -142,28 +82,17 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
         return Response.error();
     }
 
-    @Autowired(required = false)
-    private com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService lifecycle;
-
     /**
      * 物理删除：行与物理文件一起消失。
      * <p>
-     * 携带知识库状态的文档委托 {@link KnowledgeLifecycleService} 执行物理删行 + 作废在途任务 +
-     * 事务提交后异步清理 PG 切片/向量与物理文件；通用文件直接删行，物理文件在事务提交后删除
-     * （{@code name} 有唯一约束，不存在被其他行共享的可能）。
-     * </p>
-     * <p>
-     * 删除幂等：行已不存在（重复删除、并发删除）一律返回成功；不存在的 id 与已删 id
-     * 在物理删除后无法区分，按调用方参数错误处理没有价值。
+     * 物理文件在事务提交后删除（{@code name} 有唯一约束，不存在被其他行共享的可能）。
+     * 行已不存在（重复删除、并发删除）一律返回成功；不存在的 id 与已删 id 在物理删除后
+     * 无法区分，按调用方参数错误处理没有价值。
      * </p>
      */
     public ResponseDTO delete(Integer id) {
         Docs doc = docsMapper.selectById(id);
         if (doc == null) {
-            return Response.success();
-        }
-        if (doc.getKbStatus() != null && lifecycle != null) {
-            lifecycle.delete(new com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService.DeleteCommand(id.longValue()));
             return Response.success();
         }
         // 并发删除：行已被别的请求删掉，removeById 影响行数为 0，此时对对象再删一次是幂等的
@@ -206,14 +135,12 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
         return Response.success();
     }
 
-
     public ResponseDTO edit(Docs docs) {
         if (updateById(docs)) {
             return Response.success();
         }
         return Response.error();
     }
-
 
     public ResponseDTO query(Integer id) {
         Docs docs = getById(id);
@@ -223,12 +150,7 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
         return Response.error();
     }
 
-
     public ResponseDTO list(Integer current, Integer size, String oldName, String staffName) {
-        return list(current, size, oldName, staffName, null, null);
-    }
-
-    public ResponseDTO list(Integer current, Integer size, String oldName, String staffName, Boolean onlyKb, String kbStatus) {
         if (oldName == null) {
             oldName = "";
         }
@@ -236,8 +158,7 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
             staffName = "";
         }
         IPage<StaffDocsVO> config = new Page<>(current, size);
-        IPage<StaffDocsVO> page = this.docsMapper.listStaffDocsVO(config, oldName, staffName, onlyKb, kbStatus);
-        // 将响应数据填充到map中
+        IPage<StaffDocsVO> page = this.docsMapper.listStaffDocsVO(config, oldName, staffName);
         Map map = new HashMap();
         map.put("pages", page.getPages());
         map.put("total", page.getTotal());
@@ -245,14 +166,6 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
         return Response.success(map);
     }
 
-    /**
-     * 在文件下载以及数据导出时，响应对象是可以不用作为方法返回值返回的，其在方法执行时已经开始输出，
-     * 且其无法与@RestController配合，以JSON格式返回给前端；如果返回响应对象，后端会抛出异常
-     *
-     * @param response
-     * @return
-     * @throws IOException
-     */
     public void export(HttpServletResponse response, String filename) throws IOException {
         List<Docs> list = list();
         HutoolExcelUtil.writeExcel(response, list, filename, Docs.class);
@@ -284,7 +197,6 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
     public ResponseDTO imp(MultipartFile file) throws IOException {
         InputStream inputStream = file.getInputStream();
         List<Docs> list = HutoolExcelUtil.readExcel(inputStream, 1, Docs.class);
-        // IService接口中的方法.批量插入数据
         if (saveBatch(list)) {
             return Response.success();
         }
@@ -294,9 +206,8 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
     /**
      * 每日凌晨 4:00 清理无 DB 引用的孤儿文件。
      *
-     * <p>「有引用」指对象键出现在 sys_docs.name（文件中心与知识库文档）或 sys_staff.avatar
-     * （头像直传只写对象、不建 sys_docs 行）中。分片上传目录与异步任务产物各有独立清理任务
-     * （FileUploadService.cleanExpiredSessions / FileTaskCleanupJob，保留期 file-task.retention-days），
+     * <p>「有引用」指对象键出现在 sys_docs.name 或 sys_staff.avatar（头像直传只写对象、
+     * 不建 sys_docs 行）中。知识库文档（kb/ 前缀）、分片上传目录与异步任务产物各有独立清理任务，
      * 本任务不越界处理——新增模块的存储前缀需同样登记到 {@code MANAGED_ELSEWHERE_PREFIXES}。</p>
      *
      * <p>文件需满足：最后修改时间超过 24 小时且对象键不在上述引用集合中。</p>

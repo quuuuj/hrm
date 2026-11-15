@@ -1,0 +1,84 @@
+package com.qiujie.document.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 文本切片服务。按段落自然边界分割，兼顾 maxSize 和 overlap。
+ */
+@Service
+public class ChunkService {
+
+    /** 最大切片字符数 */
+    @Value("${knowledge.chunk.max-size}")
+    private int maxSize;
+
+    /** 相邻切片重叠字符数 */
+    @Value("${knowledge.chunk.overlap}")
+    private int overlap;
+
+    public List<ChunkResult> split(String text) {
+        List<ChunkResult> chunks = new ArrayList<>();
+        if (text == null || text.isBlank()) {
+            return chunks;
+        }
+
+        // 1. 按段落边界切分
+        String[] paragraphs = text.split("\\n\\s*\\n");
+        StringBuilder current = new StringBuilder();
+        int index = 0;
+        int currentCharStart = 0;
+        String overlapText = "";
+
+        for (String para : paragraphs) {
+            String trimmed = para.trim();
+            if (trimmed.isEmpty()) continue;
+
+            if (current.length() + trimmed.length() > maxSize && current.length() > 0) {
+                chunks.add(buildChunk(current.toString(), currentCharStart, index++));
+                // overlap: 保留上一块的结尾部分
+                overlapText = current.substring(Math.max(0, current.length() - overlap));
+                currentCharStart += current.length() - overlapText.length();
+                current = new StringBuilder(overlapText + trimmed + "\n\n");
+            } else {
+                current.append(trimmed).append("\n\n");
+            }
+        }
+
+        // 最后一个切片
+        if (current.length() > 0) {
+            chunks.add(buildChunk(current.toString(), currentCharStart, index));
+        }
+
+        return chunks;
+    }
+
+    private ChunkResult buildChunk(String text, int charStart, int index) {
+        String trimmed = text.trim();
+        // 估算 token 数：中文约1.5字符/token，英文约4字符/token
+        int tokenCount = (int) (trimmed.length() / 2.5);
+        return new ChunkResult(trimmed, tokenCount, charStart, charStart + trimmed.length());
+    }
+
+    public static class ChunkResult {
+        private final String text;
+        private final int tokenCount;
+        private final int charStart;
+        private final int charEnd;
+
+        public ChunkResult(String text, int tokenCount, int charStart, int charEnd) {
+            this.text = text;
+            this.tokenCount = tokenCount;
+            this.charStart = charStart;
+            this.charEnd = charEnd;
+        }
+
+        public String getText() { return text; }
+        public int getTokenCount() { return tokenCount; }
+        public int getCharStart() { return charStart; }
+        public int getCharEnd() { return charEnd; }
+    }
+}

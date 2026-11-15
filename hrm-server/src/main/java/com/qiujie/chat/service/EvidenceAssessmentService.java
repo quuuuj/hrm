@@ -37,7 +37,7 @@ public class EvidenceAssessmentService {
 
         double maxScore = results.stream().mapToDouble(SearchResult::relevance).max().orElse(0);
         double avgScore = results.stream().mapToDouble(SearchResult::relevance).average().orElse(0);
-        long uniqueDocs = results.stream().map(SearchResult::docsId).distinct().count();
+        long uniqueDocs = results.stream().map(SearchResult::documentId).distinct().count();
         int count = results.size();
 
         // 多因素综合判定

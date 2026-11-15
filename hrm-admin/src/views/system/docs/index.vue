@@ -40,7 +40,6 @@
         :complete-api="docsUploadApi"
         label="上传文件"
         accept="*/*"
-        :ingest="false"
         style="margin-left: 10px"
         @success="handleUploadSuccess"
       />

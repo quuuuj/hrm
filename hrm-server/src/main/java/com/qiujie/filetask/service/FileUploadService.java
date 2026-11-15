@@ -290,18 +290,18 @@ public class FileUploadService {
 
     /**
      * 阶段3：完成上传，合并分片并通过 handler 执行业务逻辑。
-     * ingest 参数透传给 handler（决定是否触发知识库 ETL）。
+     * 走哪个 handler 由调用方决定，scope 已各自绑定（DOCS / DOCUMENT）。
      * 重复调用时返回首次执行的结果快照，不重复合并、不重复入库。
      *
      * @param staffId 当前操作员工 ID，用于校验会话归属
      */
     @Transactional(rollbackFor = Exception.class)
-    public ResponseDTO completeUpload(String uploadId, UploadCompletionHandler handler, boolean ingest, Integer staffId) {
+    public ResponseDTO completeUpload(String uploadId, UploadCompletionHandler handler, Integer staffId) {
         FileUploadSession session = sessionMapper.selectById(uploadId);
         if (!ownedBy(session, staffId)) {
             return Response.error(SESSION_MISSING);
         }
-        // 会话已完成且结果已落库：直接重放，避免重复插 sys_docs 与重复触发 ETL
+        // 会话已完成且结果已落库：直接重放，避免重复插行与重复触发 ETL
         if (session.getStatus() == UploadSessionStatusEnum.COMPLETED && session.getMergedObjectKey() != null) {
             return Response.success("上传完成", replayResult(session));
         }
@@ -310,7 +310,7 @@ public class FileUploadService {
         UploadSessionInfo info = new UploadSessionInfo(
                 uploadId, session.getFileName(), session.getFileExt(),
                 session.getFileSize(), session.getFileHash(),
-                session.getStaffId(), session.getChunkCount(), ingest);
+                session.getStaffId(), session.getChunkCount());
         Map<String, Object> extra = handler.onComplete(mergedKey, info);
         if (extra == null) extra = new HashMap<>();
         session.setCompleteResult(JSON.toJSONString(extra));

@@ -202,7 +202,7 @@ public class ChatQaService {
             if (currentLen + chunk.length() > maxContext && currentLen > 0) {
                 break;
             }
-            kbContext.append("【来源: ").append(sr.docsName()).append("】\n")
+            kbContext.append("【来源: ").append(sr.documentName()).append("】\n")
                     .append(chunk).append("\n\n");
             used.add(sr);
             currentLen += chunk.length();

@@ -75,22 +75,6 @@ export const exp = (filename) => {
   })
 }
 
-// 重试失败的摄入任务
-export const retry = (id) => {
-  return request({
-    url: url + '/' + id + '/retry',
-    method: 'post'
-  })
-}
-
-// 查看文档分块
-export const chunks = (id) => {
-  return request({
-    url: url + '/' + id + '/chunks',
-    method: 'get'
-  })
-}
-
 // 分片上传合并接口（分片协议统一走 /file-upload）
 export const getCompleteApi = () => {
   return url + '/upload-task'

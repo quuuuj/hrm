@@ -488,9 +488,9 @@ VALUES
 
 INSERT INTO `per_menu` VALUES (121, 'kb', '智能问答', 'chat-dot-round', NULL, 0, 0, 1, NULL, '2026-09-14 10:00:00', NULL, 0);
 INSERT INTO `per_menu` VALUES (122, 'chat', '聊天', 'chat-line-round', NULL, 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
-INSERT INTO `per_menu` VALUES (123, 'knowledge', '知识库', 'document-copy', 'kb:knowledge:list', 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
-INSERT INTO `per_menu` VALUES (124, 'knowledge_upload', '上传文档', 'upload2', 'kb:knowledge:upload', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
-INSERT INTO `per_menu` VALUES (125, 'knowledge_delete', '删除文档', 'remove-outline', 'kb:knowledge:delete', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (123, 'document', '知识库', 'document-copy', 'kb:knowledge:list', 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (124, 'document_upload', '上传文档', 'upload2', 'kb:knowledge:upload', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (125, 'document_delete', '删除文档', 'remove-outline', 'kb:knowledge:delete', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
 
 -- ----------------------------
 -- Table structure for per_role
@@ -1168,24 +1168,17 @@ CREATE TABLE `sys_docs`  (
   `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件备注',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
-  `kb_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '知识库状态：UPLOADED/PROCESSING/READY/FAILED',
-  `failure_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '处理失败原因',
-  `preview_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文档预览文本',
-  `chunk_count` int NULL DEFAULT 0 COMMENT '切片数量',
-  `upload_time` datetime NULL DEFAULT NULL COMMENT '上传完成时间',
-  `process_time` datetime NULL DEFAULT NULL COMMENT '处理完成时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `uk_docs_name` (`name`),
   KEY `idx_docs_file_hash` (`file_hash`),
-  KEY `idx_docs_staff_hash` (`staff_id`, `file_hash`),
-  KEY `idx_docs_kb_status` (`kb_status`)
+  KEY `idx_docs_staff_hash` (`staff_id`, `file_hash`)
 ) ENGINE = InnoDB AUTO_INCREMENT = 93 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '文件中心' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_docs
 -- ----------------------------
-INSERT INTO `sys_docs` VALUES (95, '2a6c9844eb4d109ee3f3.jpg', 'jpg', '桥.jpg', 'e88d330cf616e869867d4764eb7f3717', 800, NULL, 0, 1, NULL, '2026-04-25 20:09:25', '2026-04-25 20:09:25', NULL, NULL, NULL, 0, NULL, NULL);
-INSERT INTO `sys_docs` VALUES (96, '1e5d5a99c64ebb883dc8.jpg', 'jpg', '5c23d52f880511ebb6edd017c2d2eca2.jpg', 'd2d652f55cd647c3993cbf19ab45f831', 269, NULL, 0, 1, NULL, '2026-04-25 20:09:56', '2026-04-25 20:09:56', NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `sys_docs` VALUES (95, '2a6c9844eb4d109ee3f3.jpg', 'jpg', '桥.jpg', 'e88d330cf616e869867d4764eb7f3717', 800, NULL, 0, 1, NULL, '2026-04-25 20:09:25', '2026-04-25 20:09:25');
+INSERT INTO `sys_docs` VALUES (96, '1e5d5a99c64ebb883dc8.jpg', 'jpg', '5c23d52f880511ebb6edd017c2d2eca2.jpg', 'd2d652f55cd647c3993cbf19ab45f831', 269, NULL, 0, 1, NULL, '2026-04-25 20:09:56', '2026-04-25 20:09:56');
 
 -- ----------------------------
 -- Table structure for sys_staff
@@ -1430,7 +1423,7 @@ CREATE TABLE `chat_qa_citation` (
   `id`               bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
   `qa_record_id`     bigint unsigned NOT NULL COMMENT '所属QA问答记录ID',
   `chunk_id`         bigint          NOT NULL COMMENT '来源切片ID',
-  `docs_name`        varchar(200)    DEFAULT NULL COMMENT '来源文件名',
+  `document_name`    varchar(200)    DEFAULT NULL COMMENT '来源文档名',
   `chunk_text`       text            DEFAULT NULL COMMENT '切片文本快照',
   `relevance_score`  double          NOT NULL DEFAULT 0 COMMENT '相关性得分',
   `retrieval_source` varchar(32)     DEFAULT NULL COMMENT 'VECTOR / KEYWORD / BOTH',
@@ -1442,28 +1435,32 @@ CREATE TABLE `chat_qa_citation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='问答引用明细';
 
 -- ----------------------------
--- Table structure for kb_ingestion_task
+-- Table structure for kb_document
 -- ----------------------------
-DROP TABLE IF EXISTS `kb_ingestion_task`;
-CREATE TABLE `kb_ingestion_task` (
-  `id`             bigint        NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `docs_id`        bigint        NOT NULL COMMENT '关联文档ID',
-  `staff_id`       int           NOT NULL COMMENT '上传者',
-  `task_type`      varchar(32)   NOT NULL DEFAULT 'INGEST_DOCS' COMMENT '任务类型',
-  `status`         varchar(16)   NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/RUNNING/SUCCEEDED/FAILED/CANCELLED',
-  `retry_count`    int           NOT NULL DEFAULT 0 COMMENT '当前重试次数',
-  `max_retries`    int           NOT NULL DEFAULT 3 COMMENT '最大重试次数',
-  `worker_id`      varchar(128)  DEFAULT NULL COMMENT '执行Worker标识',
-  `start_time`     datetime      DEFAULT NULL COMMENT '开始执行时间',
-  `finish_time`    datetime      DEFAULT NULL COMMENT '完成时间',
-  `next_retry_time` datetime     DEFAULT NULL COMMENT '下次重试时间',
-  `last_error`     text          DEFAULT NULL COMMENT '最近失败错误信息',
-  `create_time`    datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time`    datetime      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+DROP TABLE IF EXISTS `kb_document`;
+CREATE TABLE `kb_document` (
+  `id`              bigint        NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name`            varchar(200)  NOT NULL COMMENT 'MinIO 对象键（物理文件引用键）',
+  `type`            varchar(10)   DEFAULT NULL COMMENT '文件类型',
+  `old_name`        varchar(200)  DEFAULT NULL COMMENT '文件原名称',
+  `file_hash`       varchar(64)   DEFAULT NULL COMMENT '文件SHA256哈希',
+  `size`            bigint        DEFAULT NULL COMMENT '文件原始大小KB',
+  `stored_size`     bigint        DEFAULT NULL COMMENT '磁盘实际占用(字节)',
+  `compressed`      tinyint(1)    NOT NULL DEFAULT 0 COMMENT '是否zstd压缩: 0=否 1=是',
+  `staff_id`        int           DEFAULT NULL COMMENT '上传者id',
+  `status`          varchar(20)   NOT NULL DEFAULT 'UPLOADED' COMMENT 'UPLOADED/PROCESSING/READY/FAILED',
+  `failure_reason`  varchar(512)  DEFAULT NULL COMMENT '处理失败原因',
+  `preview_text`    text          COMMENT '文档预览文本',
+  `chunk_count`     int           DEFAULT 0 COMMENT '切片数量',
+  `upload_time`     datetime      DEFAULT NULL COMMENT '上传完成时间',
+  `process_time`    datetime      DEFAULT NULL COMMENT '处理完成时间',
+  `create_time`     datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`     datetime      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`),
-  KEY `idx_ingestion_task_runnable` (`status`, `next_retry_time`, `create_time`),
-  KEY `idx_ingestion_task_docs` (`docs_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文档摄入异步任务表';
+  UNIQUE KEY `uk_document_name` (`name`),
+  KEY `idx_document_status` (`status`),
+  KEY `idx_document_staff_hash` (`staff_id`, `file_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库文档';
 
 
 SET FOREIGN_KEY_CHECKS = 1;

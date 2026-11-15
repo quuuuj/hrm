@@ -1,12 +1,10 @@
 package com.qiujie.docs.controller;
 
-import com.qiujie.knowledge.entity.Docs;
-import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
-import com.qiujie.knowledge.lifecycle.KnowledgeLifecycleService;
-import com.qiujie.filetask.service.FileUploadService;
+import com.qiujie.docs.entity.Docs;
 import com.qiujie.docs.service.DocsService;
 import com.qiujie.docs.service.DocsUploadCompletionHandler;
+import com.qiujie.filetask.service.FileUploadService;
 import com.qiujie.staff.service.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,19 +12,19 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
 /**
- * 文件上传接口
+ * 文件中心接口（普通附件）。
+ * <p>
+ * 知识库文档是独立模块，接口在 {@code /document}。
  *
  * @Author qiujie
  * @Date 2022/2/24
  * @Version 1.0
  */
-
 @RestController
 @RequestMapping("/docs")
 public class DocsController {
@@ -43,9 +41,6 @@ public class DocsController {
     @Autowired
     private SecurityUtil securityUtil;
 
-    @Autowired(required = false)
-    private KnowledgeLifecycleService lifecycle;
-
     @Operation(summary = "新增")
     @PostMapping
     @PreAuthorize("hasAnyAuthority('system:docs:upload')")
@@ -55,14 +50,14 @@ public class DocsController {
 
     @Operation(summary = "删除")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('system:docs:delete','kb:knowledge:delete')")
+    @PreAuthorize("hasAnyAuthority('system:docs:delete')")
     public ResponseDTO delete(@PathVariable Integer id) {
         return this.docsService.delete(id);
     }
 
     @Operation(summary = "批量删除")
     @DeleteMapping("/batch/{ids}")
-    @PreAuthorize("hasAnyAuthority('system:docs:delete','kb:knowledge:delete')")
+    @PreAuthorize("hasAnyAuthority('system:docs:delete')")
     public ResponseDTO deleteBatch(@PathVariable List<Integer> ids) {
         return this.docsService.deleteBatch(ids);
     }
@@ -82,21 +77,19 @@ public class DocsController {
 
     @Operation(summary = "分页条件查询")
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('system:docs:list','system:docs:search','kb:knowledge:list')")
+    @PreAuthorize("hasAnyAuthority('system:docs:list','system:docs:search')")
     public ResponseDTO list(@RequestParam(defaultValue = "1") Integer current,
                             @RequestParam(defaultValue = "10") Integer size,
                             String oldName,
-                            String staffName,
-                            @RequestParam(required = false) Boolean onlyKb,
-                            @RequestParam(required = false) String kbStatus) {
-        return this.docsService.list(current, size, oldName, staffName, onlyKb, kbStatus);
+                            String staffName) {
+        return this.docsService.list(current, size, oldName, staffName);
     }
 
     @Operation(summary = "数据导出接口")
     @GetMapping("/export/{filename}")
     @PreAuthorize("hasAnyAuthority('system:docs:export')")
-    public void export(HttpServletResponse response,@PathVariable  String filename) throws IOException {
-        this.docsService.export(response,filename);
+    public void export(HttpServletResponse response, @PathVariable String filename) throws IOException {
+        this.docsService.export(response, filename);
     }
 
     @Operation(summary = "数据导入接口")
@@ -105,7 +98,6 @@ public class DocsController {
     public ResponseDTO imp(MultipartFile file) throws IOException {
         return this.docsService.imp(file);
     }
-
 
     @Operation(summary = "文件下载")
     // 对象键形如 docs/{staffId}/{uploadId}/{uuid}.{ext}，含斜杠，需用通配捕获整段路径
@@ -122,7 +114,7 @@ public class DocsController {
         this.docsService.download(filename, response);
     }
 
-    // ========== 分片上传（合并 + 登记，分片协议在 /file-upload）==========
+    // ========== 分片上传（合并由本接口完成，分片协议在 /file-upload）==========
 
     @Operation(summary = "头像上传（小文件直传）")
     @PostMapping("/upload/{id}")
@@ -131,31 +123,11 @@ public class DocsController {
         return this.docsService.upload(file, id);
     }
 
-    @Operation(summary = "分片上传-合并分片并登记文件（ingest=true 同时加入知识库）")
+    @Operation(summary = "分片上传-合并分片并登记普通附件")
     @PostMapping("/upload-task")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
-    public ResponseDTO completeUpload(@RequestParam String uploadId,
-                                      @RequestParam(defaultValue = "false") boolean ingest) {
-        return fileUploadService.completeUpload(uploadId, docsHandler, ingest,
+    @PreAuthorize("hasAnyAuthority('system:docs:upload')")
+    public ResponseDTO completeUpload(@RequestParam String uploadId) {
+        return fileUploadService.completeUpload(uploadId, docsHandler,
                 securityUtil.getCurrentOperatorId());
     }
-
-    // ========== 文件中心（知识库能力并入） ==========
-
-    @Operation(summary = "查看文档切片")
-    @GetMapping("/{id}/chunks")
-    @PreAuthorize("hasAnyAuthority('system:docs:list','kb:knowledge:list')")
-    public ResponseDTO chunks(@PathVariable Long id) {
-        return this.docsService.chunks(id);
-    }
-
-    @Operation(summary = "重试失败的摄入任务")
-    @PostMapping("/{id}/retry")
-    @PreAuthorize("hasAnyAuthority('system:docs:upload','kb:knowledge:upload')")
-    public ResponseDTO retry(@PathVariable Integer id) {
-        KnowledgeLifecycleService.RetryResult r =
-                lifecycle.retry(new KnowledgeLifecycleService.RetryCommand(id.longValue()));
-        return r.accepted() ? Response.success("已重新提交处理") : Response.error(r.reason());
-    }
-
 }

@@ -270,7 +270,7 @@ hrm/
 │           ├── permission/         # 角色与菜单权限管理
 │           ├── performance/        # 考勤表现、加班明细、请假审批
 │           ├── money/              # 薪资明细、五险一金比例与参保城市
-│           ├── kb/                 # 智能问答（chat）与知识库（knowledge）
+│           ├── kb/                 # 智能问答（chat）与知识库文档（document）
 │           └── login/              # 登录页
 └── hrm-server/                     # 后端工程 (Spring Boot 3.4 + Java 17)
     ├── src/main/java/com/qiujie/
@@ -281,7 +281,7 @@ hrm/
     │   ├── util/                   # 通用工具（Excel、验证码、日期等）
     │   ├── auth/                   # 登录、验证码与令牌刷新
     │   ├── chat/                   # 智能问答：意图闸门、混合检索、证据评估与会话
-    │   ├── knowledge/              # 知识库：文档 ETL、切块、向量化与生命周期
+    │   ├── document/             # 知识库文档：实体/接口/生命周期（独立于文件中心）
     │   ├── docs/                   # 文件中心接口与服务
     │   ├── filetask/               # 异步文件任务、分片上传、任务产物存储
     │   ├── notification/           # 站内通知（落库 + SSE 推送 + 过期清理）

@@ -30,16 +30,14 @@ const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024
 export default {
   name: 'ChunkedImportBtn',
   props: {
-    /** 分片上传范围：DOCS 走秒传，IMPORT 不秒传 */
+    /** 分片上传范围：DOCS/DOCUMENT 走秒传，IMPORT 不秒传 */
     scope: { type: String, default: 'IMPORT' },
-    /** 合并分片并落库的业务接口，如 /docs/upload-task 或 /attendance/import/task */
+    /** 合并分片并落库的业务接口，如 /docs/upload-task、/document/upload-task 或 /attendance/import/task */
     completeApi: { type: String, required: true },
     /** 接受的文件类型，如 .xlsx,.pdf */
     accept: { type: String, default: '.xlsx' },
     /** 按钮文案 */
-    label: { type: String, default: '导入' },
-    /** DOCS 范围下是否加入知识库进行分块与向量化（默认 false） */
-    ingest: { type: Boolean, default: false }
+    label: { type: String, default: '导入' }
   },
   emits: ['success', 'error'],
   data () {
@@ -121,12 +119,10 @@ export default {
 
     /** 阶段 3: 合并分片并由业务接口落库、建任务 */
     async complete (uploadId) {
-      const params = { uploadId }
-      if (this.scope === 'DOCS') params.ingest = this.ingest
       const res = await request({
         url: this.completeApi,
         method: 'post',
-        params
+        params: { uploadId }
       })
       if (res.code !== 200) throw new Error(res.message || '合并分片失败')
       return res

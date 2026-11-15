@@ -11,8 +11,8 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- embedding 可空：向量化失败或尚未执行时为 NULL，检索侧以 IS NOT NULL 过滤
 CREATE TABLE IF NOT EXISTS kb_chunk (
     id              BIGSERIAL PRIMARY KEY,
-    docs_id     BIGINT       NOT NULL,
-    docs_name   VARCHAR(255) NOT NULL DEFAULT '',
+    document_id     BIGINT       NOT NULL,
+    document_name   VARCHAR(255) NOT NULL DEFAULT '',
     chunk_index     INT          NOT NULL,
     chunk_text      TEXT         NOT NULL,
     token_count     INT          DEFAULT 0,
@@ -21,9 +21,9 @@ CREATE TABLE IF NOT EXISTS kb_chunk (
     char_end        INT          DEFAULT 0,
     embedding       vector(1024),
     create_time     TIMESTAMP    NOT NULL DEFAULT NOW(),
-    UNIQUE (docs_id, chunk_index)
+    UNIQUE (document_id, chunk_index)
 );
-CREATE INDEX IF NOT EXISTS idx_chunk_docs ON kb_chunk(docs_id);
+CREATE INDEX IF NOT EXISTS idx_chunk_document ON kb_chunk(document_id);
 
 -- 向量近邻索引（HNSW + 余弦距离）；部分索引跳过未向量化的行
 CREATE INDEX IF NOT EXISTS idx_chunk_embedding
@@ -32,8 +32,8 @@ CREATE INDEX IF NOT EXISTS idx_chunk_embedding
 
 -- 列注释
 COMMENT ON COLUMN kb_chunk.id IS '主键';
-COMMENT ON COLUMN kb_chunk.docs_id IS '所属文档ID';
-COMMENT ON COLUMN kb_chunk.docs_name IS '文档显示名快照（sys_docs.old_name）';
+COMMENT ON COLUMN kb_chunk.document_id IS '所属知识库文档ID（kb_document.id）';
+COMMENT ON COLUMN kb_chunk.document_name IS '文档显示名快照（kb_document.old_name）';
 COMMENT ON COLUMN kb_chunk.chunk_index IS '切片序号';
 COMMENT ON COLUMN kb_chunk.chunk_text IS '切片文本';
 COMMENT ON COLUMN kb_chunk.token_count IS 'Token数量';

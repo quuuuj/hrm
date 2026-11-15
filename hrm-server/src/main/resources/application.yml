@@ -126,7 +126,7 @@ storage:
 # 知识库模块配置（仅保留知识库自身的开关与切片参数；检索与问答评估归 chat.*）
 knowledge:
   enabled: true
-  # 开机全量回填重建：扫描 kb_status 非空的文档并重跑 ETL（一次性运维开关，默认关闭）
+  # 开机全量回填重建：扫描 kb_document 全表并重跑 ETL（一次性运维开关，默认关闭）
   rebuild-on-start: false
   chunk:
     max-size: 1000
