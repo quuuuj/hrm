@@ -15,7 +15,6 @@ import com.qiujie.filetask.enums.TaskTypeEnum;
 import com.qiujie.filetask.mapper.FileTaskMapper;
 import com.qiujie.filetask.spi.ExportProcessor;
 import com.qiujie.filetask.spi.ImportProcessor;
-import com.qiujie.filetask.store.FileTaskStore;
 import com.qiujie.filetask.store.MinioArtifactStore;
 import com.qiujie.staff.service.SecurityUtil;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,15 +34,13 @@ import java.util.Map;
 /**
  * 文件任务统一入口：任务创建与异步提交、查询、访问控制与文件下载。
  * <p>
- * 业务模块只描述导入/导出的处理器，任务生命周期由本类持有，持久化与状态流转委托给
- * {@link FileTaskStore}，执行委托给 {@link FileTaskEngine}。
+ * 业务模块只描述导入/导出的处理器；任务生命周期、持久化与执行统一委托给
+ * {@link FileTaskEngine}。
  * </p>
  */
 @Service
 public class FileTaskService {
 
-    @Autowired
-    private FileTaskStore taskStore;
     @Autowired
     private FileTaskMapper fileTaskMapper;
     @Autowired
@@ -69,7 +66,7 @@ public class FileTaskService {
      */
     public <T> FileTask submitImport(TaskModuleEnum module, String fileName, String sourceFilePath,
                                      String queryParams, Integer operatorId, ImportProcessor<T> processor) {
-        FileTask task = taskStore.create(TaskTypeEnum.IMPORT, module, fileName,
+        FileTask task = fileTaskEngine.create(TaskTypeEnum.IMPORT, module, fileName,
                 sourceFilePath, queryParams, operatorId);
         fileTaskExecutor.execute(() -> fileTaskEngine.runImport(task.getId(), processor));
         return task;
@@ -78,7 +75,7 @@ public class FileTaskService {
     /** 创建导出任务并提交异步执行。 */
     public <T> FileTask submitExport(TaskModuleEnum module, String fileName, String queryParams,
                                      Integer operatorId, ExportProcessor<T> processor) {
-        FileTask task = taskStore.create(TaskTypeEnum.EXPORT, module, fileName,
+        FileTask task = fileTaskEngine.create(TaskTypeEnum.EXPORT, module, fileName,
                 null, queryParams, operatorId);
         fileTaskExecutor.execute(() -> fileTaskEngine.runExport(task.getId(), processor, queryParams, fileName));
         return task;

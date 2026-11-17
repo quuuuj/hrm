@@ -1,23 +1,25 @@
 package com.qiujie.filetask.engine;
 
-import com.qiujie.filetask.service.FileTaskErrorService;
-import com.qiujie.filetask.spi.ExportProcessor;
-import com.qiujie.filetask.spi.ImportProcessor;
-import com.qiujie.filetask.spi.ImportRow;
-
-import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.qiujie.common.sse.SseService;
 import com.qiujie.filetask.dto.FileTaskErrorExportRow;
 import com.qiujie.filetask.entity.FileTask;
 import com.qiujie.filetask.entity.FileTaskError;
+import com.qiujie.filetask.enums.TaskModuleEnum;
 import com.qiujie.filetask.enums.TaskStatusEnum;
+import com.qiujie.filetask.enums.TaskTypeEnum;
+import com.qiujie.filetask.mapper.FileTaskMapper;
 import com.qiujie.filetask.notify.FileTaskNotifier;
-import com.qiujie.filetask.store.FileTaskStore;
+import com.qiujie.filetask.service.FileTaskErrorService;
+import com.qiujie.filetask.spi.ExportProcessor;
+import com.qiujie.filetask.spi.ImportProcessor;
+import com.qiujie.filetask.spi.ImportRow;
 import com.qiujie.filetask.store.MinioArtifactStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,13 +27,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 通用异步导入导出引擎。
- * 负责流式读写、缓冲管理、进度更新、错误文件生成等通用逻辑，
+ * 通用异步导入导出引擎：任务生命周期与流式读写。
+ * 持有任务的持久化与状态流转（创建、CAS 认领、进度累加、终态结算、SSE 推送），
+ * 以及流式读写、缓冲管理、错误文件生成等通用执行逻辑；
  * 具体业务的校验和入库逻辑由各模块通过 ImportProcessor / ExportProcessor 接口提供。
  *
  * @author qiujie
@@ -48,7 +53,7 @@ public class FileTaskEngine {
     private static final int ERROR_EXPORT_PAGE_SIZE = 1000;
 
     @Autowired
-    private FileTaskStore taskStore;
+    private FileTaskMapper fileTaskMapper;
 
     @Autowired
     private FileTaskErrorService fileTaskErrorService;
@@ -59,6 +64,107 @@ public class FileTaskEngine {
     @Autowired
     private FileTaskNotifier fileTaskNotifier;
 
+    @Autowired
+    private SseService sseService;
+
+    // ==================== 任务状态 ====================
+
+    /**
+     * 创建任务记录并推送初始状态。
+     *
+     * @param sourceFilePath 导入任务的源文件 key；导出任务传 null
+     * @param queryParams    业务自定义参数，可为 null
+     * @return 任务初始快照，状态为 PENDING
+     */
+    public FileTask create(TaskTypeEnum taskType, TaskModuleEnum module, String fileName,
+                           String sourceFilePath, String queryParams, Integer operatorId) {
+        FileTask fileTask = new FileTask()
+                .setTaskType(taskType)
+                .setModule(module)
+                .setStatus(TaskStatusEnum.PENDING)
+                .setFileName(fileName)
+                .setSourceFilePath(sourceFilePath)
+                .setQueryParams(queryParams)
+                .setTotalCount(0)
+                .setProcessedCount(0)
+                .setSuccessCount(0)
+                .setFailCount(0)
+                .setOperatorId(operatorId);
+        fileTaskMapper.insert(fileTask);
+        pushTaskEvent(fileTask.getId());
+        return fileTask;
+    }
+
+    public FileTask getById(Long id) {
+        return fileTaskMapper.selectById(id);
+    }
+
+    public boolean claimRunning(Long id) {
+        boolean claimed = fileTaskMapper.claimRunning(id) == 1;
+        if (claimed) {
+            pushTaskEvent(id);
+        }
+        return claimed;
+    }
+
+    public void setTotalCount(Long id, int total) {
+        fileTaskMapper.updateById(new FileTask().setId(id).setTotalCount(total));
+    }
+
+    public void increaseProgress(Long id, int total, int processed, int success, int fail) {
+        fileTaskMapper.increaseProgress(id, total, processed, success, fail);
+        pushTaskEvent(id);
+    }
+
+    public void finish(Long id, TaskStatusEnum status) {
+        fileTaskMapper.updateById(new FileTask()
+                .setId(id)
+                .setStatus(status)
+                .setFinishTime(Timestamp.valueOf(LocalDateTime.now())));
+        pushTaskEvent(id);
+    }
+
+    public void fail(Long id, Exception e) {
+        fail(id, e == null ? null : e.getMessage());
+    }
+
+    public void fail(Long id, String message) {
+        if (message != null && message.length() > 1000) {
+            message = message.substring(0, 1000);
+        }
+        fileTaskMapper.updateById(new FileTask()
+                .setId(id)
+                .setStatus(TaskStatusEnum.FAILED)
+                .setFailReason(message)
+                .setFinishTime(Timestamp.valueOf(LocalDateTime.now())));
+        pushTaskEvent(id);
+    }
+
+    public void setResultFile(Long id, String resultFilePath) {
+        fileTaskMapper.updateById(new FileTask().setId(id).setResultFilePath(resultFilePath));
+    }
+
+    public void setErrorFile(Long id, String errorFilePath) {
+        fileTaskMapper.updateById(new FileTask().setId(id).setErrorFilePath(errorFilePath));
+    }
+
+    /** 删除任务源文件；源文件 key 为空时忽略。 */
+    public void deleteSourceFile(Long taskId) {
+        FileTask task = getById(taskId);
+        if (task != null && task.getSourceFilePath() != null) {
+            artifactStore.delete(task.getSourceFilePath());
+        }
+    }
+
+    private void pushTaskEvent(Long id) {
+        FileTask task = fileTaskMapper.selectById(id);
+        if (task != null && task.getOperatorId() != null) {
+            sseService.emit(task.getOperatorId(), "task-update", task);
+        }
+    }
+
+    // ==================== 任务执行 ====================
+
     /**
      * 执行异步导入。
      * 流式读取源文件，每攒够一批行交给 processor 批量处理，任务结算统一在此完成。
@@ -67,10 +173,10 @@ public class FileTaskEngine {
      * @param processor 模块导入处理器
      */
     public <T> void runImport(Long taskId, ImportProcessor<T> processor) {
-        if (!taskStore.claimRunning(taskId)) {
+        if (!claimRunning(taskId)) {
             return;
         }
-        FileTask task = taskStore.getById(taskId);
+        FileTask task = getById(taskId);
         if (task == null) {
             return;
         }
@@ -101,24 +207,24 @@ public class FileTaskEngine {
                 }
             }).headRowNumber(HEAD_ROW_NUMBER).sheet().doRead();
 
-            FileTask finishedTask = taskStore.getById(taskId);
+            FileTask finishedTask = getById(taskId);
             if (finishedTask != null && finishedTask.getProcessedCount() != null) {
                 // 流式读取完成后回填真实总量，前端进度显示准确
-                taskStore.setTotalCount(taskId, finishedTask.getProcessedCount());
+                setTotalCount(taskId, finishedTask.getProcessedCount());
             }
             if (finishedTask != null && finishedTask.getFailCount() != null && finishedTask.getFailCount() > 0) {
                 generateErrorFile(taskId);
-                taskStore.finish(taskId, TaskStatusEnum.PARTIAL_SUCCESS);
+                finish(taskId, TaskStatusEnum.PARTIAL_SUCCESS);
             } else {
-                taskStore.finish(taskId, TaskStatusEnum.SUCCESS);
+                finish(taskId, TaskStatusEnum.SUCCESS);
             }
         } catch (Exception e) {
-            taskStore.fail(taskId, e);
+            fail(taskId, e);
         } finally {
             deleteTemporaryFile(sourceFile);
             // 所有终态都清理源文件，避免敏感数据长期驻留
             try {
-                taskStore.deleteSourceFile(taskId);
+                deleteSourceFile(taskId);
             } catch (Exception e) {
                 log.warn("Failed to delete source file: taskId={}", taskId, e);
             }
@@ -132,7 +238,7 @@ public class FileTaskEngine {
         if (!errors.isEmpty()) {
             fileTaskErrorService.saveBatch(errors, DB_BATCH_SIZE);
         }
-        taskStore.increaseProgress(taskId, 0, rows.size(),
+        increaseProgress(taskId, 0, rows.size(),
                 rows.size() - errors.size(), errors.size());
     }
 
@@ -146,7 +252,7 @@ public class FileTaskEngine {
      * @param exportName       导出文件名
      */
     public <T> void runExport(Long taskId, ExportProcessor<T> processor, String queryParamsJson, String exportName) {
-        if (!taskStore.claimRunning(taskId)) {
+        if (!claimRunning(taskId)) {
             return;
         }
         File resultFile = null;
@@ -165,19 +271,19 @@ public class FileTaskEngine {
                 }
                 excelWriter.write(list, writeSheet);
                 if (current == 1) {
-                    taskStore.setTotalCount(taskId, (int) page.getTotal());
+                    setTotalCount(taskId, (int) page.getTotal());
                 }
-                taskStore.increaseProgress(taskId, 0, list.size(), list.size(), 0);
+                increaseProgress(taskId, 0, list.size(), list.size(), 0);
                 current++;
             } while (current <= page.getPages());
             // EasyExcel 在 finish() 时才把缓冲区落盘，必须先关闭 writer 再上传
             excelWriter.finish();
             excelWriter = null;
-            taskStore.setResultFile(taskId, artifactStore.upload(resultFile, "task-result"));
+            setResultFile(taskId, artifactStore.upload(resultFile, "task-result"));
             resultFile = null;
-            taskStore.finish(taskId, TaskStatusEnum.SUCCESS);
+            finish(taskId, TaskStatusEnum.SUCCESS);
         } catch (Exception e) {
-            taskStore.fail(taskId, e);
+            fail(taskId, e);
         } finally {
             try {
                 if (excelWriter != null) {
@@ -227,6 +333,6 @@ public class FileTaskEngine {
             excelWriter.finish();
         }
         String key = artifactStore.upload(errorFile, "task-error");
-        taskStore.setErrorFile(taskId, key);
+        setErrorFile(taskId, key);
     }
 }
