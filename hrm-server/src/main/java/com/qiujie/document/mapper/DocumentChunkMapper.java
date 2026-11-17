@@ -10,6 +10,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -51,18 +53,24 @@ public class DocumentChunkMapper {
      *
      * @param embedding 向量；null 表示向量化失败或未执行，写入 NULL（不参与向量检索）
      */
-    public DocumentChunk insert(DocumentChunk chunk, PGvector embedding) {
+    public DocumentChunk insert(DocumentChunk chunk, float[] embedding) {
         jdbc.update(
                 "INSERT INTO kb_chunk (document_id, document_name, chunk_index, chunk_text, "
                 + "token_count, chunk_summary, char_start, char_end, embedding) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 chunk.getDocumentId(), chunk.getDocumentName(), chunk.getChunkIndex(),
                 chunk.getChunkText(), chunk.getTokenCount(), chunk.getChunkSummary(),
-                chunk.getCharStart(), chunk.getCharEnd(), embedding);
+                chunk.getCharStart(), chunk.getCharEnd(),
+                embedding == null ? null : new PGvector(embedding));
         Long id = jdbc.queryForObject(
                 "SELECT currval(pg_get_serial_sequence('kb_chunk', 'id'))", Long.class);
         chunk.setId(id);
         return chunk;
+    }
+
+    /** 已落过切片的文档 id（去重），供孤儿清理与 kb_document 比对。 */
+    public List<Long> selectDistinctDocumentIds() {
+        return jdbc.queryForList("SELECT DISTINCT document_id FROM kb_chunk", Long.class);
     }
 
     public List<DocumentChunk> selectByDocumentIdOrderByChunkIndex(Long documentId) {
@@ -71,5 +79,23 @@ public class DocumentChunkMapper {
                 + "chunk_summary, char_start, char_end, create_time "
                 + "FROM kb_chunk WHERE document_id = ? ORDER BY chunk_index",
                 ROW_MAPPER, documentId);
+    }
+
+    /** 幂等清理某文档全部切片与向量（不存在也成功）。 */
+    public void deleteByDocumentId(Long documentId) {
+        jdbc.update("DELETE FROM kb_chunk WHERE document_id = ?", documentId);
+    }
+
+    /**
+     * 批量清理多个文档的全部切片与向量：一条 DELETE 走 idx_chunk_document。
+     * 文档数量由页面选择决定（最多一页），占位符数量随之变化，无需额外约束。
+     */
+    public void deleteByDocumentIds(Collection<Long> documentIds) {
+        if (documentIds == null || documentIds.isEmpty()) {
+            return;
+        }
+        String placeholders = String.join(",", Collections.nCopies(documentIds.size(), "?"));
+        jdbc.update("DELETE FROM kb_chunk WHERE document_id IN (" + placeholders + ")",
+                documentIds.toArray());
     }
 }

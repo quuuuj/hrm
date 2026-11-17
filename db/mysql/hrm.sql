@@ -488,9 +488,9 @@ VALUES
 
 INSERT INTO `per_menu` VALUES (121, 'kb', '智能问答', 'chat-dot-round', NULL, 0, 0, 1, NULL, '2026-09-14 10:00:00', NULL, 0);
 INSERT INTO `per_menu` VALUES (122, 'chat', '聊天', 'chat-line-round', NULL, 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
-INSERT INTO `per_menu` VALUES (123, 'document', '知识库', 'document-copy', 'kb:knowledge:list', 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
-INSERT INTO `per_menu` VALUES (124, 'document_upload', '上传文档', 'upload2', 'kb:knowledge:upload', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
-INSERT INTO `per_menu` VALUES (125, 'document_delete', '删除文档', 'remove-outline', 'kb:knowledge:delete', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (123, 'document', '知识库', 'document-copy', 'kb:document:list', 121, 1, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (124, 'document_upload', '上传文档', 'upload2', 'kb:document:upload', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
+INSERT INTO `per_menu` VALUES (125, 'document_delete', '删除文档', 'remove-outline', 'kb:document:delete', 123, 2, 1, NULL, '2026-09-15 10:00:00', NULL, 0);
 
 -- ----------------------------
 -- Table structure for per_role

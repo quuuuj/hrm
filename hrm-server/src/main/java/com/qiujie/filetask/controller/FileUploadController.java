@@ -27,7 +27,7 @@ import java.util.Map;
 public class FileUploadController {
 
     private static final String UPLOAD_AUTHORITIES =
-            "hasAnyAuthority('system:docs:upload','kb:knowledge:upload',"
+            "hasAnyAuthority('system:docs:upload','kb:document:upload',"
                     + "'performance:attendance:import','performance:overtime:import','money:salary:import')";
 
     @Autowired

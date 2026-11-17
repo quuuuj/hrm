@@ -9,8 +9,6 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
-import java.util.List;
-
 /**
  * 知识库文档 Mapper（MySQL，kb_document）。
  * <p>
@@ -32,25 +30,18 @@ public interface DocumentMapper extends BaseMapper<Document> {
                                      @Param("oldName") String oldName,
                                      @Param("status") String status);
 
-    /** 启动恢复：执行中崩溃的 PROCESSING 文档 → FAILED（UPLOADED 由恢复器续跑，不在此处理）。 */
-    @Update("UPDATE kb_document SET status = 'FAILED', failure_reason = #{reason}, "
-          + "update_time = NOW() WHERE status = 'PROCESSING'")
-    int markStaleProcessingAsFailed(String reason);
-
-    /** 启动恢复：未启动的 UPLOADED 文档（供续跑 ETL）。 */
-    @Select("SELECT * FROM kb_document WHERE status = 'UPLOADED'")
-    List<Document> selectLiveUploaded();
-
-    /** 启动恢复：全部文档 id，用于识别 PG 侧失去主表行引用的孤儿索引。 */
-    @Select("SELECT id FROM kb_document")
-    List<Long> selectAllIds();
-
     /**
-     * CAS 认领：仅当状态为 UPLOADED/FAILED 时置 PROCESSING。
-     * 唯一的并发互斥原语——PROCESSING ⟺ 恰好一个管道拥有该文档。
+     * CAS 认领：把 UPLOADED/READY/FAILED 置 PROCESSING，并清掉上一轮的失败原因与切片快照。
+     * <p>
+     * 唯一的并发互斥原语——「进入 PROCESSING 的唯一入口是一条要求起始状态非 PROCESSING
+     * 的原子 UPDATE」，并发触发只有一个能通过（影响 1 行），其余影响 0 行即退出。
+     * PROCESSING 不在允许集合内：在途管道持有该文档，不能借此抢走所有权。
+     * <p>
+     * 初始提交与重试共用这一条：前者认领刚插入的 UPLOADED 行，后者顺带把终态行退回可跑状态。
      */
-    @Update("UPDATE kb_document SET status = 'PROCESSING', update_time = NOW() "
-          + "WHERE id = #{id} AND status IN ('UPLOADED', 'FAILED')")
+    @Update("UPDATE kb_document SET status = 'PROCESSING', failure_reason = NULL, "
+          + "chunk_count = NULL, preview_text = NULL, update_time = NOW() "
+          + "WHERE id = #{id} AND status IN ('UPLOADED', 'READY', 'FAILED')")
     int claimForProcessing(Long id);
 
     /** CAS 结算：PROCESSING → READY，一并写 chunk_count/preview_text/process_time 并清除失败原因；已删除（行不存在）则失败。 */

@@ -3,11 +3,10 @@ package com.qiujie.document.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qiujie.common.storage.MinioStorageService;
 import com.qiujie.document.entity.Document;
-import com.qiujie.document.lifecycle.DocumentLifecycleService;
 import com.qiujie.document.mapper.DocumentMapper;
 import com.qiujie.filetask.enums.UploadScopeEnum;
 import com.qiujie.filetask.spi.UploadCompletionHandler;
-import com.qiujie.filetask.spi.UploadSessionInfo;
+import com.qiujie.filetask.entity.FileUploadSession;
 import com.qiujie.util.StorageCompressor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 知识库文档上传完成处理器：SHA256 秒传 + zstd 压缩 + 登记 kb_document。
+ * 知识库文档上传完成处理器：SHA256 秒传 + zstd 压缩 + 提交 kb_document。
  * <p>
- * 落库后由 {@link DocumentLifecycleService#register} 在事务提交后触发异步 ETL。
+ * 落库后由 {@link DocumentService#submit} 在事务提交后触发异步 ETL。
  * 与文件中心的处理器各自独立：两张表、两套去重、两个对象前缀。
  */
 @Component
@@ -36,7 +35,7 @@ public class DocumentUploadCompletionHandler implements UploadCompletionHandler 
     private MinioStorageService storageService;
 
     @Autowired
-    private DocumentLifecycleService lifecycle;
+    private DocumentService documentService;
 
     @Override
     public UploadScopeEnum getScope() {
@@ -70,7 +69,7 @@ public class DocumentUploadCompletionHandler implements UploadCompletionHandler 
     }
 
     @Override
-    public Map<String, Object> onComplete(String mergedKey, UploadSessionInfo session) {
+    public void onComplete(String mergedKey, FileUploadSession session) {
         byte[] rawBytes;
         try (java.io.InputStream in = storageService.get(mergedKey)) {
             rawBytes = in.readAllBytes();
@@ -87,16 +86,14 @@ public class DocumentUploadCompletionHandler implements UploadCompletionHandler 
             storageService.put(mergedKey, compressed.bytes);
         }
 
-        DocumentLifecycleService.RegisterResult r = lifecycle.register(
-                new DocumentLifecycleService.RegisterCommand(
-                        mergedKey, session.getFileName(), session.getFileExt(),
-                        session.getFileHash(), (long) rawBytes.length / 1024,
-                        (long) compressed.bytes.length, compressed.compressed ? 1 : 0,
-                        session.getStaffId()));
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("id", r.documentId());
-        result.put("status", r.status());
-        return result;
+        documentService.submit(new Document()
+                .setName(mergedKey)
+                .setOldName(session.getFileName())
+                .setType(session.getFileExt())
+                .setFileHash(session.getFileHash())
+                .setSize((long) rawBytes.length / 1024)
+                .setStoredSize((long) compressed.bytes.length)
+                .setCompressed(compressed.compressed ? 1 : 0)
+                .setStaffId(session.getStaffId()));
     }
 }

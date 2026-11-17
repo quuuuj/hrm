@@ -22,7 +22,7 @@ import java.util.Map;
  * DashScope 文本重排序客户端（原生 API）。
  * <p>
  * 重排序是检索期能力，只有问答链路使用，因此放在 chat 包内（知识库摄入不依赖它）；
- * 配置沿用 {@code knowledge.retrieval.*} 前缀，与 top-k / rrf-k 等检索参数同处一节。
+ * 配置沿用 {@code chat.retrieval.*} 前缀，与 top-k / rrf-k 等检索参数同处一节。
  * </p>
  * <p>
  * 失败语义：任何异常都降级为「原样返回候选」，检索链路不因重排不可用而中断——

@@ -3,10 +3,10 @@
     <div style="margin-bottom: 10px">
       <!-- 知识库摄入文档上传（自动触发分块与向量化） -->
       <ChunkedImportBtn
-        v-permission="['kb:knowledge:upload']"
+        v-permission="['kb:document:upload']"
         scope="DOCUMENT"
         :complete-api="docsUploadApi"
-        label="上传知识文档"
+        label="上传"
         accept=".pdf,.docx,.md,.txt"
         @success="handleUploadSuccess"
       />
@@ -19,7 +19,7 @@
         title="你确定删除吗？"
         @confirm="handleDeleteBatch"
       >
-        <el-button v-permission="['kb:knowledge:delete']" type="danger" size="mini" slot="reference">
+        <el-button v-permission="['kb:document:delete']" type="danger" size="mini" slot="reference">
           批量删除 <i class="el-icon-remove-outline"></i>
         </el-button>
       </el-popconfirm>
@@ -98,8 +98,7 @@
               @click="handleViewChunks(scope.row)"
             >分块</el-button>
             <el-button
-              v-if="scope.row.status === 'FAILED'"
-              v-permission="['kb:knowledge:upload']"
+              v-permission="['kb:document:upload']"
               size="mini"
               type="warning"
               @click="handleRetry(scope.row)"
@@ -112,7 +111,7 @@
               icon-color="red"
               title="你确定删除吗？"
               @confirm="handleDelete(scope.row.id)">
-              <el-button v-permission="['kb:knowledge:delete']" size="mini" type="danger" slot="reference">
+              <el-button v-permission="['kb:document:delete']" size="mini" type="danger" slot="reference">
                 删除
               </el-button>
             </el-popconfirm>
@@ -135,8 +134,8 @@
     </div>
 
     <!-- 文档分块弹窗 -->
-    <el-dialog title="文档分块预览" :visible.sync="chunkDialog.isShow" width="60%">
-      <div v-loading="chunkDialog.loading">
+    <el-dialog title="文档分块预览" :visible.sync="chunkDialog.isShow" width="60%" custom-class="chunk-dialog">
+      <div v-loading="chunkDialog.loading" class="chunk-scroll-body">
         <div v-for="(chunk, idx) in chunkDialog.list" :key="idx" style="margin-bottom:12px;padding:8px;background:#f5f7fa;border-radius:4px">
           <el-tag size="mini" type="info">#{{ chunk.chunkIndex }}</el-tag>
           <span style="font-size:12px;color:#909399;margin-left:8px">{{ chunk.tokenCount }} tokens</span>
@@ -366,5 +365,15 @@ export default {
   position: absolute;
   bottom: 0;
   right: 20px;
+}
+</style>
+<style>
+/* 分块内容多时只在弹窗内部滚动，标题与关闭按钮保持固定 */
+.chunk-dialog .el-dialog__body {
+  padding: 24px;
+}
+.chunk-scroll-body {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
 }
 </style>

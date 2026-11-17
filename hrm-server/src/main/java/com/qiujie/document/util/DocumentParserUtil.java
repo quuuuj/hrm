@@ -1,27 +1,25 @@
-package com.qiujie.document.service;
+package com.qiujie.document.util;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
- * 多格式文档解析服务。
+ * 多格式文档解析工具。
  * 支持 PDF / DOCX / MD / TXT，自动编码检测。
+ * <p>
+ * 纯函数，无 Spring 依赖，可直接零 mock 单测。
  */
-@Service
-public class DocumentParserService {
+public final class DocumentParserUtil {
 
-    private static final Logger log = LoggerFactory.getLogger(DocumentParserService.class);
-
-    public String parse(InputStream inputStream, String fileExt) {
+    public static String parse(InputStream inputStream, String fileExt) {
         try {
             // 先读入字节数组（支持多次读取）
             byte[] bytes = inputStream.readAllBytes();
@@ -36,7 +34,7 @@ public class DocumentParserService {
         }
     }
 
-    private String parsePdf(byte[] bytes) throws IOException {
+    private static String parsePdf(byte[] bytes) throws IOException {
         try (PDDocument document = PDDocument.load(bytes)) {
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
@@ -44,7 +42,7 @@ public class DocumentParserService {
         }
     }
 
-    private String parseDocx(byte[] bytes) throws IOException {
+    private static String parseDocx(byte[] bytes) throws IOException {
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(bytes));
              XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
             return extractor.getText();
@@ -54,7 +52,7 @@ public class DocumentParserService {
     /**
      * 自动编码检测：尝试 UTF-8 → GBK → UTF-16
      */
-    private Charset detectCharset(byte[] bytes) {
+    private static Charset detectCharset(byte[] bytes) {
         // BOM 检测
         if (bytes.length >= 3 && bytes[0] == (byte) 0xEF && bytes[1] == (byte) 0xBB && bytes[2] == (byte) 0xBF) {
             return StandardCharsets.UTF_8;
