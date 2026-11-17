@@ -5,7 +5,7 @@ import com.qiujie.docs.entity.Docs;
 import com.qiujie.docs.mapper.DocsMapper;
 import com.qiujie.filetask.enums.UploadScopeEnum;
 import com.qiujie.filetask.spi.UploadCompletionHandler;
-import com.qiujie.filetask.spi.UploadSessionInfo;
+import com.qiujie.filetask.entity.FileUploadSession;
 import com.qiujie.common.storage.MinioStorageService;
 import com.qiujie.util.StorageCompressor;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
     }
 
     @Override
-    public Map<String, Object> onComplete(String mergedKey, UploadSessionInfo session) {
+    public void onComplete(String mergedKey, FileUploadSession session) {
         // 读取合并后的文件内容用于压缩
         byte[] rawBytes;
         try (java.io.InputStream in = storageService.get(mergedKey)) {
@@ -94,11 +94,5 @@ public class DocsUploadCompletionHandler implements UploadCompletionHandler {
                 .setCompressed(compressed.compressed ? 1 : 0)
                 .setStaffId(session.getStaffId());
         docsMapper.insert(docs);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("id", docs.getId());
-        result.put("name", docs.getName());
-        result.put("compressed", compressed.compressed);
-        return result;
     }
 }

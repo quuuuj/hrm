@@ -1,5 +1,6 @@
 package com.qiujie.filetask.spi;
 
+import com.qiujie.filetask.entity.FileUploadSession;
 import com.qiujie.filetask.enums.UploadScopeEnum;
 
 import java.util.Collections;
@@ -34,9 +35,12 @@ public interface UploadCompletionHandler {
 
     /**
      * 分片合并完成后执行的业务逻辑。
-     * @param mergedKey  合并后对象的存储 key
-     * @param session    上传会话信息
-     * @return 返回给客户端的额外字段，可为 null
+     * <p>
+     * 业务结果只落在各模块自己的表里，不回流给上传协议：complete 接口统一返回
+     * 「上传完成」，会话置 COMPLETED 即为收口。
+     *
+     * @param mergedKey 合并后对象的存储 key
+     * @param session   上传会话信息
      */
-    Map<String, Object> onComplete(String mergedKey, UploadSessionInfo session);
+    void onComplete(String mergedKey, FileUploadSession session);
 }

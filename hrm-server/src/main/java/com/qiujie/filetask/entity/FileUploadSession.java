@@ -54,10 +54,6 @@ public class FileUploadSession implements Serializable {
     @TableField("merged_object_key")
     private String mergedObjectKey;
 
-    /** handler 版 complete 首次执行时返回的 JSON 快照，用于重复调用幂等返回 */
-    @TableField("complete_result")
-    private String completeResult;
-
     @TableField("expire_time")
     private LocalDateTime expireTime;
 

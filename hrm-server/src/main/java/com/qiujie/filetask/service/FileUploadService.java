@@ -2,8 +2,6 @@ package com.qiujie.filetask.service;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.SecureUtil;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.qiujie.common.dto.Response;
 import com.qiujie.common.dto.ResponseDTO;
@@ -13,7 +11,6 @@ import com.qiujie.filetask.enums.UploadSessionStatusEnum;
 import com.qiujie.filetask.mapper.FileUploadChunkMapper;
 import com.qiujie.filetask.mapper.FileUploadSessionMapper;
 import com.qiujie.filetask.spi.UploadCompletionHandler;
-import com.qiujie.filetask.spi.UploadSessionInfo;
 import com.qiujie.common.storage.MinioStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -291,7 +288,7 @@ public class FileUploadService {
     /**
      * 阶段3：完成上传，合并分片并通过 handler 执行业务逻辑。
      * 走哪个 handler 由调用方决定，scope 已各自绑定（DOCS / DOCUMENT）。
-     * 重复调用时返回首次执行的结果快照，不重复合并、不重复入库。
+     * 重复调用时按会话状态短路，不重复合并、不重复入库。
      *
      * @param staffId 当前操作员工 ID，用于校验会话归属
      */
@@ -301,21 +298,14 @@ public class FileUploadService {
         if (!ownedBy(session, staffId)) {
             return Response.error(SESSION_MISSING);
         }
-        // 会话已完成且结果已落库：直接重放，避免重复插行与重复触发 ETL
+        // 会话已完成：直接短路，避免重复插行与重复触发 ETL
         if (session.getStatus() == UploadSessionStatusEnum.COMPLETED && session.getMergedObjectKey() != null) {
-            return Response.success("上传完成", replayResult(session));
+            return Response.success("上传完成");
         }
 
         String mergedKey = mergeChunks(session, handler.getStoragePrefix());
-        UploadSessionInfo info = new UploadSessionInfo(
-                uploadId, session.getFileName(), session.getFileExt(),
-                session.getFileSize(), session.getFileHash(),
-                session.getStaffId(), session.getChunkCount());
-        Map<String, Object> extra = handler.onComplete(mergedKey, info);
-        if (extra == null) extra = new HashMap<>();
-        session.setCompleteResult(JSON.toJSONString(extra));
-        sessionMapper.updateById(session);
-        return Response.success("上传完成", extra);
+        handler.onComplete(mergedKey, session);
+        return Response.success("上传完成");
     }
 
     /**
@@ -421,20 +411,6 @@ public class FileUploadService {
             }
         }
         return missing.isEmpty() ? "" : "，缺失序号 " + missing;
-    }
-
-    /** 幂等返回：优先读会话上的结果快照，历史会话没有快照时按 mergedKey 兜底 */
-    private Map<String, Object> replayResult(FileUploadSession session) {
-        if (session.getCompleteResult() != null) {
-            try {
-                return JSON.parseObject(session.getCompleteResult(), new TypeReference<Map<String, Object>>() {});
-            } catch (Exception e) {
-                log.warn("complete_result 解析失败，返回空结果: uploadId={}", session.getId(), e);
-            }
-        }
-        Map<String, Object> fallback = new HashMap<>();
-        fallback.put("mergedKey", session.getMergedObjectKey());
-        return fallback;
     }
 
     /** 补偿删除，失败只记日志（对象已在事务外写入，删不掉只能留给孤儿清理任务） */

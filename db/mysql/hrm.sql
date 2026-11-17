@@ -1362,7 +1362,6 @@ CREATE TABLE `file_upload_session` (
   `chunk_count` int NOT NULL COMMENT '总分片数',
   `status` varchar(20) NOT NULL DEFAULT 'INIT' COMMENT 'INIT/UPLOADING/COMPLETING/COMPLETED',
   `merged_object_key` varchar(500) DEFAULT NULL COMMENT '合并后对象路径',
-  `complete_result` varchar(2000) DEFAULT NULL COMMENT 'handler 版 complete 返回结果快照(JSON)，用于幂等重放',
   `expire_time` datetime NOT NULL COMMENT '会话过期时间',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
