@@ -1,6 +1,8 @@
 package com.qiujie.common.storage;
 
 import io.minio.*;
+import io.minio.messages.DeleteError;
+import io.minio.messages.DeleteObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,8 +12,11 @@ import jakarta.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -131,6 +136,40 @@ public class MinioStorageService {
         } catch (Exception e) {
             throw new RuntimeException("MinIO delete failed: " + key, e);
         }
+    }
+
+    /**
+     * 批量删除对象（S3 DeleteObjects 协议，SDK 内部按 1000 个/请求自动分片）。
+     * <p>
+     * 与 {@link #delete} 语义不同：批量接口不抛单个对象的失败——不存在的对象视为成功，
+     * 失败项收集后返回，由调用方决定记日志还是忽略。一批里失败一个不该让其余已成功的
+     * 操作回滚（对象存储本来也回滚不了）。
+     * <p>
+     * SDK 返回的是惰性 {@link Iterable}，删除请求在遍历时才真正发出：不遍历等于什么都没删。
+     *
+     * @return 删除失败的 key（空集表示全部成功）；整批请求本身失败时返回全部 key
+     */
+    public Set<String> deleteAll(Collection<String> keys) {
+        if (keys == null || keys.isEmpty()) {
+            return Set.of();
+        }
+        List<DeleteObject> objects = keys.stream().map(DeleteObject::new).collect(Collectors.toList());
+        Iterable<Result<DeleteError>> results = client.removeObjects(
+                RemoveObjectsArgs.builder().bucket(bucket).objects(objects).build());
+        Set<String> failed = new HashSet<>();
+        try {
+            for (Result<DeleteError> result : results) {
+                DeleteError error = result.get();
+                failed.add(error.objectName());
+                log.warn("MinIO 批量删除单个对象失败: key={}, code={}, message={}",
+                        error.objectName(), error.code(), error.message());
+            }
+        } catch (Exception e) {
+            // 整批请求失败（网络/鉴权）：无法区分哪些已删，全部计为失败，交由孤儿清理兜底
+            log.error("MinIO 批量删除请求失败: keys={}", keys, e);
+            return new HashSet<>(keys);
+        }
+        return failed;
     }
 
     public boolean exists(String key) {
