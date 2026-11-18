@@ -53,6 +53,9 @@ spring:
       chat:
         options:
           model: ${llm.chat-model}
+      embedding:
+        options:
+          model: ${llm.embedding-model}
     # 模型端点故障时默认重试 10 次、指数退避，用户会长时间停在「思考中」
     retry:
       max-attempts: 2

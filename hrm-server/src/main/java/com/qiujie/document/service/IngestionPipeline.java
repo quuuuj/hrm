@@ -11,6 +11,7 @@ import com.qiujie.document.util.TextCleanupUtil;
 import com.qiujie.util.StorageCompressor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +46,9 @@ public class IngestionPipeline {
     private static final int PREVIEW_MAX_CHARS = 500;
     private static final int REASON_MAX_CHARS = 500;
 
+    /** 向量化每批文本数：与 DashScope 单次上限一致，任一批失败整篇不落库。 */
+    private static final int EMBED_BATCH_SIZE = 10;
+
     /** 最大切片字符数 */
     @Value("${kb.chunk.max-size}")
     private int chunkMaxSize;
@@ -62,7 +67,7 @@ public class IngestionPipeline {
     private MinioStorageService storageService;
 
     @Autowired
-    private DashScopeEmbeddingClient embeddingClient;
+    private EmbeddingModel embeddingModel;
 
     /** 执行摄入（工作线程调用，无 Spring 事务；PG 侧 best-effort）。调用前文档必须已被认领为 PROCESSING。 */
     void run(Long documentId) {
@@ -91,18 +96,11 @@ public class IngestionPipeline {
         String fullText = readFullText(document);
         List<ChunkUtil.ChunkResult> chunks = ChunkUtil.split(fullText, chunkMaxSize, chunkOverlap);
 
-        // 向量化先于落库：embedding 随切片行一起写入（失败条目 null 容忍，
-        // 行仍然落库——切片可查、关键词检索可用，只是不参与向量检索）
-        List<float[]> vectors = embeddingClient.embed(
-                chunks.stream().map(ChunkUtil.ChunkResult::text).toList());
+        // 向量化先于落库：任一批失败就抛异常，整篇不写切片（顶层结算 FAILED）
+        List<float[]> vectors = embedAll(chunks.stream().map(ChunkUtil.ChunkResult::text).toList());
         String documentName = document.getOldName() == null ? "" : document.getOldName();
-        int vectorCount = 0;
         for (int i = 0; i < chunks.size(); i++) {
             ChunkUtil.ChunkResult cr = chunks.get(i);
-            float[] vec = vectors.get(i);
-            if (vec != null) {
-                vectorCount++;
-            }
             chunkMapper.insert(new DocumentChunk()
                     .setDocumentId(documentId)
                     .setDocumentName(documentName)
@@ -110,10 +108,20 @@ public class IngestionPipeline {
                     .setChunkText(cr.text())
                     .setTokenCount(cr.tokenCount())
                     .setCharStart(cr.charStart())
-                    .setCharEnd(cr.charEnd()), vec);
+                    .setCharEnd(cr.charEnd()), vectors.get(i));
         }
 
-        return Optional.of(new EtlOutcome(fullText, chunks.size(), vectorCount));
+        return Optional.of(new EtlOutcome(fullText, chunks.size()));
+    }
+
+    /** 按 10 条一批调用 EmbeddingModel；任一批异常直接抛出，由顶层结算为 FAILED。 */
+    private List<float[]> embedAll(List<String> texts) {
+        List<float[]> all = new ArrayList<>(texts.size());
+        for (int start = 0; start < texts.size(); start += EMBED_BATCH_SIZE) {
+            int end = Math.min(start + EMBED_BATCH_SIZE, texts.size());
+            all.addAll(embeddingModel.embed(texts.subList(start, end)));
+        }
+        return all;
     }
 
     /** 取对象存储中的源文件，按需解压后解析清洗成可落库的纯文本。 */
@@ -137,8 +145,7 @@ public class IngestionPipeline {
             // 执行中被删：不复活已删文档，清掉本次写入的残留产物
             chunkMapper.deleteByDocumentId(documentId);
         }
-        log.info("ETL completed: documentId={}, chunks={}, vectors={}",
-                documentId, outcome.chunkCount(), outcome.vectorCount());
+        log.info("ETL completed: documentId={}, chunks={}", documentId, outcome.chunkCount());
     }
 
     /** 结算失败段：文档立即置 FAILED（不再卡 PROCESSING 等重启），原因截断防超列。 */
@@ -149,7 +156,7 @@ public class IngestionPipeline {
                 ? message.substring(0, REASON_MAX_CHARS) : message);
     }
 
-    /** ETL 段的产出：整篇清洗后文本（供预览截断）+ 切片数 + 成功向量化的切片数。 */
-    private record EtlOutcome(String fullText, int chunkCount, int vectorCount) {
+    /** ETL 段的产出：整篇清洗后文本（供预览截断）+ 切片数。 */
+    private record EtlOutcome(String fullText, int chunkCount) {
     }
 }

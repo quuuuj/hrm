@@ -1,6 +1,6 @@
 package com.qiujie.chat.service;
 
-import com.qiujie.document.service.DashScopeEmbeddingClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,7 @@ public class HybridRetrievalService {
     private static final Logger log = LoggerFactory.getLogger(HybridRetrievalService.class);
 
     @Autowired
-    private DashScopeEmbeddingClient embeddingClient;
+    private EmbeddingModel embeddingModel;
 
     @Autowired
     private DashScopeRerankClient rerankClient;
@@ -85,7 +85,7 @@ public class HybridRetrievalService {
 
     private List<SearchResult> vectorSearch(String query) {
         try {
-            float[] vec = embeddingClient.embed(List.of(query)).get(0);
+            float[] vec = embeddingModel.embed(query);
             com.pgvector.PGvector pgVec = new com.pgvector.PGvector(vec);
             // 切片与向量同表：一次查询直接拿到文本与展示名，无需回表或解析 JSON
             String sql = """
